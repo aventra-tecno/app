@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#26348B">
+<meta name="robots" content="noindex">
+<title>Cek Pindah Repository</title>
+<style>
+  :root { --navy: #26348B; --ink: #1A1D2E; --muted: #5B6280; --line: #E3E6F0; --bg: #F3F4F8; --card: #fff;
+    --ok: #17663F; --ok-bg: #E8F6EE; --bad: #B42318; --bad-bg: #FDECEA; --warn: #8A5A00; --warn-bg: #FFF4D6; --skip: #5B6280; --skip-bg: #EEF0F5; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { background: radial-gradient(circle at 92% 30%, rgba(255,255,255,.08) 0 90px, transparent 91px), linear-gradient(160deg, #2E3D99, #26348B 50%, #1D2876); color: #fff; padding: 22px 16px 70px; }
+  header h1 { margin: 0 0 4px; font-size: 21px; } header p { margin: 0; opacity: .8; font-size: 13.5px; }
+  main { max-width: 760px; margin: -54px auto 40px; padding: 0 16px; display: grid; gap: 14px; }
+  .card { background: var(--card); border-radius: 18px; box-shadow: 0 6px 20px -12px rgba(16,24,40,.3); overflow: hidden; }
+  .sum { padding: 18px; display: grid; gap: 12px; }
+  .sum-top { display: flex; align-items: center; gap: 14px; }
+  .big { font-size: 30px; font-weight: 800; color: var(--navy); line-height: 1; }
+  .bar { height: 10px; background: #EEF0F7; border-radius: 99px; overflow: hidden; } .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #4A5BC4, #26348B); transition: width .5s; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12.5px; }
+  button { font: inherit; border: 0; cursor: pointer; }
+  .btn { background: var(--navy); color: #fff; font-weight: 700; padding: 11px 16px; border-radius: 12px; width: 100%; }
+  .btn:disabled { opacity: .6; }
+  h2 { margin: 0; padding: 14px 16px; font-size: 15.5px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+  h2 span { width: 26px; height: 26px; border-radius: 8px; background: var(--navy); color: #fff; display: grid; place-items: center; font-size: 13px; flex: none; }
+  .row { display: flex; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #F0F1F6; align-items: flex-start; }
+  .row:last-child { border-bottom: 0; }
+  .row .t { flex: 1; min-width: 0; } .row b { display: block; font-size: 14.5px; } .row small { display: block; color: var(--muted); font-size: 12.5px; word-break: break-word; margin-top: 2px; }
+  .row small a { color: var(--navy); }
+  .st { flex: none; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 99px; white-space: nowrap; }
+  .st.ok { background: var(--ok-bg); color: var(--ok); } .st.bad { background: var(--bad-bg); color: var(--bad); }
+  .st.warn { background: var(--warn-bg); color: var(--warn); } .st.skip, .st.wait { background: var(--skip-bg); color: var(--skip); }
+  .inp { padding: 12px 16px; display: grid; gap: 10px; border-bottom: 1px solid #F0F1F6; background: #FAFBFD; }
+  .inp label { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .inp input { font: 13px ui-monospace, Menlo, Consolas, monospace; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; width: 100%; }
+  .chk { width: 22px; height: 22px; accent-color: var(--ok); flex: none; margin-top: 1px; }
+  .note { font-size: 12.5px; color: var(--muted); padding: 0 4px; }
+  code { font: 12.5px ui-monospace, Menlo, Consolas, monospace; background: #F2F3F8; padding: 1px 5px; border-radius: 5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cek pindah repository</h1>
+  <p>falcoraea.github.io/sp → aventra-tecno.github.io/app/sp · semua yang bisa dicek otomatis dicek di sini</p>
+</header>
+<main>
+  <section class="card sum">
+    <div class="sum-top"><div class="big" id="pct">0%</div><div style="flex:1"><b id="sumtxt">Belum dicek</b><div class="bar"><i id="pbar"></i></div></div></div>
+    <div class="legend"><span class="st ok">Sudah</span><span class="st bad">Belum / salah</span><span class="st warn">Perlu dicek</span><span class="st skip">Dilewati</span></div>
+    <button class="btn" id="run">Cek sekarang</button>
+  </section>
+  <div id="groups"></div>
+  <p class="note">Halaman ini hanya membaca, tidak mengubah apa pun. Isian dan centang manual tersimpan di browser ini saja. Untuk cek data & Telegram, login dulu di aplikasi alamat baru dengan akun owner, lalu buka halaman ini lagi.</p>
+</main>
+
+<script type="module">
+const NEW_APP = new URL('./', location.href).href;                 // https://aventra-tecno.github.io/app/sp/
+const ORIGIN = location.origin;                                    // https://aventra-tecno.github.io
+const OLD_APP = 'https://falcoraea.github.io/sp/';
+const OLD_ROOT = 'https://falcoraea.github.io/';
+const OLD_PKG = 'io.github.falcoraea.twa';
+const LS = { get: (k, d) => { try { return JSON.parse(localStorage.getItem('cekpindah:' + k)) ?? d; } catch (_) { return d; } },
+             set: (k, v) => { try { localStorage.setItem('cekpindah:' + k, JSON.stringify(v)); } catch (_) {} } };
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const LBL = { ok: 'Sudah', bad: 'Belum', warn: 'Perlu dicek', skip: 'Dilewati', wait: 'Mengecek…' };
+const get = async (url, as = 'text') => { const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'cb=' + Date.now(), { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status); return as === 'json' ? r.json() : r.text(); };
+const exists = async (url) => { try { const r = await fetch(url, { cache: 'no-store' }); return r.ok; } catch (_) { return false; } };
+
+let supa = null;
+async function supaClient() { if (supa !== null) return supa; try { supa = (await import('./js/supa.js')).supa; } catch (_) { supa = false; } return supa; }
+
+// ---------- daftar pengecekan ----------
+const G = [
+  { n: 1, title: 'Aplikasi di alamat baru', items: [
+    { id: 'page', t: 'Halaman aplikasi terbuka', run: async () => { const h = await get(NEW_APP + 'index.html'); return h.includes('manifest') ? ['ok', NEW_APP] : ['bad', 'index.html terbaca tapi isinya bukan aplikasi']; } },
+    { id: 'ver', t: 'Versi terbit lewat GitHub Actions', run: async () => { const v = await get(NEW_APP + 'version.json', 'json'); return v.build && v.build !== 'dev' ? ['ok', `v${v.version} · build ${v.build} · ${v.date || ''}`] : ['warn', 'version.json belum diisi workflow. Cek tab Actions & Settings › Pages › Source = GitHub Actions']; } },
+    { id: 'manifest', t: 'manifest.json benar (untuk Android & install)', run: async () => {
+      const m = await get(NEW_APP + 'manifest.json', 'json'); const bad = [];
+      if (m.display !== 'standalone') bad.push('display bukan standalone');
+      if (!m.start_url) bad.push('start_url kosong');
+      const icons = (m.icons || []).filter((i) => /192|512/.test(i.sizes));
+      for (const i of icons) if (!(await exists(new URL(i.src, NEW_APP + 'manifest.json').href))) bad.push('ikon tidak ada: ' + i.src);
+      return bad.length ? ['bad', bad.join(' · ')] : ['ok', `${m.name} · ${icons.length} ikon terbaca · warna ${m.theme_color}`];
+    } },
+    { id: 'sw', t: 'Service worker aktif di perangkat ini', run: async () => {
+      if (!('serviceWorker' in navigator)) return ['skip', 'Browser ini tidak mendukung'];
+      const r = await navigator.serviceWorker.getRegistration(NEW_APP);
+      return r ? ['ok', 'Terdaftar untuk ' + r.scope] : ['warn', 'Buka aplikasinya sekali di perangkat ini, lalu cek lagi'];
+    } },
+    { id: 'appRoot', t: 'Halaman /app/ (akar repo app) terbuka', run: async () => (await exists(new URL('../', NEW_APP).href)) ? ['ok', 'Boleh diganti halaman khususmu sendiri, tidak memengaruhi /app/sp/'] : ['warn', 'Belum ada index.html di akar repo app (tidak wajib)'] },
+  ] },
+  { n: 2, title: 'Login, data & Telegram', items: [
+    { id: 'login', t: 'Sudah login di alamat baru', run: async () => {
+      const s = await supaClient(); if (!s) return ['bad', 'Koneksi ke Supabase gagal dimuat (cek internet, lalu Cek ulang)'];
+      const { data } = await s.auth.getSession(); const u = data?.session?.user;
+      return u ? ['ok', u.email] : ['warn', 'Belum login. Buka aplikasi di alamat baru, login, lalu cek lagi'];
+    } },
+    { id: 'data', t: 'Data dari Supabase terbaca', run: async () => {
+      const s = await supaClient(); if (!s) return ['skip', 'Koneksi ke Supabase gagal dimuat']; const { data } = await s.auth.getSession(); if (!data?.session) return ['skip', 'Perlu login dulu'];
+      const { count, error } = await s.from('products').select('id', { count: 'exact', head: true });
+      return error ? ['bad', error.message] : ['ok', `${count} barang terbaca, database sama dengan sebelumnya`];
+    } },
+    { id: 'tg', t: 'Link laporan Telegram ke alamat baru', run: async () => {
+      const s = await supaClient(); if (!s) return ['skip', 'Koneksi ke Supabase gagal dimuat']; const { data } = await s.auth.getSession(); if (!data?.session) return ['skip', 'Perlu login sebagai owner'];
+      const { data: t, error } = await s.from('telegram_config').select('app_url, enabled').eq('id', 1).maybeSingle();
+      if (error) return ['skip', 'Hanya owner yang bisa cek ini'];
+      if (!t?.app_url) return ['skip', 'Telegram belum dipakai'];
+      return t.app_url.startsWith(NEW_APP) ? ['ok', t.app_url] : ['bad', `Masih ${t.app_url} — buka Pengaturan › Telegram › Simpan`];
+    } },
+    { id: 'push', t: 'Notifikasi HP aktif di perangkat ini', run: async () => {
+      if (!('Notification' in window)) return ['skip', 'Browser ini tidak mendukung notifikasi'];
+      if (Notification.permission !== 'granted') return ['warn', 'Izin notifikasi belum diberikan di alamat baru'];
+      const r = await navigator.serviceWorker?.getRegistration(NEW_APP); const sub = await r?.pushManager?.getSubscription();
+      return sub ? ['ok', 'Izin diberikan & berlangganan'] : ['warn', 'Izin ada tapi belum berlangganan — buka aplikasi lalu aktifkan notifikasi'];
+    } },
+  ] },
+  { n: 3, title: 'Aplikasi Android (TWA baru dari awal)', input: true, items: [
+    { id: 'al', t: 'assetlinks.json ada di akar domain', run: async () => {
+      const a = await get(ORIGIN + '/.well-known/assetlinks.json', 'json'); const ent = (Array.isArray(a) ? a : []).filter((x) => x?.target?.namespace === 'android_app');
+      if (!ent.length) return ['bad', 'File ada tapi tidak berisi aplikasi Android'];
+      window.__al = ent; return ['ok', ent.map((e) => e.target.package_name).join(', ')];
+    } },
+    { id: 'alfmt', t: 'Isi assetlinks benar (format sidik jari SHA-256)', run: async () => {
+      const ent = window.__al; if (!ent) return ['skip', 'assetlinks belum terbaca'];
+      const bad = ent.flatMap((e) => (e.target.sha256_cert_fingerprints || []).filter((f) => !/^([0-9A-F]{2}:){31}[0-9A-F]{2}$/i.test(f)));
+      const tmpl = ent.some((e) => /GANTI/i.test(e.target.package_name + JSON.stringify(e.target.sha256_cert_fingerprints)));
+      return tmpl ? ['bad', 'Masih isi contoh (GANTI…). Pakai assetlinks.json dari ZIP PWABuilder'] : bad.length ? ['bad', 'Sidik jari tidak valid: ' + bad[0]] : ['ok', 'Format benar'];
+    } },
+    { id: 'alpkg', t: 'Nama paket cocok dengan paket Android baru', run: async () => {
+      const ent = window.__al; const want = (LS.get('pkg', '') || '').trim(); if (!ent) return ['skip', 'assetlinks belum terbaca'];
+      if (!want) return ['warn', 'Isi nama paket baru di kolom atas'];
+      const hit = ent.find((e) => e.target.package_name === want);
+      if (!hit) return ['bad', `Paket ${want} tidak ada di assetlinks (yang ada: ${ent.map((e) => e.target.package_name).join(', ')})`];
+      return want === OLD_PKG ? ['warn', 'Ini nama paket lama. Kalau dibuat dari awal, pakai nama paket baru'] : ['ok', want];
+    } },
+    { id: 'alsha', t: 'Sidik jari SHA-256 cocok dengan kunci baru', run: async () => {
+      const ent = window.__al; const want = (LS.get('sha', '') || '').trim().toUpperCase(); const pkg = (LS.get('pkg', '') || '').trim();
+      if (!ent) return ['skip', 'assetlinks belum terbaca']; if (!want) return ['warn', 'Tempel SHA-256 dari signing-key-info.txt / ZIP PWABuilder di kolom atas'];
+      const e = ent.find((x) => x.target.package_name === pkg) || ent[0];
+      return (e.target.sha256_cert_fingerprints || []).map((f) => f.toUpperCase()).includes(want) ? ['ok', 'Cocok'] : ['bad', 'Tidak cocok — assetlinks belum diganti dengan yang dari ZIP baru'];
+    } },
+  ] },
+  { n: 4, title: 'Alamat lama jadi pengalihan', items: [
+    { id: 'oldidx', t: 'falcoraea.github.io/sp/ mengalihkan ke alamat baru', run: async () => {
+      const h = await get(OLD_APP + 'index.html'); return h.includes('aventra-tecno.github.io/app/sp/') ? ['ok', 'Pengalihan terpasang'] : h.includes('manifest') ? ['bad', 'Masih aplikasi lama — langkah 7 belum dikerjakan'] : ['warn', 'Isi tidak dikenali'];
+    } },
+    { id: 'oldsw', t: 'sw.js lama sudah versi penghapus cache', run: async () => { const t = await get(OLD_APP + 'sw.js'); return /penghapus/.test(t) ? ['ok', 'HP lama akan dibersihkan otomatis'] : ['bad', 'Masih sw.js aplikasi lama — unggah sw.js dari folder repo-lama-sp']; } },
+    { id: 'oldkat', t: 'Link katalog lama ikut dialihkan', run: async () => { const t = await get(OLD_APP + 'katalog.html'); return t.includes('aventra-tecno.github.io/app/sp/') ? ['ok', 'katalog.html?t=… ikut pindah'] : ['bad', 'Unggah katalog.html dari folder repo-lama-sp']; } },
+    { id: 'oldwf', t: 'Workflow lama tidak menimpa pengalihan', run: async () => { const t = await get(OLD_APP + 'version.json').catch(() => null); return t && /"build"/.test(t) ? ['warn', 'version.json lama masih ada — tidak masalah, asal index.html & sw.js sudah pengalihan'] : ['ok', 'Aman']; } },
+  ] },
+  { n: 5, title: 'Dicentang manual (tidak bisa dicek otomatis)', manual: [
+    ['m_supa', 'Supabase › Authentication › URL Configuration: Site URL & Redirect URLs = alamat baru'],
+    ['m_reset', 'Tes "Lupa password": link di email membuka alamat baru'],
+    ['m_push', 'Edge Function send-push sudah di-deploy ulang (file baru)'],
+    ['m_mayar', 'Tes bayar tagihan: setelah bayar kembali ke alamat baru'],
+    ['m_apk', 'APK baru terpasang di HP tanpa bilah alamat di atas'],
+    ['m_uninstall', 'Aplikasi Android lama di-uninstall di semua HP (paket baru tidak menimpa yang lama)'],
+    ['m_kunci', 'signing.keystore & signing-key-info.txt BARU disimpan di Google Drive + flashdisk (tidak di GitHub)'],
+    ['m_wa', 'Pegawai sudah diberi tahu alamat baru & login ulang'],
+  ] },
+];
+
+// ---------- tampilan ----------
+const state = {};
+function render() {
+  const box = document.getElementById('groups'); const checks = LS.get('manual', {});
+  box.innerHTML = G.map((g) => `<section class="card"><h2><span>${g.n}</span>${esc(g.title)}</h2>
+    ${g.input ? `<div class="inp"><label>Nama paket Android baru (Package ID di PWABuilder)<input id="pkg" placeholder="mis. id.aventra.stokgudang" value="${esc(LS.get('pkg', ''))}"></label>
+      <label>SHA-256 kunci baru (dari signing-key-info.txt atau assetlinks.json di ZIP PWABuilder)<input id="sha" placeholder="AB:CD:EF:…" value="${esc(LS.get('sha', ''))}"></label></div>` : ''}
+    ${(g.items || []).map((it) => { const s = state[it.id] || ['wait', '']; return `<div class="row"><div class="t"><b>${esc(it.t)}</b>${s[1] ? `<small>${esc(s[1])}</small>` : ''}</div><span class="st ${s[0]}">${s[0] === 'wait' && !running ? '–' : LBL[s[0]]}</span></div>`; }).join('')}
+    ${(g.manual || []).map(([id, t]) => `<label class="row"><input type="checkbox" class="chk" data-m="${id}" ${checks[id] ? 'checked' : ''}><div class="t"><b>${esc(t)}</b></div><span class="st ${checks[id] ? 'ok' : 'warn'}">${checks[id] ? 'Sudah' : 'Belum'}</span></label>`).join('')}
+  </section>`).join('');
+  box.querySelectorAll('[data-m]').forEach((c) => c.addEventListener('change', () => { const m = LS.get('manual', {}); m[c.dataset.m] = c.checked; LS.set('manual', m); render(); summary(); }));
+  for (const k of ['pkg', 'sha']) box.querySelector('#' + k)?.addEventListener('change', (e) => { LS.set(k, e.target.value.trim()); });
+  summary();
+}
+function summary() {
+  const auto = Object.values(state).filter((s) => s[0] !== 'wait' && s[0] !== 'skip');
+  const man = G.flatMap((g) => g.manual || []); const checks = LS.get('manual', {});
+  const done = auto.filter((s) => s[0] === 'ok').length + man.filter(([id]) => checks[id]).length;
+  const total = auto.length + man.length; const p = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('pct').textContent = p + '%'; document.getElementById('pbar').style.width = p + '%';
+  const bad = auto.filter((s) => s[0] === 'bad').length;
+  document.getElementById('sumtxt').textContent = !auto.length ? 'Tekan "Cek sekarang"' : `${done} dari ${total} selesai${bad ? ` · ${bad} perlu diperbaiki` : ''}`;
+}
+let running = false;
+async function runAll() {
+  running = true; const b = document.getElementById('run'); b.disabled = true; b.textContent = 'Mengecek…';
+  window.__al = null;
+  for (const g of G) for (const it of g.items || []) state[it.id] = ['wait', ''];
+  render();
+  for (const g of G) for (const it of g.items || []) {
+    try { state[it.id] = await it.run(); } catch (e) { state[it.id] = ['bad', 'Tidak bisa dibuka: ' + (e.message || e)]; }
+    render();
+  }
+  running = false; b.disabled = false; b.textContent = 'Cek ulang'; render();
+}
+document.getElementById('run').addEventListener('click', runAll);
+render(); runAll();
+</script>
+</body>
+</html>
