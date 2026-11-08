@@ -1,1 +1,8 @@
-
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.falcoraea.twa",
+        "sha256_cert_fingerprints": ["80:F9:D8:3E:01:6E:E7:A5:F7:19:92:D5:A8:50:F8:7E:39:AC:B6:B2:B4:E1:E2:ED:BB:4E:8B:BF:87:65:1C:B2"]
+      }
+    }]
