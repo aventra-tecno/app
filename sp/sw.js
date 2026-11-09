@@ -1,6 +1,6 @@
 // Service worker: aplikasi tetap terbuka cepat & bisa dipasang (PWA).
 // Naikkan VERSION setiap kali kamu upload perubahan file ke GitHub.
-const VERSION = 'v2.26.0';
+const VERSION = 'v2.27.0';
 const CACHE = 'stok-gudang-' + VERSION;
 const SHELL = [
   './', 'index.html', 'manifest.json', 'css/app.css',
@@ -50,8 +50,12 @@ self.addEventListener('push', (e) => {
     icon: 'assets/icon-192.png',
     badge: 'assets/badge-96.png',
     tag: d.tag || undefined,
-    renotify: !!d.tag,
-    vibrate: d.level === 'masalah' ? [200, 100, 200, 100, 200] : [120, 60, 120],
+    renotify: true,
+    silent: false,
+    timestamp: d.ts || Date.now(),
+    requireInteraction: d.level === 'masalah',          // masalah tetap terlihat sampai disentuh
+    vibrate: d.level === 'masalah' ? [300, 120, 300, 120, 300] : [200, 80, 200],
+    actions: [{ action: 'open', title: 'Buka' }],
     data: { link: d.link || '#/notifikasi' }
   }));
 });
