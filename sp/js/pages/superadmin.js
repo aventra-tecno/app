@@ -1,4 +1,5 @@
-import { rpc, supa } from '../supa.js';
+import { rpc, supa, logEvent } from '../supa.js';
+import { apkInfo, uploadApk, removeApk, fmtSize } from '../install.js';
 import { SUPABASE_URL } from '../config.js';
 import { billRow } from '../billing.js';
 import { store } from '../store.js';
@@ -46,6 +47,9 @@ export function alatUI(el) {
         <div class="small muted">Mengirim notifikasi tes ke perangkat ini. Tutup / kecilkan aplikasi setelah menekan tombol; notifikasi harus muncul dalam beberapa detik.</div>
         <div class="row wrap"><button class="btn btn-primary" id="ptest">Kirim notifikasi tes</button><button class="btn" id="preg">Daftarkan ulang perangkat ini</button></div>
         <div class="small" id="pst"></div></section>
+      <section class="card stack" id="apkbox"><h2 class="sec-title">${icon('download', 18)} File APK (Pasang aplikasi di halaman login)</h2><div id="apkcur" class="small muted">Memuat…</div>
+        <div class="grid g2"><label class="field">File APK<input class="input" id="apkf" type="file" accept=".apk,application/vnd.android.package-archive"></label><label class="field">Versi<input class="input" id="apkv" placeholder="mis. 1.0.0"></label></div>
+        <div class="row wrap between"><button class="btn btn-ghost btn-sm hidden" id="apkdel" style="color:var(--red)">Hapus APK</button><button class="btn btn-primary" id="apkup">${icon('upload', 16)} Unggah APK</button></div></section>
       <section class="card stack danger-zone"><h2 class="sec-title" style="color:var(--red)">${icon('alert', 18)} Hapus semua data</h2>
         <div class="small">Menghapus <b>semua</b> barang, harga, rak, stok, pesanan, upload, beli WIN, retur, opname, notifikasi, kecurangan, log, absen, gaji, biaya, dan pengumuman.<br>
           <b>Tetap ada:</b> akun pegawai &amp; jabatan, pengaturan toko, daftar toko, dan pendaftaran notifikasi HP. <b>Tidak bisa dibatalkan.</b></div>
@@ -96,6 +100,25 @@ export function alatUI(el) {
       catch (err) { toastErr(err); } finally { setTimeout(() => { e.target.disabled = false; }, 4000); }
     };
     el.querySelector('#preg').onclick = async () => { try { await subscribePush(); toast('Perangkat terdaftar', 'ok'); loadInfo(); } catch (err) { toastErr(err); } };
+    // 2.28: APK untuk tombol "Pasang aplikasi" di halaman login
+    let cur = null;
+    const paintApk = async () => {
+      cur = await apkInfo(true);
+      el.querySelector('#apkcur').innerHTML = cur ? `Sekarang: <b>versi ${esc(cur.version || '-')}</b> · ${fmtSize(cur.size)} · ${esc(cur.file || '')} · diunggah ${esc(new Date(cur.uploaded_at).toLocaleString('id-ID'))} · <a href="${esc(cur.url)}" target="_blank" rel="noopener">unduh</a>`
+        : 'Belum ada APK. Di halaman login, pilihan "Unduh APK" tertulis belum tersedia.';
+      el.querySelector('#apkdel').classList.toggle('hidden', !cur);
+    };
+    el.querySelector('#apkup').onclick = async (e) => {
+      const f = el.querySelector('#apkf').files[0]; if (!f) return toast('Pilih file APK dulu', 'err');
+      const b = e.currentTarget; b.disabled = true; b.textContent = 'Mengunggah…';
+      try { const info = await uploadApk(f, el.querySelector('#apkv').value.trim(), cur); logEvent('pengaturan', `Super admin mengunggah APK versi ${info.version || '-'} (${fmtSize(info.size)})`); toast('APK terunggah. Halaman login langsung memakai file ini.', 'ok'); el.querySelector('#apkf').value = ''; await paintApk(); }
+      catch (err) { toastErr(err); } finally { b.disabled = false; b.innerHTML = `${icon('upload', 16)} Unggah APK`; }
+    };
+    el.querySelector('#apkdel').onclick = async () => {
+      if (!(await modal({ title: 'Hapus APK?', body: '<p style="margin:0">Pilihan "Unduh APK" di halaman login jadi tidak tersedia.</p>', actions: [{ label: 'Batal', value: false }, { label: 'Hapus', cls: 'btn-dark', value: true }] }))) return;
+      try { await removeApk(cur); toast('APK dihapus', 'ok'); await paintApk(); } catch (err) { toastErr(err); }
+    };
+    paintApk();
     loadInfo();
 }
 
