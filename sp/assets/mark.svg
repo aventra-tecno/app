@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><defs><linearGradient id="gt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE08A"/><stop offset="1" stop-color="#F5B301"/></linearGradient>
+<linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E9EDFF"/></linearGradient>
+<linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9D2FF"/><stop offset="1" stop-color="#9FAEF2"/></linearGradient></defs>
+<g stroke-linejoin="round">
+<polygon points="256.0,20.0 460.4,138.0 256.0,256.0 51.6,138.0" fill="url(#gt)"/>
+<polygon points="51.6,138.0 256.0,256.0 256.0,492.0 51.6,374.0" fill="url(#gl)"/>
+<polygon points="256.0,256.0 460.4,138.0 460.4,374.0 256.0,492.0" fill="url(#gr)"/>
+<polygon points="256.0,20.0 460.4,138.0 460.4,374.0 256.0,492.0 51.6,374.0 51.6,138.0" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="11.8"/>
+<line x1="153.8" y1="79.0" x2="358.2" y2="197.0" stroke="#E39A08" stroke-width="16.5" stroke-linecap="round" opacity=".55"/>
+<circle cx="256" cy="256" r="59.0" fill="#fff"/><circle cx="256" cy="256" r="47.2" fill="#26348B"/>
+</g></svg>

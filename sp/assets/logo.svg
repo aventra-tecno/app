@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><defs><linearGradient id="bg" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#3A4CB2"/><stop offset=".5" stop-color="#26348B"/><stop offset="1" stop-color="#1A2370"/></linearGradient></defs>
+<rect width="512" height="512" rx="120" fill="url(#bg)"/>
+<circle cx="471.04" cy="61.44" r="153.6" fill="#fff" opacity=".07"/><circle cx="25.6" cy="501.76" r="133.12" fill="#fff" opacity=".05"/><defs><linearGradient id="gt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE08A"/><stop offset="1" stop-color="#F5B301"/></linearGradient>
+<linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E9EDFF"/></linearGradient>
+<linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9D2FF"/><stop offset="1" stop-color="#9FAEF2"/></linearGradient></defs>
+<g stroke-linejoin="round">
+<polygon points="256.0,94.0 401.5,178.0 256.0,262.0 110.5,178.0" fill="url(#gt)"/>
+<polygon points="110.5,178.0 256.0,262.0 256.0,430.0 110.5,346.0" fill="url(#gl)"/>
+<polygon points="256.0,262.0 401.5,178.0 401.5,346.0 256.0,430.0" fill="url(#gr)"/>
+<polygon points="256.0,94.0 401.5,178.0 401.5,346.0 256.0,430.0 110.5,346.0 110.5,178.0" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="8.4"/>
+<line x1="183.3" y1="136.0" x2="328.7" y2="220.0" stroke="#E39A08" stroke-width="11.8" stroke-linecap="round" opacity=".55"/>
+<circle cx="256" cy="262" r="42.0" fill="#fff"/><circle cx="256" cy="262" r="33.6" fill="#26348B"/>
+</g></svg>
