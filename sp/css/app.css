@@ -1616,3 +1616,10 @@ html.no-scroll { overflow: hidden; overscroll-behavior: none; }
 .ins-ic { flex: none; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; color: #fff; background: linear-gradient(145deg, #3A4BB0, #1F2B7C); }
 .ins-ic.apk { background: linear-gradient(145deg, #2FA36B, #17663F); }
 .ins-how { margin: 8px 0 0; padding-left: 18px; font-size: 13px; display: grid; gap: 3px; color: #3B4260; }
+
+/* 2.29 — logo baru (kubus gudang = mur sparepart) */
+.logo.logo-img { background: none !important; padding: 0; overflow: hidden; box-shadow: 0 4px 12px -4px rgba(16,24,40,.35); }
+.logo.logo-img img { width: 100%; height: 100%; display: block; }
+.sp-logo span { background: none !important; overflow: hidden; padding: 0; }
+.sp-logo span img { width: 100%; height: 100%; display: block; }
+.brand-mark .logo.logo-img, .side-brand .logo.logo-img { box-shadow: 0 0 0 2px rgba(255,255,255,.22), 0 6px 14px -6px rgba(0,0,0,.45); }
