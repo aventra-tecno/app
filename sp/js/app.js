@@ -30,6 +30,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
   document.getElementById('install-btn')?.classList.remove('hidden');
   emit('installable');
 });
+window.addEventListener('appinstalled', () => { window.__installPrompt = null; });
 
 // ---------- auth ----------
 if (!configured) renderLogin(root);
