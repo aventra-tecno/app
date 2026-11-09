@@ -2,7 +2,7 @@ import { supa, configured, rpc, logEvent, logPage } from './supa.js';
 import { store, loadNotifs, unreadCount, markRead, loadProfiles, onEvt, emit } from './store.js';
 import { PAGES, TABS, HOME, canOpen, menuFor, isLocked, tabsFor } from './nav.js';
 import { loadModules, modOn, paywall, ROLE_MOD } from './modules.js';
-import { esc, icon, iconSolid, toast, toastErr, ago, ROLE_LABEL, ROLE_COLOR, modal, rp, fmtDate, todayStr, addDays } from './ui.js';
+import { esc, icon, iconSolid, applyTheme, toast, toastErr, ago, ROLE_LABEL, ROLE_COLOR, modal, rp, fmtDate, todayStr, addDays } from './ui.js';
 import { renderLogin, renderPending } from './auth.js';
 import { runTour, mainSteps } from './tour.js';
 import { APP_NAME } from './config.js';
@@ -79,6 +79,15 @@ async function boot(session) {
     // dimuat bersamaan supaya aplikasi cepat terbuka
     const [{ data: settings }] = await Promise.all([supa.from('settings').select('*').eq('id', 1).single(), loadModules().catch(() => {}), loadProfiles().catch(() => {})]);
     store.settings = settings || {};
+    applyTheme(store.settings.ui_theme);
+    // 2.30: sekali saja di Android, setelah notifikasi diizinkan: tunjukkan cara membuat notifikasi tampil MELAYANG saat aplikasi ditutup
+    setTimeout(() => {
+      try {
+        if (!/Android/i.test(navigator.userAgent) || !('Notification' in window) || Notification.permission !== 'granted' || localStorage.getItem('hu-guide')) return;
+        localStorage.setItem('hu-guide', '1');
+        import('./pages/notifikasi.js').then((m) => m.headsUpGuide()).catch(() => {});
+      } catch (_) {}
+    }, 4000);
     if (!store.profile.tab_prefs) { try { store.profile.tab_prefs = JSON.parse(localStorage.getItem('tab-prefs-' + store.profile.id) || 'null'); } catch (_) {} }
     renderShell();
     if (!hashBound) { window.addEventListener('hashchange', route); hashBound = true; }
@@ -499,6 +508,7 @@ async function route() {
   document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('on', a.dataset.nav === page));
   sideOpenFor(page);
   document.body.dataset.page = page;
+    if (page !== 'pengaturan' && store.settings) applyTheme(store.settings.ui_theme);
   document.querySelector('[data-bell]')?.classList.toggle('on', page === 'notifikasi');
   const pg = PAGES[page];
   document.getElementById('t-title').textContent = pg.label;
