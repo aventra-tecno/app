@@ -1,7 +1,7 @@
 import { supa, rpc } from '../supa.js';
 import { store } from '../store.js';
 import { esc, num, rp, fmtDateTime, on, toast, toastErr, pageHead, icon, emptyState } from '../ui.js';
-import { TYPES, readSheet, detect, findHeaderRow, autoMap, saveMap, build } from '../shopee.js';
+import { TYPES, readSheet, detect, findHeaderRow, autoMap, saveMap, build, groupRows, keyList } from '../shopee.js';
 
 const RPC = { pesanan: 'import_orders', pembatalan: 'import_cancels', pengembalian: 'import_returns', penghasilan: 'import_income', pricelist: 'import_pricelist', rak: 'import_racks', stok_awal: 'import_stock_awal' };
 const CHUNK = 150;
@@ -14,7 +14,7 @@ export default {
   ],
   async render(el, { params = {} } = {}) {
     const pesananOff = store.settings.upload_pesanan === false;
-    const ALLOWED = ({ owner: Object.keys(TYPES), admin: ['pesanan', 'pembatalan', 'pengembalian', 'penghasilan', 'pricelist', 'rak'], kepala_gudang: ['rak', 'stok_awal'] }[store.role] || []).filter((t) => !(pesananOff && t === 'pesanan'));
+    const ALLOWED = ({ owner: Object.keys(TYPES), admin: ['pesanan', 'pembatalan', 'pengembalian', 'penghasilan', 'pricelist', 'rak'], kepala_gudang: ['rak', 'stok_awal'], supervisor: ['rak', 'stok_awal'] }[store.role] || []).filter((t) => !(pesananOff && t === 'pesanan'));
     let type = ALLOWED.includes(params.type) ? params.type : ALLOWED[0], parsed = null, sups = null, supplier = null;
     const card = (t) => `<button class="type-card ${t === type ? 'on' : ''}" data-type="${t}"><b>${esc(TYPES[t].label)}</b><span class="xs muted">${esc(TYPES[t].desc)}</span><span class="tag" data-last="${t}">…</span></button>`;
     el.innerHTML = `${pageHead('Upload file Shopee', 'Ekspor dari Shopee Seller Center, lalu upload di sini. Data dicek dulu sebelum disimpan.')}
@@ -128,23 +128,31 @@ export default {
             if (!sups) sups = (await supa.from('suppliers').select('*').eq('active', true).order('sort')).data || [{ code: 'WIN', name: 'WIN', potongan_5_pct: 5, diskon_beli_pct: 25, diskon_set_pct: 30, set_keyword: 'COMPLETE SET', shopee_mode: 'rumus' }];
             if (!supplier || !sups.some((x) => x.code === supplier)) supplier = (sups.find((x) => file.name.toUpperCase().includes(x.code.toUpperCase())) || sups[0]).code;
             const R = sups.find((x) => x.code === supplier);
-            const kw = String(R.set_keyword || '').toUpperCase();
+            const kw = String(R.set_keyword || '').toUpperCase(), tanpaKw = keyList(R.tanpa_keywords);
+            groupRows(data.rows, R);   // golongan potongan per bagian (urutan bagian di file)
             const withMac = data.rows.filter((r) => r.macallan > 0), shpOnly = data.rows.filter((r) => !(r.macallan > 0) && r.harga_shopee > 0);
             const withShp = data.rows.filter((r) => r.harga_shopee > 0).length;
-            const setN = kw ? withMac.filter((r) => r.section && r.section.toUpperCase().includes(kw)).length : 0;
-            const secs = [...new Set(withMac.map((r) => r.section).filter(Boolean))];
+            const setN = withMac.filter((r) => r.group === 'set').length, tanpaN = withMac.filter((r) => r.group === 'tanpa').length;
+            const isiN = withMac.filter((r) => r.isi).length;
+            const secG = new Map(); withMac.forEach((r) => { if (r.section && !secG.has(r.section)) secG.set(r.section, r.group); });
+            const secs = [...secG.keys()];
+            const gTag = (g) => g === 'tanpa' ? '<span class="tag green">tanpa potongan</span>' : g === 'set' ? `<span class="tag yellow">−${num(R.diskon_set_pct)}%</span>` : `<span class="tag">−${num(R.diskon_beli_pct)}%</span>`;
             const shopeeTxt = R.shopee_mode === 'rumus' ? `Macallan${Number(R.shopee_plus_pct) ? ' + ' + num(R.shopee_plus_pct) + '%' : ''}${Number(R.shopee_plus_rp) ? ' + ' + rp(R.shopee_plus_rp) : ''}` : R.shopee_mode === 'file' ? 'ikut file' : 'diisi manual';
             pre = `<div class="field"><span>Pricelist ini milik supplier</span><div class="chips">${sups.map((x) => `<button type="button" class="chip ${x.code === supplier ? 'on' : ''}" data-supplier="${esc(x.code)}">${esc(x.name)}</button>`).join('')}</div>
-              <span class="xs muted">${esc(R.name)}: harga beli Macallan −${num(R.diskon_beli_pct)}%${kw ? ` (bagian ${esc(kw)} −${num(R.diskon_set_pct)}%)` : ''} · harga Shopee ${esc(shopeeTxt)}</span></div>`;
-            stats += withMac.length ? (kw ? `<div class="stat ${setN ? 'yellow' : 'gray'}"><b>${num(setN)}</b><span>barang bagian ${esc(kw)} · diskon beli ${num(R.diskon_set_pct)}%</span></div>` : '') + `<div class="stat gray"><b>${num(withMac.length - setN)}</b><span>barang ${esc(R.name)} · diskon beli ${num(R.diskon_beli_pct)}%</span></div>` : '';
+              <span class="xs muted">${esc(R.name)}: harga beli Macallan −${num(R.diskon_beli_pct)}%${tanpaKw.length ? ` · bagian ${esc(tanpaKw.join(', '))} tanpa potongan` : ''}${kw ? ` · mulai bagian ${esc(kw)} ke bawah −${num(R.diskon_set_pct)}%` : ''} · harga Shopee ${esc(shopeeTxt)}</span></div>`;
+            stats += withMac.length ? `<div class="stat gray"><b>${num(withMac.length - setN - tanpaN)}</b><span>barang biasa · potongan ${num(R.diskon_beli_pct)}%</span></div>`
+              + (tanpaKw.length ? `<div class="stat ${tanpaN ? 'green' : 'gray'}"><b>${num(tanpaN)}</b><span>bagian tanpa potongan (harga beli = Macallan)</span></div>` : '')
+              + (kw ? `<div class="stat ${setN ? 'yellow' : 'gray'}"><b>${num(setN)}</b><span>mulai ${esc(kw)} ke bawah · potongan ${num(R.diskon_set_pct)}%</span></div>` : '')
+              + (isiN ? `<div class="stat gray"><b>${num(isiN)}</b><span>complete set beserta isinya</span></div>` : '') : '';
             stats += `<div class="stat ${withShp ? 'green' : 'gray'}"><b>${num(withShp)}</b><span>harga Shopee dari file</span></div>`;
-            if (data.noPrice) stats += `<div class="stat gray"><b>${num(data.noPrice)}</b><span>baris tanpa harga (mis. isi complete set) dilewati</span></div>`;
+            if (data.noPrice) stats += `<div class="stat gray"><b>${num(data.noPrice)}</b><span>baris berkode tanpa harga dilewati</span></div>`;
             extra = `<div class="small" style="line-height:1.7"><b>Yang terjadi setelah disimpan</b><br>
               • Kolom harga yang <b>kosong tidak mengubah</b> harga lama.<br>
               ${withMac.length ? `• ${num(withMac.length)} barang masuk supplier <b>${esc(R.name)}</b>: Macallan & harga beli diperbarui${R.shopee_mode === 'rumus' ? `, harga Shopee = ${esc(shopeeTxt)}` : ''} (barang baru ditambahkan ke master). Barang yang sebelumnya di supplier lain ikut pindah ke ${esc(R.name)}.<br>` : '• File ini tidak punya harga Macallan → harga modal tidak diubah.<br>'}
               ${withShp ? `• ${num(withShp)} barang: Harga Shopee dari file${shpOnly.some((r) => !r.sku) ? ' (dicocokkan lewat kode / nama barang)' : ''}${R.shopee_mode !== 'file' ? ` <span class="tag yellow">${esc(R.name)} memakai ${R.shopee_mode === 'rumus' ? 'rumus' : 'isi manual'}: harga di file hanya diberi tanda “Beda dengan file baru”</span>` : ''}.<br>` : ''}
               ${shpOnly.length ? `• Kode yang belum ada di master tidak dibuat (modalnya belum diketahui), nanti dilaporkan.<br>` : ''}
-              ${secs.length ? `<b>Bagian yang terbaca (${secs.length})</b><br>${secs.slice(0, 20).map((x) => `• ${esc(x)}${kw && x.toUpperCase().includes(kw) ? ` <span class="tag yellow">${num(R.diskon_set_pct)}%</span>` : ''}`).join('<br>')}${secs.length > 20 ? '<br>…' : ''}<br>` : ''}
+              ${isiN ? `• Isi complete set (baris di bawah barang set) disimpan di barang set-nya, kode & harganya mengikuti barang set.<br>` : ''}
+              ${secs.length ? `<b>Bagian yang terbaca (${secs.length}) & potongannya</b><br>${secs.slice(0, 40).map((x) => `• ${esc(x)} ${gTag(secG.get(x))}`).join('<br>')}${secs.length > 40 ? '<br>…' : ''}<br>` : ''}
               Rumus tiap supplier diatur owner di <b>Atur harga</b>. Harga yang dikunci owner tidak berubah.</div>`;
           }
           if (type === 'penghasilan') stats += `<div class="stat gray"><b>${rp(data.rows.reduce((a, r) => a + r.amount, 0))}</b><span>total dana cair</span></div>`;
