@@ -204,6 +204,25 @@ function paintMasalah() {
 addEventListener('masalah-changed', () => refreshMasalah(true));
 addEventListener('masalah-paint', () => paintMasalah());
 
+// 2.27: notifikasi melayang (heads-up) di dalam aplikasi, seperti notifikasi HP: turun dari atas, bisa diketuk / digeser ke atas
+export function headsUp(n) {
+  document.querySelector('.hu')?.remove();
+  const el = document.createElement('div');
+  el.className = 'hu' + (n.level === 'masalah' ? ' hu-bad' : '');
+  el.setAttribute('role', 'alert');
+  el.innerHTML = `<span class="hu-ic">${icon(n.level === 'masalah' ? 'alert' : 'bell', 20, 2.2)}</span>
+    <div class="hu-t"><div class="hu-app">${esc(APP_NAME)} · sekarang</div><b>${esc(n.title)}</b>${n.body ? `<span>${esc(n.body)}</span>` : ''}</div>`;
+  document.body.appendChild(el);
+  try { navigator.vibrate?.(n.level === 'masalah' ? [200, 80, 200] : 120); } catch (_) {}
+  requestAnimationFrame(() => el.classList.add('on'));
+  const close = () => { el.classList.remove('on'); setTimeout(() => el.remove(), 300); };
+  let t = setTimeout(close, n.level === 'masalah' ? 8000 : 5000), y0 = null;
+  el.addEventListener('click', () => { close(); if (n.id) markRead([n.id]).catch?.(() => {}); location.hash = n.link || '#/notifikasi'; });
+  el.addEventListener('touchstart', (e) => { y0 = e.touches[0].clientY; clearTimeout(t); }, { passive: true });
+  el.addEventListener('touchmove', (e) => { if (y0 == null) return; const dy = Math.min(0, e.touches[0].clientY - y0); el.style.transform = `translateY(${dy}px)`; }, { passive: true });
+  el.addEventListener('touchend', (e) => { const dy = (e.changedTouches[0].clientY - (y0 ?? 0)); el.style.transform = ''; y0 = null; if (dy < -30) close(); else t = setTimeout(close, 3000); });
+}
+
 function paintBadge() {
   const n = unreadCount();
   document.querySelectorAll('[data-badge]').forEach((b) => { b.textContent = n > 99 ? '99+' : n; b.classList.toggle('hidden', !n); });
@@ -344,9 +363,7 @@ function subscribe() {
       if (store.notifs.find((x) => x.id === n.id)) return;
       store.notifs.unshift(n);
       emit('notifs');
-      if (n.source_user !== store.profile.id) {
-        toast((n.level === 'masalah' ? '⚠ ' : '') + n.title);
-      }
+      if (n.source_user !== store.profile.id) headsUp(n);
     })
     .subscribe();
 }
