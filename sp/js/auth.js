@@ -1,5 +1,5 @@
 import { supa, errMsg, configured } from './supa.js';
-import { esc, icon, modal, toast } from './ui.js';
+import { esc, icon, modal, toast, applyTheme } from './ui.js';
 import { APP_NAME, APP_VERSION } from './config.js';
 import { showInstall, isStandalone } from './install.js';
 
@@ -49,6 +49,7 @@ export function renderLogin(root, { recovery = false } = {}) {
   supa.rpc('login_board').then(({ data, error }) => {
     if (error || !data) { root.querySelector('#ann-desk').innerHTML = annCards([]); return; }
     const name = data.nama_toko || APP_NAME;
+    if (data.ui_theme) applyTheme(data.ui_theme);
     ['#lg-name', '#lg-name-m'].forEach((s) => { const e = root.querySelector(s); if (e) e.textContent = name; });
     const items = data.items || [];
     root.querySelector('#ann-desk').innerHTML = annCards(items);
