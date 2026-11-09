@@ -141,7 +141,7 @@ function renderShell() {
 
   root.innerHTML = `<div class="shell">
     <nav class="sidebar" aria-label="Menu utama">
-      <div class="side-brand"><span class="logo">${esc(ini(store.settings.nama_toko || APP_NAME))}</span><div class="sb-t"><b>${esc(store.settings.nama_toko || APP_NAME)}</b><span>${esc(ROLE_LABEL[role])} · ${esc(p.full_name)}</span></div>
+      <div class="side-brand"><span class="logo logo-img"><img src="assets/logo.svg" alt="" width="36" height="36"></span><div class="sb-t"><b>${esc(store.settings.nama_toko || APP_NAME)}</b><span>${esc(ROLE_LABEL[role])} · ${esc(p.full_name)}</span></div>
         <button class="side-mini-btn" data-mini title="Kecilkan menu" aria-label="Kecilkan / lebarkan menu">${icon('chev', 16, 2.4)}</button></div>
       <label class="side-search" title="Cari menu">${icon('search', 16)}<input id="side-q" placeholder="Cari menu…" autocomplete="off" aria-label="Cari menu"><kbd>/</kbd></label>
       <div class="side-menu">${side}<div class="side-none hidden">Menu tidak ditemukan</div></div>
