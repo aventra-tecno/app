@@ -1,6 +1,6 @@
 import { supa, rpc } from '../supa.js';
 import { store } from '../store.js';
-import { esc, toast, toastErr, pageHead, icon, on, promptBox, confirmBox, num, parseNum } from '../ui.js';
+import { esc, toast, toastErr, pageHead, icon, on, promptBox, confirmBox, num, parseNum, applyTheme } from '../ui.js';
 import { APP_VERSION } from '../config.js';
 
 export default {
@@ -10,6 +10,11 @@ export default {
       <form class="stack" id="f">
         <section class="card stack"><h2 class="sec-title">Toko</h2>
           <label class="field">Nama toko (tampil di menu)<input class="input" name="nama_toko" value="${esc(s.nama_toko || '')}"></label></section>
+        <section class="card stack"><h2 class="sec-title">Kombinasi warna</h2>
+          <div class="theme-pick">${[['biru', 'Biru', 'Navy seperti tampilan HP'], ['hitam', 'Hitam', 'Hitam + kuning seperti desktop lama']].map(([v, l, d]) => `<label class="theme-opt">
+            <input type="radio" name="ui_theme" value="${v}" ${(s.ui_theme || 'biru') === v ? 'checked' : ''}>
+            <span class="th-prev th-${v}"><i class="th-bar"></i><i class="th-side"></i><i class="th-card"></i><i class="th-dot"></i></span>
+            <span class="th-t"><b>${l}</b><span class="xs muted">${d}</span></span></label>`).join('')}</div></section>
         <section class="card stack"><h2 class="sec-title">Cara pesanan masuk</h2>
           <div class="list-item" style="padding:0;border:0"><div class="grow"><b>Upload file pesanan (pencocokan otomatis SKU)</b>
             <div class="small muted">Nyalakan kalau marketplace memakai SKU / kode barang yang sama dengan pricelist. Matikan kalau tidak ada SKU: pesanan dicatat kepala gudang di menu <b>Catat pesanan</b> (scan resi + scan barang).</div></div>
@@ -31,13 +36,15 @@ export default {
       </form>
       <section class="card stack" id="tg" style="margin-top:16px"><h2 class="sec-title">${icon('send', 18)} Notifikasi Telegram</h2><div class="skeleton" style="height:90px"></div></section>
       <div class="xs muted" style="margin-top:12px">Versi aplikasi ${APP_VERSION}</div>`;
+    // pratinjau langsung saat dipilih; tersimpan setelah tekan Simpan pengaturan
+    el.querySelectorAll('[name="ui_theme"]').forEach((r) => r.addEventListener('change', () => applyTheme(r.value)));
     el.querySelector('#f').addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
       const upd = {
         nama_toko: fd.get('nama_toko').trim() || 'Stok Gudang', packing_cost: parseNum(fd.get('packing_cost')) || 0, hari_kerja: +fd.get('hari_kerja') || 26,
         shopee_fee_pct: +fd.get('shopee_fee_pct') || 0, jam_mulai: fd.get('jam_mulai'), jam_selesai: fd.get('jam_selesai'),
-        retur_grace_days: +fd.get('retur_grace_days') || 2, wajib_foto_packing: fd.get('wajib_foto_packing') === 'on', upload_pesanan: fd.get('upload_pesanan') === 'on', updated_at: new Date().toISOString()
+        ui_theme: fd.get('ui_theme') || 'biru', retur_grace_days: +fd.get('retur_grace_days') || 2, wajib_foto_packing: fd.get('wajib_foto_packing') === 'on', upload_pesanan: fd.get('upload_pesanan') === 'on', updated_at: new Date().toISOString()
       };
       const { error } = await supa.from('settings').update(upd).eq('id', 1);
       if (error) return toastErr(error);
