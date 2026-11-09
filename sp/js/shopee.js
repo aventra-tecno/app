@@ -219,7 +219,7 @@ export function build(rows, headerRow, type, map) {
   if (type === 'pricelist') {
     // judul bagian (mis. "***COMPLETE SET BODY HONDA***") diingat untuk baris-baris di bawahnya.
     // Judul dengan tanda * = bagian utama; baris teks tanpa harga lainnya (mis. "HONDA") = sub judul.
-    let section = '', noPrice = 0;
+    let section = '', noPrice = 0, last = null;
     const out = [];
     for (const r of data) {
       const sku = get(r, 'sku'), mac = map.macallan > -1 ? parseNum(get(r, 'macallan')) : 0;
@@ -231,15 +231,36 @@ export function build(rows, headerRow, type, map) {
         if (sku && !(mac > 0) && !(shp > 0)) noPrice++;
         const text = r.map((c) => String(c ?? '').trim()).filter(Boolean).join(' ');
         // judul bagian = baris tanpa kode barang yang asli (kode asli punya angka & tanpa tanda *)
-        if ((!sku || /\*/.test(sku) || !/\d/.test(sku)) && text && /\*/.test(text)) section = text.replace(/\*/g, '').replace(/\s+/g, ' ').trim();
+        if ((!sku || /\*/.test(sku) || !/\d/.test(sku)) && text && /\*/.test(text)) { section = text.replace(/\*/g, '').replace(/\s+/g, ' ').trim(); last = null; continue; }
+        // isi complete set: baris tanpa kode & harga tepat di bawah barang "COMPLETE SET ..." -> ikut barang set itu (kode & harga sama)
+        const isiTxt = (nm || text).replace(/\s+/g, ' ').trim();
+        if (last && !sku && isiTxt && /\s/.test(isiTxt) && !/^\d+$/.test(isiTxt) && /\bSET\b/i.test(last.name + ' ' + (last.section || ''))) { (last.isi ||= []).push(isiTxt); continue; }
+        if (isiTxt && !/\s/.test(isiTxt)) last = null;   // sub judul satu kata (mis. "HONDA") menutup isi set
         continue;
       }
       // harga kosong dikirim null = harga lama tidak diubah
-      out.push({ sku, name: nm, macallan: mac > 0 ? mac : null, harga_shopee: shp > 0 ? shp : null, category: get(r, 'category'), section: section || null });
+      last = { sku, name: nm, macallan: mac > 0 ? mac : null, harga_shopee: shp > 0 ? shp : null, category: get(r, 'category'), section: section || null };
+      out.push(last);
     }
-    out.forEach((x) => { x._k = (x.sku || ('nama:' + x.name)).toUpperCase(); });
+    out.forEach((x) => { x._k = (x.sku || ('nama:' + x.name)).toUpperCase(); if (x.isi) x.isi = x.isi.join('\n'); });
     return { rows: uniq(out, '_k').map(({ _k, ...x }) => x), noPrice };
   }
   return {};
 }
 const uniq = (arr, k) => { const s = new Set(); return arr.filter((x) => (s.has(x[k]) ? false : s.add(x[k]))); };
+
+// 2.31: golongan potongan harga beli per BAGIAN, mengikuti urutan bagian di file pricelist:
+//  - bagian yang judulnya memuat kata kunci "tanpa potongan" (mis. ACCESORIES, BOHLAM)  -> 'tanpa' (harga beli = Macallan)
+//  - mulai bagian pertama yang memuat kata kunci bagian khusus (mis. COMPLETE SET) ke bawah -> 'set'
+//  - selain itu -> '' (potongan barang biasa)
+export const keyList = (s) => String(s || '').split(',').map((x) => x.trim().toUpperCase()).filter(Boolean);
+export function groupRows(rows, sup) {
+  const tanpa = keyList(sup?.tanpa_keywords), set = String(sup?.set_keyword || '').trim().toUpperCase();
+  let setOn = false;
+  for (const r of rows) {
+    const sec = String(r.section || '').toUpperCase();
+    if (set && sec.includes(set)) setOn = true;
+    r.group = sec && tanpa.some((k) => sec.includes(k)) ? 'tanpa' : setOn ? 'set' : '';
+  }
+  return rows;
+}
