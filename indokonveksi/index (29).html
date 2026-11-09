@@ -1,0 +1,1335 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7A1F2B">
+<title>SIMPRO Konveksi · Prototipe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --m:#7A1F2B; --m2:#A3283A; --md:#561420; --tint:#F7E6E9; --tint2:#EFD3D8;
+  --ink:#24161A; --muted:#5E5257; --bg:#F8F3F4; --line:#ECDfE2; --card:#FFFFFF;
+  --ok:#15803D; --okbg:#DCFCE7; --bad:#B91C1C; --badbg:#FEE2E2; --warn:#B45309; --warnbg:#FEF3C7;
+  --blue:#1E3A8A; --bluebg:#E0E9FF;
+  --grad:linear-gradient(135deg,#7A1F2B 0%,#A3283A 100%);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;-webkit-tap-highlight-color:transparent}
+html.no-scroll{overflow:hidden}
+body{min-height:100vh}
+a{color:var(--m)}
+button,input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
+img{max-width:100%}
+.hidden{display:none!important}
+
+/* layout */
+.app{display:flex;min-height:100vh}
+.side{display:none}
+.col{flex:1;min-width:0;display:flex;flex-direction:column}
+.hd{position:sticky;top:0;z-index:20;background:var(--grad);color:#fff;overflow:hidden;padding:14px 16px 16px}
+.hd::before,.hd::after,.hero::before,.bn::before{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.07);pointer-events:none}
+.hd::before{width:180px;height:180px;right:-50px;top:-80px}
+.hd::after{width:90px;height:90px;right:80px;top:30px;background:rgba(255,255,255,.05)}
+.hd-row{position:relative;display:flex;align-items:center;gap:6px;max-width:880px;margin:0 auto}
+.hd-t{flex:1;min-width:0}
+.hd-t b{display:block;font-size:19px;line-height:25px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd-t span{display:block;font-size:13px;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{position:relative;width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:#fff;border-radius:12px;cursor:pointer;text-decoration:none}
+.ib:active{background:rgba(255,255,255,.12)}
+.dot{position:absolute;top:6px;right:5px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#FCD34D;color:#5A1420;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(252,211,77,.6)}50%{box-shadow:0 0 0 6px rgba(252,211,77,0)}}
+.mn{width:100%;max-width:880px;margin:0 auto;padding:16px 16px 100px;display:flex;flex-direction:column;gap:12px}
+.hero{position:relative;overflow:hidden;background:var(--grad);color:#fff;border-radius:0 0 22px 22px;margin:-16px -16px 0;padding:6px 20px 22px}
+.hero::before{width:160px;height:160px;left:-50px;bottom:-90px}
+.hero small{display:block;font-size:13px;color:rgba(255,255,255,.85)}
+.hero .big{font-size:32px;line-height:38px;font-weight:800}
+
+/* bottom nav */
+.bn{position:fixed;left:0;right:0;bottom:0;z-index:30;height:calc(68px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);display:flex;background:var(--grad);overflow:hidden}
+.bn::before{width:150px;height:150px;left:-40px;bottom:-80px}
+.bn a,.bn button{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:7px;border:none;background:none;color:rgba(255,255,255,.85);font-size:11px;font-weight:600;text-decoration:none;cursor:pointer}
+.bn .ic{width:50px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center}
+.bn .on{color:#fff;font-weight:800}
+.bn .on .ic{background:#fff;color:var(--m);animation:pop 1.6s ease}
+@keyframes pop{0%{transform:scale(.8)}20%{transform:scale(1.08)}40%,100%{transform:scale(1)}}
+
+@media(min-width:900px){
+  .side{display:flex;flex-direction:column;gap:4px;width:250px;flex:none;position:sticky;top:0;height:100vh;padding:20px 14px;background:var(--grad);color:#fff;overflow-y:auto}
+  .side .brand{padding:6px 10px 18px}
+  .side .brand b{display:block;font-size:22px;font-weight:800}
+  .side .brand span{font-size:12px;color:rgba(255,255,255,.8)}
+  .side a{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:12px;color:rgba(255,255,255,.9);text-decoration:none;font-weight:600;font-size:14px}
+  .side a.on{background:#fff;color:var(--m);font-weight:800}
+  .side .out{margin-top:auto;background:var(--bad);color:#fff;justify-content:center}
+  .bn{display:none}
+  .mn{padding-bottom:40px}
+}
+
+/* blocks */
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.card.tight{gap:0;padding:4px 16px}
+.sec{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--muted);margin-top:4px;text-transform:uppercase}
+.row{display:flex;gap:10px;align-items:center}
+.row>*{min-width:0}
+.wrap{flex-wrap:wrap}
+.grow{flex:1}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(min-width:700px){.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:4px;text-decoration:none;color:var(--ink)}
+.stat span{font-size:12px;font-weight:700;color:var(--muted)}
+.stat b{font-size:24px;font-weight:800}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:14px;line-height:20px}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{text-align:right;font-weight:600}
+.mut{color:var(--muted);font-size:13px}
+.small{font-size:12px;color:var(--muted)}
+.center{text-align:center}
+.li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line);text-decoration:none;color:var(--ink)}
+.li:first-child{border-top:none}
+.li .t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.li .t b{font-size:14px}
+.li .t span{font-size:13px;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;background:#F1ECEE;color:#4A3A40}
+.pill.ok{background:var(--okbg);color:#14532D}.pill.bad{background:var(--badbg);color:#7F1D1D}.pill.warn{background:var(--warnbg);color:#78350F}.pill.blue{background:var(--bluebg);color:var(--blue)}.pill.m{background:var(--m);color:#fff}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+
+/* buttons & inputs */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 16px;border-radius:12px;font-size:15px;font-weight:700;text-decoration:none;cursor:pointer;border:1px solid var(--m);background:var(--m);color:#fff;width:100%;transition:transform .08s}
+.btn:active{transform:scale(.98)}
+.btn.ok{background:var(--ok);border-color:var(--ok)}
+.btn.danger{background:#fff;color:var(--bad);border:1.5px solid var(--bad)}
+.btn.red{background:var(--bad);border-color:var(--bad)}
+.btn.light{background:var(--tint);color:var(--md);border-color:var(--tint2)}
+.btn.ghost{background:#fff;color:var(--m);border:1.5px solid var(--m)}
+.btn.wa{background:#0B7C70;border-color:#0B7C70}
+.btn.sm{min-height:40px;font-size:14px;padding:0 12px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btns{display:flex;gap:10px}
+.btns>*{flex:1}
+.shake{animation:shake 2.4s ease-in-out infinite}
+@keyframes shake{0%,88%,100%{transform:translateX(0)}90%{transform:translateX(-3px)}92%{transform:translateX(3px)}94%{transform:translateX(-2px)}96%{transform:translateX(2px)}}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fld label{font-size:13px;font-weight:700;color:#4A3A40}
+.inp{width:100%;min-height:46px;padding:0 14px;border:1px solid #D9C9CD;border-radius:12px;background:#fff;font-size:15px}
+textarea.inp{padding:12px 14px;min-height:84px;resize:vertical}
+.inp:focus{outline:2px solid var(--m2);outline-offset:1px;border-color:transparent}
+select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5' fill='none' stroke='%235E5257' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:38px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chip{flex:none;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid #D9C9CD;background:#fff;color:#4A3A40;font-size:13px;font-weight:700;display:flex;align-items:center;text-decoration:none;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--m);border-color:var(--m);color:#fff}
+.tog{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:12px;border:1px solid #D9C9CD;background:#fff;font-weight:700;font-size:14px;cursor:pointer;flex:1;position:relative}
+.tog input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.tog:has(input:checked){background:var(--m);border-color:var(--m);color:#fff}
+.chk{display:flex;align-items:center;gap:12px;min-height:44px;font-size:15px;cursor:pointer}
+.chk input{width:22px;height:22px;accent-color:var(--m)}
+.sizes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.sizes .fld label{text-align:center;font-weight:800}
+.sizes .inp{text-align:center;padding:0 4px;font-weight:700}
+.tabs{display:flex;gap:4px;padding:4px;border-radius:12px;background:#EEE3E5;overflow-x:auto;scrollbar-width:none}
+.tabs a{flex:1;min-height:42px;padding:0 10px;display:flex;align-items:center;justify-content:center;border-radius:10px;font-size:14px;font-weight:700;color:#4A3A40;text-decoration:none;white-space:nowrap}
+.tabs a.on{background:#fff;color:var(--m);font-weight:800;box-shadow:0 1px 3px rgba(36,22,26,.12)}
+.fab{position:fixed;right:18px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:25;width:56px;height:56px;border-radius:28px;background:var(--m);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(122,31,43,.35);text-decoration:none}
+@media(min-width:900px){.fab{bottom:28px}}
+
+/* timeline */
+.tl{display:flex;flex-direction:column}
+.tl-i{position:relative;display:flex;gap:14px;padding-bottom:16px}
+.tl-i:not(:last-child)::after{content:"";position:absolute;left:7px;top:22px;bottom:-4px;width:2px;background:#E5D9DC}
+.tl-i.done:not(:last-child)::after{background:var(--ok)}
+.tl-d{position:relative;width:16px;height:16px;flex:none;margin-top:3px;border-radius:8px;background:#CDBFC3}
+.tl-i.done .tl-d{background:var(--ok)}
+.tl-i.now .tl-d{background:var(--m);box-shadow:0 0 0 5px var(--tint2)}
+.tl-i.rw .tl-d{background:var(--bad)}
+.tl-i.skip{opacity:.55}
+.tl-b{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tl-b b{font-size:15px}
+.tl-i.now .tl-b>b{color:var(--m)}
+.photos{display:flex;gap:8px;overflow-x:auto;margin-top:6px}
+.ph{width:84px;height:68px;flex:none;border-radius:10px;object-fit:cover;background:#EEE3E5;border:1px solid var(--line);cursor:zoom-in}
+
+/* kanban */
+.kan{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;align-items:flex-start}
+.kcol{flex:none;width:220px;display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:14px;background:#EFE4E6}
+.kcol h4{margin:0;padding:2px 4px;display:flex;justify-content:space-between;font-size:14px}
+.kc{display:flex;flex-direction:column;gap:5px;padding:12px;border-radius:12px;background:#fff;border:1px solid var(--line);text-decoration:none;color:var(--ink);font-size:13px}
+.kc.late{border:1.5px solid var(--bad)}
+
+/* chat */
+.bub{max-width:85%;padding:10px 12px;font-size:14px;line-height:20px;white-space:pre-wrap;word-break:break-word}
+.bub.in{align-self:flex-start;background:#fff;border:1px solid var(--line);border-radius:14px 14px 14px 4px}
+.bub.out{align-self:flex-end;background:var(--tint);border-radius:14px 14px 4px 14px}
+.bub small{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+.av{width:44px;height:44px;flex:none;border-radius:22px;background:var(--tint);color:var(--md);display:flex;align-items:center;justify-content:center;font-weight:800}
+.badge{min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--bad);color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+
+/* sheet, toast */
+.ov{position:fixed;inset:0;z-index:50;background:rgba(36,22,26,.5);display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+.sh{width:100%;max-width:560px;max-height:90vh;overflow-y:auto;background:#fff;border-radius:22px 22px 0 0;padding:18px 16px calc(22px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;animation:up .2s ease}
+@media(min-width:900px){.ov{align-items:center}.sh{border-radius:22px}}
+.sh-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sh-h b{font-size:18px}
+@keyframes fade{from{opacity:0}}@keyframes up{from{transform:translateY(40px);opacity:.4}}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;max-width:92vw;padding:12px 18px;border-radius:12px;background:#24161A;color:#fff;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:up .2s}
+.alert{padding:12px 14px;border-radius:12px;font-size:14px;line-height:20px}
+.alert.warn{background:var(--warnbg);color:#78350F}.alert.bad{background:var(--badbg);color:#7F1D1D}.alert.ok{background:var(--okbg);color:#14532D}.alert.info{background:var(--tint);color:var(--md)}
+.bars{display:flex;align-items:flex-end;gap:10px;height:120px}
+.bars div{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;height:100%}
+.bars i{display:block;width:100%;border-radius:6px 6px 2px 2px;background:var(--tint2)}
+.bars div:last-child i{background:var(--m)}
+.bars span{font-size:11px;color:var(--muted)}
+.meter{height:10px;border-radius:5px;background:#EFE4E6;overflow:hidden}.meter i{display:block;height:100%;background:var(--m);border-radius:5px}
+.prev{height:220px;border-radius:12px;background:#F1E8EA;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.prev img{width:100%;height:100%;object-fit:contain}
+.vers{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.ver{flex:none;width:108px;display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:14px;background:#fff;border:1px solid var(--line);text-decoration:none;color:var(--ink)}
+.ver.on{border:2px solid var(--m)}
+.ver .th{height:80px;border-radius:10px;background:#F1E8EA;display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:800;color:var(--muted)}
+.ver .th img{width:100%;height:100%;object-fit:cover}
+
+/* login */
+.login{min-height:100vh;display:flex;flex-direction:column}
+.lg-top{position:relative;overflow:hidden;background:var(--grad);color:#fff;padding:48px 24px 72px}
+.lg-top::before{content:"";position:absolute;width:220px;height:220px;border-radius:50%;right:-70px;top:-90px;background:rgba(255,255,255,.08)}
+.lg-top::after{content:"";position:absolute;width:120px;height:120px;border-radius:50%;left:-40px;bottom:-50px;background:rgba(255,255,255,.06)}
+.lg-top>*{position:relative;max-width:520px;margin:0 auto}
+.lg-body{width:100%;max-width:520px;margin:-44px auto 0;padding:0 16px 32px;display:flex;flex-direction:column;gap:12px;position:relative}
+.acc{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.acc:first-of-type{border-top:none}
+.acc .t{flex:1;min-width:0}
+.acc .t b{display:block;font-size:14px}
+.acc .t span{display:block;font-size:12px;color:var(--muted);word-break:break-all}
+
+/* tracking */
+.trk-hero{position:relative;overflow:hidden;background:var(--grad);color:#fff;padding:24px 20px 28px}
+.trk-hero::before{content:"";position:absolute;width:200px;height:200px;border-radius:50%;right:-60px;top:-80px;background:rgba(255,255,255,.08)}
+.trk-hero>*{position:relative;max-width:640px;margin-left:auto;margin-right:auto}
+.zoom{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px}
+.zoom img{max-height:90vh;border-radius:12px}
+
+/* print */
+.doc{max-width:760px;margin:0 auto;background:#fff;padding:32px;font-size:14px}
+.doc h1{margin:0;font-size:22px;color:var(--m)}
+.doc table{width:100%;border-collapse:collapse;margin-top:12px}
+.doc th,.doc td{border-bottom:1px solid #E5D9DC;padding:8px 6px;text-align:left;vertical-align:top}
+.doc th{background:var(--tint);color:var(--md);font-size:12px}
+.doc .r{text-align:right}
+@media print{.noprint{display:none!important}body{background:#fff}.doc{padding:0}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+'use strict';
+/* =========================================================
+   SIMPRO Konveksi — prototipe (data tersimpan di browser)
+   ========================================================= */
+const KEY = 'simpro_demo_v1', SKEY = 'simpro_sess_v1', PASS = 'demo123';
+const STAGES = [['kain','Kain'],['cutting','Cutting'],['jahit','Jahit'],['bordir','Bordir'],['sablon','Sablon'],['jahit_apd','Jahit APD'],['finishing','Finishing'],['qc','QC'],['packing','Packing']];
+const SN = Object.fromEntries(STAGES);
+const OPTIONAL = ['bordir','sablon','jahit_apd'];
+const SIZES = ['S','M','L','XL','XXL','XXXL'];
+const ROLES = {owner:'Owner',admin:'Admin',designer:'Designer',manajer:'Manajer Produksi',kepala:'Kepala Pabrik',ketua:'Ketua Tim'};
+const ORDER_ST = {menunggu_desain:['Menunggu Desain','n'],revisi_desain:['Revisi Desain','warn'],siap_spk:['Siap SPK','blue'],produksi:['Produksi','blue'],selesai_produksi:['Selesai Produksi','ok'],dikirim:['Dikirim','ok'],selesai:['Selesai','ok'],batal:['Batal','bad']};
+const SPK_ST = {dikirim:['Dikirim','n'],negosiasi:['Negosiasi','warn'],diterima:['Diterima','ok'],ditolak:['Ditolak','bad'],selesai:['Selesai','ok']};
+const STG_ST = {belum:['Belum','n'],menunggu:['Menunggu','warn'],dikerjakan:['Dikerjakan','blue'],selesai:['Selesai','ok'],rework:['Rework','bad'],dilewati:['Dilewati','n'],menunggu_rework:['Tunggu rework','warn']};
+const INV_ST = {belum_bayar:['Belum Bayar','bad'],dp:['DP','warn'],lunas:['Lunas','ok'],jatuh_tempo:['Jatuh Tempo','bad']};
+const DES_ST = {diajukan:['Diajukan','blue'],revisi:['Revisi','warn'],disetujui:['Disetujui','ok']};
+const CHAT_ST = {baru:['Baru','bad'],diproses:['Diproses','warn'],selesai:['Selesai','ok']};
+const PAY_T = {dp:'DP',cicilan:'Cicilan',pelunasan:'Pelunasan'};
+
+/* ---------- icons ---------- */
+const IC = {
+ home:'M3 11 L12 4 L21 11 V20 H14 V14 H10 V20 H3 Z', chat:'M4 5 H20 V16 H9 L5 20 V16 H4 Z',
+ order:'M8 3 H16 V6 H8 Z M6 5 H5 V21 H19 V5 H18 M9 11 H15 M9 15 H13', invoice:'M6 3 H18 V21 L15 19 L12 21 L9 19 L6 21 Z M9 8 H15 M9 12 H15',
+ more:'M4 4 H10 V10 H4 Z M14 4 H20 V10 H14 Z M4 14 H10 V20 H4 Z M14 14 H20 V20 H14 Z', spk:'M6 3 H14 L18 7 V21 H6 Z M14 3 V7 H18 M9 13 H15 M9 17 H13',
+ board:'M4 4 H8 V20 H4 Z M10 4 H14 V14 H10 Z M16 4 H20 V17 H16 Z', chart:'M4 20 H20 M7 16 V11 M12 16 V6 M17 16 V9',
+ task:'M4 12 L9 17 L20 6', clock:'M12 3 A9 9 0 1 0 12.01 3 Z M12 7 V12 L15 14', bell:'M6 16 V11 A6 6 0 0 1 18 11 V16 L20 18 H4 Z M10 21 H14',
+ user:'M12 12 A4 4 0 1 0 12 4 A4 4 0 1 0 12 12 Z M4 21 C4 15 20 15 20 21', camera:'M4 8 H8 L10 5 H14 L16 8 H20 V19 H4 Z M12 16 A3 3 0 1 0 12 10 A3 3 0 1 0 12 16 Z',
+ pen:'M4 20 L8 19 L19 8 L16 5 L5 16 Z', back:'M15 5 L8 12 L15 19', search:'M11 18 A7 7 0 1 0 11 4 A7 7 0 1 0 11 18 Z M16 16 L21 21',
+ wa:'M5 19 L6 15 A8 8 0 1 1 9 18 Z', plus:'M12 5 V19 M5 12 H19', gear:'M12 15 A3 3 0 1 0 12 9 A3 3 0 1 0 12 15 Z M12 2 V5 M12 19 V22 M2 12 H5 M19 12 H22 M5 5 L7 7 M17 17 L19 19 M5 19 L7 17 M17 7 L19 5',
+ file:'M6 3 H14 L18 7 V21 H6 Z M14 3 V7 H18', out:'M10 4 H5 V20 H10 M15 8 L19 12 L15 16 M19 12 H9', x:'M6 6 L18 18 M18 6 L6 18', send:'M4 12 L20 4 L14 20 L11 13 Z',
+ print:'M7 8 V3 H17 V8 M7 17 H5 V9 H19 V17 H17 M7 14 H17 V21 H7 Z', link:'M10 14 L14 10 M8 12 L6 14 A3 3 0 0 0 10 18 L12 16 M16 12 L18 10 A3 3 0 0 0 14 6 L12 8'
+};
+const ic = (n, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true" style="flex:none"><path d="${IC[n]}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+/* ---------- helpers ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2, 10);
+const token = () => Array.from(crypto.getRandomValues(new Uint8Array(20)), b => b.toString(16).padStart(2, '0')).join('');
+const rp = n => 'Rp\u00a0' + Math.round(Number(n) || 0).toLocaleString('id-ID');
+const num = v => Number(String(v ?? '').replace(/[^\d-]/g, '')) || 0;
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
+const addDays = (s, n) => { const d = new Date(s + 'T00:00:00'); d.setDate(d.getDate() + n); return ymd(d); };
+const daysTo = s => Math.round((new Date(s + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 864e5);
+const BLN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const fd = s => { if (!s) return '-'; const d = new Date(s.length <= 10 ? s + 'T00:00:00' : s); return `${d.getDate()} ${BLN[d.getMonth()]} ${d.getFullYear()}`; };
+const ft = s => { if (!s) return '-'; const d = new Date(s); return `${d.getDate()} ${BLN[d.getMonth()]} ${pad(d.getHours())}.${pad(d.getMinutes())}`; };
+const now = () => new Date().toISOString();
+const pill = (map, k) => { const v = map[k] || [k, 'n']; return `<span class="pill ${v[1]}">${esc(v[0])}</span>`; };
+const kv = (k, v, cls = '') => `<div class="kv"><span>${k}</span><span class="${cls}">${v}</span></div>`;
+const fld = (label, name, val = '', opt = {}) => {
+  const id = 'f_' + name + '_' + uid().slice(0, 4);
+  const attrs = `id="${id}" name="${name}" class="inp" ${opt.req ? 'required' : ''} ${opt.ph ? `placeholder="${esc(opt.ph)}"` : ''} ${opt.attr || ''}`;
+  let ctl;
+  if (opt.sel) ctl = `<select ${attrs}>${opt.sel.map(o => { const [v, t] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}" ${String(v) === String(val) ? 'selected' : ''}>${esc(t)}</option>`; }).join('')}</select>`;
+  else if (opt.area) ctl = `<textarea ${attrs}>${esc(val)}</textarea>`;
+  else ctl = `<input type="${opt.type || 'text'}" value="${esc(val)}" ${opt.num ? 'inputmode="numeric"' : ''} ${attrs}>`;
+  return `<div class="fld"><label for="${id}">${label}</label>${ctl}${opt.hint ? `<div class="small">${opt.hint}</div>` : ''}</div>`;
+};
+const photoPh = (t = 'Foto contoh') => 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="240"><defs><pattern id="p" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="16" fill="#EAD7DB"/></pattern></defs><rect width="320" height="240" fill="#F5EBED"/><rect width="320" height="240" fill="url(#p)"/><text x="160" y="128" text-anchor="middle" font-family="sans-serif" font-size="22" font-weight="700" fill="#7A1F2B">${t}</text></svg>`);
+
+function fileToData(file, max = 1000, q = 0.7) {
+  return new Promise(res => {
+    if (!file || !file.type.startsWith('image/')) return res(null);
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const r = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', q));
+    };
+    img.onerror = () => res(null); img.src = url;
+  });
+}
+
+/* ---------- data ---------- */
+let DB;
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(DB)); }
+  catch (e) { toast('Penyimpanan browser penuh. Hapus beberapa foto atau reset data contoh.'); }
+}
+function load() {
+  try { DB = JSON.parse(localStorage.getItem(KEY)); } catch (e) { DB = null; }
+  if (!DB || DB.v !== 1) { DB = seed(); save(); }
+}
+function nextNo(p, at = new Date()) {
+  const k = p + String(at.getFullYear()).slice(2) + pad(at.getMonth() + 1);
+  DB.seq[k] = (DB.seq[k] || 0) + 1;
+  return `${p}-${k.slice(p.length)}-${String(DB.seq[k]).padStart(4, '0')}`;
+}
+const me = () => DB.users.find(u => u.id === localStorage.getItem(SKEY) && u.active);
+const U = id => DB.users.find(u => u.id === id);
+const C = id => DB.customers.find(c => c.id === id);
+const O = id => DB.orders.find(o => o.id === id);
+const F = id => DB.factories.find(f => f.id === id);
+const T = id => DB.teams.find(t => t.id === id);
+const spkOf = oid => DB.spks.filter(s => s.orderId === oid && s.status !== 'ditolak').slice(-1)[0];
+const stagesOf = sid => DB.stages.filter(s => s.spkId === sid).sort((a, b) => a.seq - b.seq);
+const invOf = oid => DB.invoices.find(i => i.orderId === oid);
+const photosOf = stid => DB.photos.filter(p => p.stageId === stid);
+const designsOf = oid => DB.designs.filter(d => d.orderId === oid).sort((a, b) => a.version - b.version);
+const qtyItem = it => SIZES.reduce((s, z) => s + (num(it.sizes[z])), 0);
+const qtyOrder = o => o.items.reduce((s, it) => s + qtyItem(it), 0);
+const totalOrder = o => o.items.reduce((s, it) => s + qtyItem(it) * num(it.price), 0);
+const canPrice = u => u && (u.role === 'owner' || u.role === 'manajer');
+const itemsTxt = o => o.items.map(it => `${it.product} ${it.color}`).join(', ');
+function curStage(spk) {
+  if (!spk) return null; const st = stagesOf(spk.id);
+  return st.find(s => s.status === 'rework') || st.find(s => s.status === 'dikerjakan') || st.find(s => s.status === 'menunggu') || st.find(s => s.status === 'menunggu_rework') || null;
+}
+function spkWarn(spk) {
+  if (!spk || spk.status !== 'diterima') return null;
+  const qc = stagesOf(spk.id).find(s => s.type === 'qc');
+  if (qc && qc.status !== 'belum') return null;
+  const d = daysTo(spk.deadline);
+  if (d < 0) return [`Lewat ${-d} hari`, 'bad'];
+  if (d <= 2) return [d === 0 ? 'Hari ini' : `H-${d}`, 'warn'];
+  return null;
+}
+function recalc(inv) {
+  inv.paid = DB.payments.filter(p => p.invoiceId === inv.id).reduce((s, p) => s + num(p.amount), 0);
+  inv.balance = Math.max(0, inv.total - inv.paid);
+  inv.status = inv.paid >= inv.total ? 'lunas' : (daysTo(inv.due) < 0 ? 'jatuh_tempo' : (inv.paid > 0 ? 'dp' : 'belum_bayar'));
+}
+function log(entity, id, action, oldv, newv) {
+  const u = me(); DB.logs.unshift({ id: uid(), at: now(), userId: u ? u.id : null, entity, entityId: id, action, old: oldv ?? null, new: newv ?? null });
+  DB.logs = DB.logs.slice(0, 400);
+}
+function notify(userIds, msg, link) {
+  [].concat(userIds).filter(Boolean).forEach(uidv => DB.notifs.unshift({ id: uid(), userId: uidv, msg, link, at: now(), read: false }));
+  DB.notifs = DB.notifs.slice(0, 500);
+}
+const usersBy = (role, extra = () => true) => DB.users.filter(u => u.role === role && u.active && extra(u)).map(u => u.id);
+const trackUrl = o => location.href.split('#')[0] + '#/t/' + o.token;
+
+/* ---------- seed (data contoh) ---------- */
+function seed() {
+  const d = { v: 1, seq: {}, users: [], factories: [], teams: [], products: ['Kaos lengan pendek','Kaos lengan panjang','Kemeja PDH','Polo','Jaket','Seragam'], materials: ['Cotton combed 30s','Cotton combed 24s','Drill','Lacoste','Fleece','American drill'],
+    customers: [], chats: [], orders: [], designs: [], comments: [], spks: [], nego: [], stages: [], photos: [], qc: [], invoices: [], payments: [], notifs: [], logs: [], warned: {} };
+  DB = d;
+  const add = (id, name, email, role, extra = {}) => d.users.push({ id, name, email, role, active: true, factoryId: null, teamId: null, ...extra });
+  add('u_owner', 'Bu Ratna', 'owner@simpro.id', 'owner');
+  add('u_admin', 'Rina', 'admin@simpro.id', 'admin');
+  add('u_design', 'Andi', 'designer@simpro.id', 'designer');
+  add('u_yudi', 'Pak Yudi', 'yudi@simpro.id', 'manajer');
+  const heads = { p1: 'Pak Bambang', p2: 'Bu Sari', p3: 'Pak Agus' };
+  const leaders = ['Joko','Wati','Dimas','Nur','Eko','Lilis','Rudi','Tika','Hadi'];
+  ['p1','p2','p3'].forEach((fid, fi) => {
+    d.factories.push({ id: fid, name: 'Pabrik ' + (fi + 1), address: '(alamat contoh)', headId: 'u_head_' + fid, active: true });
+    add('u_head_' + fid, heads[fid], `pabrik${fi + 1}@simpro.id`, 'kepala', { factoryId: fid });
+    STAGES.forEach(([k, n], si) => {
+      const tid = `t_${fid}_${k}`, lid = `u_${fid}_${k}`;
+      d.teams.push({ id: tid, name: 'Tim ' + n, factoryId: fid, stage: k, leaderId: lid });
+      add(lid, `${leaders[si]} (${n} P${fi + 1})`, `${k.replace('_', '')}.p${fi + 1}@simpro.id`, 'ketua', { factoryId: fid, teamId: tid });
+    });
+  });
+  const cust = (name, phone, addr) => { const c = { id: uid(), name, phone, address: addr, email: '' }; d.customers.push(c); return c; };
+  const c1 = cust('Dewi · Komunitas Lari Malang', '6281234567001', 'Malang');
+  const c2 = cust('SMK Bina Karya', '6281234567002', 'Batu');
+  const c3 = cust('Klinik Sehat Sentosa', '6281234567003', 'Malang');
+  const c4 = cust('PT Sinar Abadi', '6281234567004', 'Surabaya');
+  const c5 = cust('Event Run Nusantara', '6281234567005', 'Surabaya');
+  const c6 = cust('Toko Batik Asri', '6281234567006', 'Pasuruan');
+  const t0 = Date.now(), ago = h => new Date(t0 - h * 36e5).toISOString();
+  d.chats.push({ id: uid(), customerId: c1.id, phone: c1.phone, name: 'Dewi Komunitas Lari', status: 'diproses', unread: 0, lastAt: ago(30), msgs: [
+    { dir: 'in', body: 'Kak, mau pesan kaos komunitas 240 pcs, sablon depan belakang. Bisa selesai akhir bulan?', at: ago(200) },
+    { dir: 'out', body: 'Bisa kak, boleh kirim logo & rincian ukurannya ya.', at: ago(199), by: 'u_admin' },
+    { dir: 'in', body: 'Desain v2 sudah oke kak, lanjut produksi', at: ago(30) }] });
+  d.chats.push({ id: uid(), customerId: null, phone: '6285711223301', name: 'Pak Hendra', status: 'baru', unread: 2, lastAt: ago(2), msgs: [
+    { dir: 'in', body: 'Selamat siang, untuk seragam kantor bahan drill minimal order berapa ya?', at: ago(3) },
+    { dir: 'in', body: 'Rencana 60 orang, ada bordir logo di dada.', at: ago(2) }] });
+  d.chats.push({ id: uid(), customerId: null, phone: '6289900112233', name: 'Lina Store', status: 'baru', unread: 1, lastAt: ago(1), msgs: [
+    { dir: 'in', body: 'Halo kak, bisa bikin hoodie 100 pcs? Minta pricelist ya', at: ago(1) }] });
+
+  const mkOrder = (c, items, flags, dlDays, dp, status, createdH, notes = '') => {
+    const at = new Date(t0 - createdH * 36e5);
+    const o = { id: uid(), no: nextNo('ORD', at), customerId: c.id, items, needsBordir: !!flags.b, needsSablon: !!flags.s, needsApd: !!flags.a, deadline: addDays(today(), dlDays), dp, status, notes, token: token(), createdAt: at.toISOString(), createdBy: 'u_admin', cancelReason: '' };
+    d.orders.push(o); return o;
+  };
+  const it = (product, material, color, sz, price) => ({ product, material, color, sizes: Object.fromEntries(SIZES.map((z, i) => [z, sz[i] || 0])), price });
+  const mkDesign = (o, v, status, final, h) => { const ds = { id: uid(), orderId: o.id, version: v, name: `desain-v${v}.png`, src: photoPh('Desain v' + v), status, final, by: 'u_design', at: ago(h), note: '' }; d.designs.push(ds); return ds; };
+  const mkSpk = (o, fid, status, propose, agreed, h, stagesSel) => {
+    const at = new Date(t0 - h * 36e5);
+    const s = { id: uid(), no: nextNo('SPK', at), orderId: o.id, factoryId: fid, deadline: addDays(o.deadline, -5), deadlineReason: '', proposed: propose, agreed, instructions: 'Ikuti desain final. Label leher cetak.', stages: stagesSel, status, by: 'u_yudi', at: at.toISOString(), reason: '' };
+    d.spks.push(s); return s;
+  };
+  const mkStages = (spk, statuses, qty) => {
+    STAGES.forEach(([k], i) => {
+      const st = spk.stages.includes(k) ? (statuses[k] || 'belum') : 'dilewati';
+      const s = { id: uid(), spkId: spk.id, type: k, seq: i + 1, teamId: `t_${spk.factoryId}_${k}`, status: st, qtyDone: st === 'selesai' ? qty : 0, qtyReject: 0, startedAt: ['selesai','dikerjakan'].includes(st) ? ago(120 - i * 10) : null, finishedAt: st === 'selesai' ? ago(100 - i * 10) : null, notes: '', rework: false, reworkQty: 0 };
+      d.stages.push(s);
+      if (st === 'selesai') [1, 2].forEach(n => d.photos.push({ id: uid(), stageId: s.id, src: photoPh(SN[k] + ' ' + n), caption: `Hasil ${SN[k]} (contoh)`, at: s.finishedAt, by: s.teamId }));
+    });
+  };
+  const mkInv = (o, spk, h) => {
+    const inv = { id: uid(), no: nextNo('INV', new Date(t0 - h * 36e5)), orderId: o.id, spkId: spk.id, total: totalOrder(o), paid: 0, balance: 0, due: o.deadline, status: 'belum_bayar', at: ago(h) };
+    d.invoices.push(inv);
+    if (o.dp > 0) d.payments.push({ id: uid(), invoiceId: inv.id, type: 'dp', amount: o.dp, date: today(), proof: null, by: 'u_admin', at: ago(h) });
+    recalc(inv); return inv;
+  };
+  const base = ['kain','cutting','jahit','finishing','qc','packing'];
+  // O1: produksi di Jahit (P2)
+  const o1 = mkOrder(c1, [it('Kaos lengan pendek', 'Cotton combed 30s', 'Hitam', [20, 60, 80, 50, 20, 10], 85000)], { s: 1 }, 19, 6000000, 'produksi', 220, 'Sablon plastisol, logo dada kiri');
+  mkDesign(o1, 1, 'revisi', false, 210); mkDesign(o1, 2, 'disetujui', true, 190);
+  const s1 = mkSpk(o1, 'p2', 'diterima', 18000, 19500, 180, [...base, 'sablon']);
+  d.nego.push({ id: uid(), spkId: s1.id, by: 'u_yudi', price: 18000, msg: 'Bahan disiapkan kantor.', action: 'usul', at: ago(180) });
+  d.nego.push({ id: uid(), spkId: s1.id, by: 'u_head_p2', price: 21000, msg: 'Sablon 2 warna depan belakang, perlu lembur.', action: 'tawar', at: ago(176) });
+  d.nego.push({ id: uid(), spkId: s1.id, by: 'u_yudi', price: 19500, msg: 'Kita tengahkan, deadline tetap.', action: 'tawar', at: ago(172) });
+  d.nego.push({ id: uid(), spkId: s1.id, by: 'u_head_p2', price: 19500, msg: 'Oke, kami terima.', action: 'terima', at: ago(170) });
+  mkStages(s1, { kain: 'selesai', cutting: 'selesai', jahit: 'dikerjakan' }, 240);
+  mkInv(o1, s1, 170);
+  // O2: hampir deadline (P1, finishing)
+  const o2 = mkOrder(c2, [it('Kemeja PDH', 'American drill', 'Navy', [0, 40, 80, 60, 20, 0], 120000)], { b: 1 }, 6, 0, 'produksi', 400, 'Bordir logo sekolah lengan kiri');
+  mkDesign(o2, 1, 'disetujui', true, 380);
+  const s2 = mkSpk(o2, 'p1', 'diterima', 32000, 32000, 360, [...base, 'bordir']);
+  d.nego.push({ id: uid(), spkId: s2.id, by: 'u_yudi', price: 32000, msg: '', action: 'usul', at: ago(360) });
+  d.nego.push({ id: uid(), spkId: s2.id, by: 'u_head_p1', price: 32000, msg: 'Siap.', action: 'terima', at: ago(355) });
+  mkStages(s2, { kain: 'selesai', cutting: 'selesai', jahit: 'selesai', bordir: 'selesai', finishing: 'dikerjakan' }, 200);
+  mkInv(o2, s2, 355);
+  // O3: desain diajukan
+  const o3 = mkOrder(c3, [it('Polo', 'Lacoste', 'Putih', [10, 20, 30, 15, 5, 0], 95000)], { b: 1 }, 25, 2000000, 'menunggu_desain', 60);
+  mkDesign(o3, 1, 'diajukan', false, 20);
+  d.comments.push({ id: uid(), designId: d.designs.slice(-1)[0].id, by: 'u_design', body: 'Logo klinik di dada kiri, tulisan belakang kecil.', at: ago(20) });
+  // O4: siap SPK
+  const o4 = mkOrder(c4, [it('Jaket', 'Fleece', 'Abu tua', [0, 80, 120, 80, 20, 0], 175000)], { s: 1 }, 30, 15000000, 'siap_spk', 90);
+  mkDesign(o4, 1, 'disetujui', true, 40);
+  // O5: negosiasi SPK P3
+  const o5 = mkOrder(c5, [it('Kaos lengan pendek', 'Cotton combed 24s', 'Merah', [50, 150, 150, 100, 50, 0], 55000)], { s: 1 }, 22, 10000000, 'siap_spk', 120);
+  mkDesign(o5, 1, 'disetujui', true, 100);
+  const s5 = mkSpk(o5, 'p3', 'negosiasi', 12000, null, 20, [...base, 'sablon']);
+  d.nego.push({ id: uid(), spkId: s5.id, by: 'u_yudi', price: 12000, msg: 'Sablon 1 warna depan.', action: 'usul', at: ago(20) });
+  d.nego.push({ id: uid(), spkId: s5.id, by: 'u_head_p3', price: 14000, msg: 'Jumlah besar, perlu tambah operator.', action: 'tawar', at: ago(6) });
+  // O6: menunggu desain
+  mkOrder(c6, [it('Seragam', 'Drill', 'Coklat', [10, 30, 40, 30, 10, 0], 140000)], { b: 1, a: 1 }, 35, 0, 'menunggu_desain', 8, 'Seragam karyawan + bordir nama');
+  notify('u_admin', 'Pak Hendra mengirim chat baru', '#/chat');
+  notify('u_yudi', `Pabrik 3 menawar ${s5.no} jadi Rp 14.000/pcs`, '#/spk/' + s5.id);
+  notify('u_design', 'Order baru menunggu desain: Toko Batik Asri', '#/orders');
+  notify('u_head_p2', `SPK ${s1.no} sudah berjalan`, '#/spk/' + s1.id);
+  d.logs.push({ id: uid(), at: now(), userId: null, entity: 'sistem', entityId: null, action: 'Data contoh dibuat', old: null, new: null });
+  return d;
+}
+
+/* ---------- warnings (dijalankan sekali sehari per SPK) ---------- */
+function runWarnings() {
+  const t = today(); let changed = false;
+  DB.spks.forEach(s => {
+    const w = spkWarn(s); if (!w || DB.warned[s.id] === t) return;
+    const o = O(s.orderId); DB.warned[s.id] = t; changed = true;
+    notify(['u_yudi', F(s.factoryId)?.headId, ...usersBy('owner')], `${s.no} (${C(o.customerId)?.name}) ${w[0]} deadline SPK, belum masuk QC`, '#/spk/' + s.id);
+  });
+  DB.invoices.forEach(i => { const st = i.status; recalc(i); if (st !== i.status) changed = true; });
+  if (changed) save();
+}
+
+/* ---------- UI shell ---------- */
+const MENU = {
+  owner: [['#/', 'Beranda', 'home'], ['#/laporan', 'Laporan', 'chart'], ['#/orders', 'Order', 'order'], ['#/papan', 'Papan', 'board'], ['#/spk', 'SPK', 'spk'], ['#/invoices', 'Invoice', 'invoice'], ['#/chat', 'Chat', 'chat'], ['#/customers', 'Customer', 'user'], ['#/master', 'Pengaturan', 'gear'], ['#/log', 'Log aktivitas', 'clock']],
+  admin: [['#/', 'Beranda', 'home'], ['#/chat', 'Chat', 'chat'], ['#/orders', 'Order', 'order'], ['#/invoices', 'Invoice', 'invoice'], ['#/customers', 'Customer', 'user'], ['#/papan', 'Papan', 'board']],
+  designer: [['#/', 'Beranda', 'home'], ['#/orders', 'Desain', 'pen'], ['#/notif', 'Notifikasi', 'bell']],
+  manajer: [['#/', 'Beranda', 'home'], ['#/spk', 'SPK', 'spk'], ['#/papan', 'Papan', 'board'], ['#/laporan', 'Laporan', 'chart'], ['#/orders', 'Order', 'order']],
+  kepala: [['#/', 'Beranda', 'home'], ['#/spk', 'SPK Masuk', 'spk'], ['#/papan', 'Papan', 'board'], ['#/notif', 'Notifikasi', 'bell']],
+  ketua: [['#/tugas', 'Tugas', 'task'], ['#/riwayat', 'Riwayat', 'clock'], ['#/notif', 'Notifikasi', 'bell']],
+};
+let ROUTE = '';
+function isOn(href) { const p = ROUTE.split('?')[0]; if (href === '#/') return p === '#/' || p === ''; return p.startsWith(href); }
+function shell(title, sub, body, o = {}) {
+  const u = me(), menu = MENU[u.role];
+  const unread = DB.notifs.filter(n => n.userId === u.id && !n.read).length;
+  let bn = menu.length > 5 ? [...menu.slice(0, 4), ['more', 'Lainnya', 'more']] : (menu.length < 5 ? [...menu, ['acc', 'Akun', 'user']] : menu);
+  const bnHtml = bn.map(([h, l, i]) => (h === 'more' || h === 'acc')
+    ? `<button type="button" data-act="${h === 'more' ? 'moreMenu' : 'account'}"><span class="ic">${ic(i, 20)}</span>${l}</button>`
+    : `<a href="${h}" class="${isOn(h) ? 'on' : ''}"><span class="ic">${ic(i, 20)}</span>${l}</a>`).join('');
+  return `<div class="app">
+  <aside class="side"><div class="brand"><b>SIMPRO</b><span>${esc(u.name)} · ${ROLES[u.role]}</span></div>
+   ${menu.map(([h, l, i]) => `<a href="${h}" class="${isOn(h) ? 'on' : ''}">${ic(i, 20)}${l}</a>`).join('')}
+   <a href="#/notif" class="${isOn('#/notif') ? 'on' : ''}">${ic('bell', 20)}Notifikasi ${unread ? `<span class="badge" style="margin-left:auto">${unread}</span>` : ''}</a>
+   <a href="#" class="out" data-act="logout">${ic('out', 20)}Keluar</a></aside>
+  <div class="col">
+   <header class="hd"><div class="hd-row">
+     ${o.back ? `<a class="ib" href="${o.back}" aria-label="Kembali" style="margin-left:-10px">${ic('back')}</a>` : ''}
+     <div class="hd-t"><b>${title}</b>${sub ? `<span>${sub}</span>` : ''}</div>
+     <a class="ib" href="#/notif" aria-label="Notifikasi">${ic('bell')}${unread ? `<span class="dot">${unread}</span>` : ''}</a>
+     <button class="ib" type="button" data-act="account" aria-label="Akun">${ic('user')}</button>
+   </div></header>
+   <main class="mn">${body}</main>
+  </div>
+  ${o.fab ? `<a class="fab" href="${o.fab}" aria-label="Tambah">${ic('plus', 26)}</a>` : ''}
+  <nav class="bn" aria-label="Menu bawah">${bnHtml}</nav></div>`;
+}
+function sheet(html) {
+  closeSheet();
+  const ov = document.createElement('div'); ov.className = 'ov'; ov.id = 'ov';
+  ov.innerHTML = `<div class="sh" role="dialog" aria-modal="true">${html}</div>`;
+  ov.addEventListener('click', e => { if (e.target === ov) closeSheet(); });
+  document.body.appendChild(ov); document.documentElement.classList.add('no-scroll');
+  const f = ov.querySelector('input:not([type=file]),textarea'); if (f && innerWidth > 900) f.focus();
+}
+function closeSheet() { $('#ov')?.remove(); document.documentElement.classList.remove('no-scroll'); }
+const shHead = t => `<div class="sh-h"><b>${t}</b><button type="button" class="btn ghost sm" style="width:auto" data-act="close">Tutup</button></div>`;
+let toastT;
+function toast(m) { $('.toast')?.remove(); clearTimeout(toastT); const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = m; document.body.appendChild(t); toastT = setTimeout(() => t.remove(), 2800); }
+const go = h => { if (location.hash === h) render(); else location.hash = h; };
+
+/* ---------- router ---------- */
+const PAGES = {};
+function render() {
+  closeSheet();
+  ROUTE = location.hash || '#/';
+  const [path, qs] = ROUTE.slice(1).split('?');
+  const q = Object.fromEntries(new URLSearchParams(qs || ''));
+  const parts = path.split('/').filter(Boolean);
+  const root = $('#root');
+  if (parts[0] === 't') { root.innerHTML = pageTrack(parts[1]); scrollTo(0, 0); return; }
+  const u = me();
+  if (!u) { root.innerHTML = pageLogin(); return; }
+  runWarnings();
+  if (parts[0] === 'print') { root.innerHTML = pagePrint(parts[1], parts[2]); return; }
+  const key = parts[0] || 'home';
+  if (u.role === 'ketua' && key === 'home') return go('#/tugas');
+  const fn = PAGES[key];
+  const html = fn ? fn(parts.slice(1), q, u) : shell('Tidak ditemukan', '', `<div class="card"><b>Halaman tidak ada</b><a class="btn" href="#/">Ke beranda</a></div>`);
+  if (html === undefined) return;
+  root.innerHTML = html;
+  if (!ROUTE.includes('keep')) scrollTo(0, 0);
+}
+addEventListener('hashchange', render);
+
+/* =================== LOGIN =================== */
+function pageLogin() {
+  const acc = (label, email, role) => `<div class="acc"><div class="t"><b>${label}</b><span>${email} · ${PASS}</span></div><button type="button" class="btn light sm" style="width:auto" data-act="fill" data-email="${email}">Pakai</button></div>`;
+  const facts = DB.factories.map(f => [f.id, f.name]);
+  return `<div class="login">
+   <div class="lg-top"><div style="font-size:12px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.85)">[NAMA KONVEKSI]</div>
+     <div style="font-size:34px;line-height:40px;font-weight:800;margin-top:6px">SIMPRO</div>
+     <div style="font-size:15px;color:rgba(255,255,255,.9)">Order &amp; produksi konveksi · prototipe</div></div>
+   <div class="lg-body">
+    <form class="card" data-form="login" style="gap:14px;padding:20px">
+      <b style="font-size:20px">Masuk</b>
+      ${fld('Email', 'email', '', { type: 'email', req: 1, ph: 'nama@simpro.id', attr: 'autocomplete="username"' })}
+      ${fld('Password', 'password', '', { type: 'password', req: 1, ph: '••••••', attr: 'autocomplete="current-password"' })}
+      <div id="lgErr" class="alert bad hidden" role="alert">Email atau password salah</div>
+      <button class="btn" type="submit">Masuk</button>
+      <button class="btn ghost sm" type="button" data-act="forgot" style="border:none">Lupa password?</button>
+    </form>
+    <div class="card" style="gap:4px">
+      <div class="sec">Akun contoh · password semua: ${PASS}</div>
+      ${acc('Owner (Super Admin)', 'owner@simpro.id')}
+      ${acc('Admin', 'admin@simpro.id')}
+      ${acc('Designer', 'designer@simpro.id')}
+      ${acc('Manajer Produksi (Pak Yudi)', 'yudi@simpro.id')}
+      ${DB.factories.map((f, i) => acc('Kepala ' + f.name, `pabrik${i + 1}@simpro.id`)).join('')}
+      <div class="acc" style="flex-direction:column;align-items:stretch;gap:10px">
+        <div class="t"><b>Ketua Tim</b><span>format: tahap.pabrik@simpro.id · contoh jahit.p2@simpro.id</span></div>
+        <div class="row">${fld('Pabrik', 'lgF', 'p2', { sel: facts })}${fld('Tim', 'lgS', 'jahit', { sel: STAGES })}</div>
+        <button type="button" class="btn light sm" data-act="fillTeam">Pakai akun ketua tim</button>
+      </div>
+    </div>
+    <div class="small center">Data tersimpan di browser ini saja (prototipe). aventra · PT. Klinhome Indonesia</div>
+   </div></div>`;
+}
+
+/* =================== HOME =================== */
+PAGES.home = (p, q, u) => {
+  const active = DB.orders.filter(o => !['selesai', 'batal'].includes(o.status));
+  const warns = DB.spks.map(s => [s, spkWarn(s)]).filter(x => x[1]).filter(([s]) => u.role !== 'kepala' || s.factoryId === u.factoryId);
+  const wl = warns.length ? warns.map(([s, w]) => { const o = O(s.orderId), cs = curStage(s); return `<a class="li" href="#/order/${o.id}?tab=produksi"><span class="t"><b>${o.no} · ${esc(C(o.customerId)?.name)}</b><span>${F(s.factoryId).name} · tahap ${cs ? SN[cs.type] : '-'} · deadline SPK ${fd(s.deadline)}</span></span><span class="pill ${w[1]}">${w[0]}</span></a>`; }).join('') : `<div class="mut" style="padding:12px 0">Tidak ada order yang terancam terlambat</div>`;
+  const greet = `Halo, ${esc(u.name)}`, sub = `${ROLES[u.role]}${u.factoryId ? ' · ' + F(u.factoryId).name : ''} · ${fd(today())}`;
+  let hero = '', body = '';
+  if (u.role === 'owner' || u.role === 'admin') {
+    const unpaid = DB.invoices.filter(i => i.status !== 'lunas').reduce((s, i) => s + i.balance, 0);
+    const chatNew = DB.chats.reduce((s, c) => s + c.unread, 0);
+    const months = []; for (let i = 5; i >= 0; i--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); months.push([d.getFullYear(), d.getMonth()]); }
+    const counts = months.map(([y, m]) => DB.orders.filter(o => { const d = new Date(o.createdAt); return d.getFullYear() === y && d.getMonth() === m; }).length);
+    const mx = Math.max(1, ...counts);
+    hero = `<div class="hero"><small>Order aktif</small><div class="big">${active.length}</div><small>${DB.spks.filter(s => s.status === 'diterima').length} SPK berjalan di ${DB.factories.length} pabrik</small></div>`;
+    body = `<div class="grid2 grid4">
+      <a class="stat" href="#/papan"><span>Terlambat / H-2</span><b style="color:${warns.length ? 'var(--bad)' : 'inherit'}">${warns.length}</b></a>
+      <a class="stat" href="#/chat"><span>Chat belum dibaca</span><b>${chatNew}</b></a>
+      <a class="stat" href="#/invoices"><span>Belum lunas</span><b style="font-size:19px;color:var(--warn)">${rp(unpaid)}</b></a>
+      <a class="stat" href="#/orders?st=siap_spk"><span>Siap SPK</span><b>${DB.orders.filter(o => o.status === 'siap_spk').length}</b></a></div>
+      ${u.role === 'admin' ? `<div class="btns"><a class="btn" href="#/order/new">${ic('plus', 18)}Order baru</a><a class="btn light" href="#/chat">${ic('chat', 18)}Inbox</a></div>` : ''}
+      <div class="card" style="gap:0"><div class="row" style="justify-content:space-between;padding-bottom:4px"><b>Mendekati deadline SPK</b><a href="#/papan" style="font-size:13px;font-weight:700">Papan</a></div>${wl}</div>
+      <div class="card"><b>Order per bulan</b><div class="bars">${months.map(([y, m], i) => `<div><span style="font-weight:700;color:var(--ink)">${counts[i]}</span><i style="height:${Math.max(6, counts[i] / mx * 90)}px"></i><span>${BLN[m]}</span></div>`).join('')}</div></div>`;
+  } else if (u.role === 'designer') {
+    const need = DB.orders.filter(o => ['menunggu_desain', 'revisi_desain'].includes(o.status));
+    hero = `<div class="hero"><small>Butuh desain</small><div class="big">${need.length}</div><small>${need.filter(o => o.status === 'revisi_desain').length} minta revisi</small></div>`;
+    body = `<div class="card" style="gap:0"><b style="padding-bottom:4px">Antrian desain</b>${need.length ? need.map(o => { const last = designsOf(o.id).slice(-1)[0]; return `<a class="li" href="#/design/${o.id}"><span class="t"><b>${o.no} · ${esc(C(o.customerId).name)}</b><span>${esc(itemsTxt(o))} · ${qtyOrder(o)} pcs · ${last ? 'v' + last.version + ' ' + DES_ST[last.status][0] : 'belum ada desain'}</span></span>${pill(ORDER_ST, o.status)}</a>`; }).join('') : '<div class="mut" style="padding:12px 0">Antrian kosong</div>'}</div>`;
+  } else if (u.role === 'manajer') {
+    const ready = DB.orders.filter(o => o.status === 'siap_spk' && !spkOf(o.id));
+    const nego = DB.spks.filter(s => ['dikirim', 'negosiasi'].includes(s.status));
+    hero = `<div class="hero"><small>SPK berjalan</small><div class="big">${DB.spks.filter(s => s.status === 'diterima').length}</div><small>${ready.length} order siap SPK · ${nego.length} menunggu pabrik</small></div>`;
+    body = `<div class="card" style="gap:0"><b style="padding-bottom:4px">Siap diterbitkan SPK</b>${ready.length ? ready.map(o => `<div class="li"><span class="t"><b>${o.no} · ${esc(C(o.customerId).name)}</b><span>${esc(itemsTxt(o))} · ${qtyOrder(o)} pcs · deadline ${fd(o.deadline)}</span></span><a class="btn sm" style="width:auto" href="#/spk/new/${o.id}">Terbitkan</a></div>`).join('') : '<div class="mut" style="padding:12px 0">Tidak ada</div>'}</div>
+     <div class="card" style="gap:0"><b style="padding-bottom:4px">Negosiasi / menunggu pabrik</b>${nego.length ? nego.map(s => spkLi(s, u)).join('') : '<div class="mut" style="padding:12px 0">Tidak ada</div>'}</div>
+     <div class="card" style="gap:0"><b style="padding-bottom:4px">Peringatan deadline</b>${wl}</div>
+     <div class="card"><b>Beban pabrik</b>${DB.factories.map(f => { const n = DB.spks.filter(s => s.factoryId === f.id && s.status === 'diterima').length; return `<div class="fld"><div class="kv"><span><b style="color:var(--ink)">${f.name}</b></span><span>${n} SPK aktif</span></div><div class="meter"><i style="width:${Math.min(100, n * 25)}%"></i></div></div>`; }).join('')}</div>`;
+  } else if (u.role === 'kepala') {
+    const inbox = DB.spks.filter(s => s.factoryId === u.factoryId && ['dikirim', 'negosiasi'].includes(s.status));
+    const run = DB.spks.filter(s => s.factoryId === u.factoryId && s.status === 'diterima');
+    hero = `<div class="hero"><small>${F(u.factoryId).name} · produksi berjalan</small><div class="big">${run.length}</div><small>${inbox.length} SPK menunggu jawaban Anda</small></div>`;
+    body = `<div class="card" style="gap:0"><b style="padding-bottom:4px">SPK masuk</b>${inbox.length ? inbox.map(s => spkLi(s, u)).join('') : '<div class="mut" style="padding:12px 0">Tidak ada SPK baru</div>'}</div>
+     <div class="card" style="gap:0"><b style="padding-bottom:4px">Sedang diproduksi</b>${run.length ? run.map(s => spkLi(s, u)).join('') : '<div class="mut" style="padding:12px 0">Belum ada</div>'}</div>
+     <div class="card" style="gap:0"><b style="padding-bottom:4px">Peringatan deadline</b>${wl}</div>`;
+  }
+  return shell(greet, sub, hero + body);
+};
+function spkLi(s, u) {
+  const o = O(s.orderId), w = spkWarn(s), cs = curStage(s);
+  const info = s.status === 'diterima' ? `tahap ${cs ? SN[cs.type] : '-'}` : `${F(s.factoryId).name}${canPrice(u) || u.role === 'kepala' ? ' · ' + rp(lastPrice(s)) + '/pcs' : ''}`;
+  return `<a class="li" href="#/spk/${s.id}"><span class="t"><b>${s.no} · ${esc(C(o.customerId).name)}</b><span>${qtyOrder(o)} pcs · ${info} · deadline ${fd(s.deadline)}</span></span><span class="pills">${w ? `<span class="pill ${w[1]}">${w[0]}</span>` : ''}${pill(SPK_ST, s.status)}</span></a>`;
+}
+const lastPrice = s => { const n = DB.nego.filter(x => x.spkId === s.id).slice(-1)[0]; return s.agreed ?? (n ? n.price : s.proposed); };
+
+/* =================== CHAT =================== */
+PAGES.chat = (p, q, u) => {
+  if (p[0]) return pageChatDetail(p[0], u);
+  const st = q.st || 'semua', s = (q.q || '').toLowerCase();
+  const list = DB.chats.filter(c => (st === 'semua' || c.status === st) && (!s || (c.name + c.phone).toLowerCase().includes(s))).sort((a, b) => b.lastAt.localeCompare(a.lastAt));
+  const unread = DB.chats.reduce((a, c) => a + c.unread, 0);
+  const chip = (k, l) => `<a class="chip ${st === k ? 'on' : ''}" href="#/chat?st=${k}">${l}</a>`;
+  return shell('Inbox Chat', `WhatsApp · ${unread} belum dibaca`, `
+   <form data-form="chatSearch" class="row"><input class="inp" name="q" value="${esc(q.q || '')}" placeholder="Cari nama atau nomor" aria-label="Cari chat"><button class="btn light" style="width:auto" aria-label="Cari">${ic('search', 20)}</button></form>
+   <div class="chips">${chip('semua', 'Semua')}${chip('baru', 'Baru')}${chip('diproses', 'Diproses')}${chip('selesai', 'Selesai')}</div>
+   <div class="card tight">${list.length ? list.map(c => `<a class="li" href="#/chat/${c.id}" style="align-items:flex-start;justify-content:flex-start;gap:12px"><span class="av">${esc(c.name[0])}</span><span class="t grow"><span class="row" style="justify-content:space-between"><b>${esc(c.name)}</b><span class="small">${ft(c.lastAt)}</span></span><span>+${esc(c.phone)}${c.customerId ? ' · customer' : ''}</span><span class="row" style="justify-content:space-between"><span style="color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.msgs.slice(-1)[0]?.body)}</span>${c.unread ? `<span class="badge">${c.unread}</span>` : ''}</span><span>${pill(CHAT_ST, c.status)}</span></span></a>`).join('') : '<div class="mut" style="padding:16px 0">Tidak ada chat</div>'}</div>
+   <button type="button" class="btn ghost" data-act="simChat">${ic('chat', 18)}Simulasi chat masuk</button>
+   <div class="small center">Tanpa WhatsApp Business API, chat masuk dicatat manual / disimulasikan</div>`);
+};
+function pageChatDetail(id, u) {
+  const c = DB.chats.find(x => x.id === id); if (!c) return shell('Chat', '', '<div class="card">Chat tidak ditemukan</div>', { back: '#/chat' });
+  if (c.unread) { c.unread = 0; save(); }
+  return shell(esc(c.name), '+' + esc(c.phone), `
+   <div class="row">${fld('Status', 'chatSt', c.status, { sel: Object.entries(CHAT_ST).map(([k, v]) => [k, v[0]]), attr: `data-change="chatStatus" data-id="${c.id}"` })}</div>
+   <div class="card" style="background:#F3EAEC;gap:8px">${c.msgs.map(m => `<div class="bub ${m.dir}">${esc(m.body)}<small>${ft(m.at)}${m.dir === 'out' ? ' · ' + esc(U(m.by)?.name || '') : ''}</small></div>`).join('')}</div>
+   <form data-form="chatReply" data-id="${c.id}" class="row"><input class="inp" name="body" placeholder="Tulis balasan…" aria-label="Balasan" required><button class="btn" style="width:auto" aria-label="Kirim">${ic('send', 20)}</button></form>
+   <div class="btns">${c.customerId ? `<a class="btn light" href="#/customers?id=${c.customerId}">Lihat customer</a>` : `<button type="button" class="btn light" data-act="chatToCust" data-id="${c.id}">Jadikan customer</button>`}
+    <button type="button" class="btn" data-act="chatToOrder" data-id="${c.id}">Buat order</button></div>
+   <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${esc(c.phone)}">${ic('wa', 18)}Buka di WhatsApp</a>`, { back: '#/chat' });
+}
+
+/* =================== CUSTOMERS =================== */
+PAGES.customers = (p, q, u) => {
+  if (q.id) {
+    const c = C(q.id); if (!c) return go('#/customers');
+    const os = DB.orders.filter(o => o.customerId === c.id);
+    return shell(esc(c.name), '+' + esc(c.phone), `
+     <form class="card" data-form="custSave" data-id="${c.id}">${fld('Nama', 'name', c.name, { req: 1 })}${fld('No. WhatsApp', 'phone', c.phone, { req: 1, num: 1, hint: 'Format 62…' })}${fld('Alamat', 'address', c.address, { area: 1 })}${fld('Email', 'email', c.email, { type: 'email' })}<button class="btn">Simpan</button></form>
+     <div class="card" style="gap:0"><b style="padding-bottom:4px">Riwayat order (${os.length})</b>${os.map(o => orderLi(o)).join('') || '<div class="mut" style="padding:12px 0">Belum ada</div>'}</div>
+     <a class="btn" href="#/order/new?c=${c.id}">${ic('plus', 18)}Order baru untuk customer ini</a>`, { back: '#/customers' });
+  }
+  const s = (q.q || '').toLowerCase();
+  const list = DB.customers.filter(c => !s || (c.name + c.phone).toLowerCase().includes(s));
+  return shell('Customer', `${DB.customers.length} customer`, `
+   <form data-form="custSearch" class="row"><input class="inp" name="q" value="${esc(q.q || '')}" placeholder="Cari nama atau nomor" aria-label="Cari customer"><button class="btn light" style="width:auto" aria-label="Cari">${ic('search', 20)}</button></form>
+   <div class="card tight">${list.map(c => `<a class="li" href="#/customers?id=${c.id}"><span class="t"><b>${esc(c.name)}</b><span>+${esc(c.phone)} · ${esc(c.address || '-')}</span></span><span class="pill">${DB.orders.filter(o => o.customerId === c.id).length} order</span></a>`).join('')}</div>
+   <button type="button" class="btn ghost" data-act="custNew">${ic('plus', 18)}Customer baru</button>`);
+};
+
+/* =================== ORDERS =================== */
+function orderLi(o) {
+  const inv = invOf(o.id), s = spkOf(o.id), w = spkWarn(s);
+  return `<a class="li" href="#/order/${o.id}"><span class="t"><b>${o.no} · ${esc(C(o.customerId)?.name)}</b><span>${esc(itemsTxt(o))} · ${qtyOrder(o)} pcs · deadline ${fd(o.deadline)}</span></span><span class="pills" style="justify-content:flex-end">${w ? `<span class="pill ${w[1]}">${w[0]}</span>` : ''}${pill(ORDER_ST, o.status)}${inv ? pill(INV_ST, inv.status) : ''}</span></a>`;
+}
+PAGES.orders = (p, q, u) => {
+  const st = q.st || (u.role === 'designer' ? 'desain' : 'aktif'), s = (q.q || '').toLowerCase();
+  const f = o => st === 'semua' ? true : st === 'aktif' ? !['selesai', 'batal'].includes(o.status) : st === 'desain' ? ['menunggu_desain', 'revisi_desain'].includes(o.status) : o.status === st;
+  const list = DB.orders.filter(o => f(o) && (!s || (o.no + C(o.customerId).name).toLowerCase().includes(s))).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const chip = (k, l) => `<a class="chip ${st === k ? 'on' : ''}" href="#/orders?st=${k}">${l}</a>`;
+  const canNew = ['admin', 'owner'].includes(u.role);
+  return shell(u.role === 'designer' ? 'Desain' : 'Order', `${list.length} order`, `
+   <form data-form="orderSearch" class="row"><input type="hidden" name="st" value="${st}"><input class="inp" name="q" value="${esc(q.q || '')}" placeholder="Cari no. order atau customer" aria-label="Cari order"><button class="btn light" style="width:auto" aria-label="Cari">${ic('search', 20)}</button></form>
+   <div class="chips">${chip('aktif', 'Aktif')}${chip('desain', 'Perlu desain')}${chip('siap_spk', 'Siap SPK')}${chip('produksi', 'Produksi')}${chip('selesai_produksi', 'Selesai produksi')}${chip('selesai', 'Selesai')}${chip('batal', 'Batal')}${chip('semua', 'Semua')}</div>
+   <div class="card tight">${list.map(o => u.role === 'designer' ? orderLi(o).replace(`#/order/${o.id}`, `#/design/${o.id}`) : orderLi(o)).join('') || '<div class="mut" style="padding:16px 0">Tidak ada order</div>'}</div>`, { fab: canNew ? '#/order/new' : null });
+};
+
+/* ---- form order ---- */
+let DRAFT = null;
+function blankItem() { return { product: DB.products[0], material: DB.materials[0], color: '', sizes: Object.fromEntries(SIZES.map(z => [z, 0])), price: '' }; }
+PAGES.order = (p, q, u) => {
+  if (p[0] === 'new') {
+    if (!['admin', 'owner'].includes(u.role)) return go('#/orders');
+    if (!DRAFT || q.fresh) DRAFT = { customerId: q.c || '', newName: '', newPhone: '', items: [blankItem()], b: false, s: false, a: false, deadline: addDays(today(), 21), dp: '', notes: '' };
+    if (q.c) DRAFT.customerId = q.c;
+    if (q.name) { DRAFT.newName = q.name; DRAFT.newPhone = q.phone || ''; }
+    return shell('Order baru', 'Status awal: Menunggu Desain', orderForm(), { back: '#/orders' });
+  }
+  return pageOrderDetail(p[0], q, u);
+};
+function orderForm() {
+  const d = DRAFT;
+  const custSel = [['', '— customer baru —'], ...DB.customers.map(c => [c.id, `${c.name} · +${c.phone}`])];
+  const items = d.items.map((it, i) => `<div class="card" data-item="${i}">
+    <div class="row" style="justify-content:space-between"><div class="sec">Item ${i + 1}</div><span class="pill m" data-qty="${i}">${qtyItem(it)} pcs</span></div>
+    ${fld('Jenis produk', `product_${i}`, it.product, { sel: DB.products })}
+    <div class="row">${fld('Bahan', `material_${i}`, it.material, { sel: DB.materials })}${fld('Warna', `color_${i}`, it.color, { req: 1, ph: 'Hitam' })}</div>
+    <div class="fld"><label>Ukuran &amp; jumlah</label><div class="sizes">${SIZES.map(z => `<div class="fld"><label for="sz_${i}_${z}">${z}</label><input id="sz_${i}_${z}" class="inp" name="sz_${i}_${z}" inputmode="numeric" value="${it.sizes[z] || ''}" data-calc="1"></div>`).join('')}</div></div>
+    ${fld('Harga jual / pcs (Rp)', `price_${i}`, it.price, { num: 1, req: 1, ph: '85000', attr: 'data-calc="1"' })}
+    ${d.items.length > 1 ? `<button type="button" class="btn danger sm" data-act="delItem" data-i="${i}">Hapus item</button>` : ''}
+   </div>`).join('');
+  return `<form data-form="orderSave" style="display:flex;flex-direction:column;gap:12px">
+   <div class="card"><div class="sec">Customer</div>${fld('Pilih customer', 'customerId', d.customerId, { sel: custSel, attr: 'data-change="custPick"' })}
+    <div id="newCust" class="${d.customerId ? 'hidden' : ''}" style="display:flex;flex-direction:column;gap:10px">${fld('Nama customer baru', 'newName', d.newName, { ph: 'Nama / instansi' })}${fld('No. WhatsApp', 'newPhone', d.newPhone, { num: 1, ph: '62812…' })}</div></div>
+   ${items}
+   <button type="button" class="btn ghost" data-act="addItem">${ic('plus', 18)}Tambah item</button>
+   <div class="card"><div class="sec">Tambahan proses</div><div class="row">
+     <label class="tog"><input type="checkbox" name="s" ${d.s ? 'checked' : ''}>Sablon</label><label class="tog"><input type="checkbox" name="b" ${d.b ? 'checked' : ''}>Bordir</label><label class="tog"><input type="checkbox" name="a" ${d.a ? 'checked' : ''}>Jahit APD</label></div></div>
+   <div class="card"><div class="sec">Waktu &amp; bayar</div>
+    ${fld('Deadline order', 'deadline', d.deadline, { type: 'date', req: 1, attr: 'data-calc="1"', hint: `<span id="dlSpk">Deadline SPK otomatis: ${fd(addDays(d.deadline, -5))} (5 hari lebih cepat)</span>` })}
+    ${fld('DP (Rp)', 'dp', d.dp, { num: 1, ph: '0', attr: 'data-calc="1"' })}
+    ${fld('Catatan', 'notes', d.notes, { area: 1, ph: 'Detail sablon/bordir, label, dll.' })}</div>
+   <div class="card" id="sum"></div>
+   <div id="ordErr" class="alert bad hidden" role="alert"></div>
+   <button class="btn ok" type="submit">Simpan order</button></form>`;
+}
+function readDraft(f) {
+  const fd_ = new FormData(f), d = DRAFT;
+  d.customerId = fd_.get('customerId') || ''; d.newName = fd_.get('newName') || ''; d.newPhone = fd_.get('newPhone') || '';
+  d.items = d.items.map((it, i) => ({ product: fd_.get(`product_${i}`), material: fd_.get(`material_${i}`), color: fd_.get(`color_${i}`) || '', price: fd_.get(`price_${i}`) || '', sizes: Object.fromEntries(SIZES.map(z => [z, num(fd_.get(`sz_${i}_${z}`))])) }));
+  d.s = !!fd_.get('s'); d.b = !!fd_.get('b'); d.a = !!fd_.get('a');
+  d.deadline = fd_.get('deadline') || d.deadline; d.dp = fd_.get('dp') || ''; d.notes = fd_.get('notes') || '';
+  return d;
+}
+function calcOrderForm() {
+  const f = $('form[data-form=orderSave]'); if (!f) return;
+  const d = readDraft(f); let tot = 0, q = 0;
+  d.items.forEach((it, i) => { const n = qtyItem(it); q += n; tot += n * num(it.price); const el = $(`[data-qty="${i}"]`); if (el) el.textContent = n + ' pcs'; });
+  const dp = num(d.dp);
+  $('#sum').innerHTML = kv('Jumlah', q + ' pcs') + kv('Total', `<b>${rp(tot)}</b>`) + kv('DP', rp(dp)) + kv('Sisa', `<b style="color:var(--warn)">${rp(Math.max(0, tot - dp))}</b>`);
+  if ($('#dlSpk')) $('#dlSpk').textContent = `Deadline SPK otomatis: ${fd(addDays(d.deadline, -5))} (5 hari lebih cepat)`;
+}
+
+/* ---- order detail ---- */
+function timeline(spk, withPhotos, publicView) {
+  if (!spk) return `<div class="mut">SPK belum diterima pabrik. Tahap produksi muncul setelah SPK diterima.</div>`;
+  return `<div class="tl">${stagesOf(spk.id).map(s => {
+    const cls = s.status === 'selesai' ? 'done' : (['dikerjakan', 'menunggu'].includes(s.status) ? 'now' : s.status === 'rework' ? 'rw now' : s.status === 'dilewati' ? 'skip' : '');
+    const ph = withPhotos ? photosOf(s.id) : [];
+    const info = s.status === 'dilewati' ? 'Tidak dipakai' : s.status === 'selesai' ? `Selesai ${ft(s.finishedAt)}${s.startedAt ? ' · mulai ' + ft(s.startedAt) : ''}` : s.status === 'dikerjakan' ? `Dikerjakan sejak ${ft(s.startedAt)}` : s.status === 'rework' ? `Rework ${s.reworkQty} pcs dari QC` : STG_ST[s.status][0];
+    const team = !publicView && s.status !== 'dilewati' ? ` · ${T(s.teamId)?.name}` : '';
+    return `<div class="tl-i ${cls}"><span class="tl-d"></span><div class="tl-b"><b>${SN[s.type]}</b><span class="mut">${info}${team}${!publicView && s.qtyDone ? ` · ${s.qtyDone} pcs` : ''}${!publicView && s.qtyReject ? ` · reject ${s.qtyReject}` : ''}</span>${ph.length ? `<div class="photos">${ph.map(x => `<img class="ph" src="${x.src}" alt="${esc(x.caption || 'Foto progres ' + SN[s.type])}" data-act="zoom">`).join('')}</div>` : ''}</div></div>`;
+  }).join('')}</div>`;
+}
+function pageOrderDetail(id, q, u) {
+  const o = O(id); if (!o) return shell('Order', '', '<div class="card">Order tidak ditemukan</div>', { back: '#/orders' });
+  const c = C(o.customerId), spk = spkOf(o.id), inv = invOf(o.id), w = spkWarn(spk), des = designsOf(o.id), fin = des.find(d => d.final);
+  const tab = q.tab || 'ringkasan';
+  const tabs = [['ringkasan', 'Ringkasan'], ['desain', 'Desain'], ['spk', 'SPK'], ['produksi', 'Produksi'], ['invoice', 'Invoice']];
+  const flags = [o.needsSablon && 'Sablon', o.needsBordir && 'Bordir', o.needsApd && 'Jahit APD'].filter(Boolean).join(', ') || '-';
+  let body = '';
+  if (tab === 'ringkasan') {
+    const canCancel = ['admin', 'owner'].includes(u.role) && !['batal', 'selesai'].includes(o.status) && !(spk && ['diterima', 'selesai'].includes(spk.status));
+    const nextAct = (['admin', 'owner'].includes(u.role) && o.status === 'selesai_produksi') ? (inv && inv.status === 'lunas' ? `<button type="button" class="btn ok" data-act="ship" data-id="${o.id}">Tandai sudah dikirim</button>` : `<a class="btn shake" href="#/invoice/${inv?.id}">Tagih sisa pembayaran dulu</a>`) : (['admin', 'owner'].includes(u.role) && o.status === 'dikirim') ? `<button type="button" class="btn ok" data-act="finishOrder" data-id="${o.id}">Order selesai</button>` : '';
+    body = `<div class="card">${kv('Customer', `<a href="#/customers?id=${c.id}">${esc(c.name)}</a>`)}${kv('WhatsApp', '+' + esc(c.phone))}${kv('Deadline order', fd(o.deadline))}${kv('Proses tambahan', flags)}${o.notes ? kv('Catatan', esc(o.notes)) : ''}${o.status === 'batal' ? kv('Alasan batal', esc(o.cancelReason), 'mut') : ''}</div>
+     ${o.items.map((it, i) => `<div class="card"><div class="row" style="justify-content:space-between"><b>${esc(it.product)} · ${esc(it.color)}</b><span class="pill m">${qtyItem(it)} pcs</span></div><span class="mut">${esc(it.material)} · ${SIZES.filter(z => it.sizes[z]).map(z => `${z} ${it.sizes[z]}`).join(' · ')}</span>${kv('Harga jual', rp(it.price) + '/pcs')}${kv('Subtotal', `<b>${rp(qtyItem(it) * num(it.price))}</b>`)}</div>`).join('')}
+     <div class="card">${kv('Total', `<b>${rp(totalOrder(o))}</b>`)}${kv('DP', rp(o.dp))}</div>
+     ${nextAct}
+     <div class="btns"><a class="btn ghost" href="#/print/order/${o.id}">${ic('print', 18)}Cetak order</a>${canCancel ? `<button type="button" class="btn danger" data-act="cancelOrder" data-id="${o.id}">Batalkan</button>` : ''}</div>`;
+  } else if (tab === 'desain') {
+    body = `<div class="card" style="gap:0">${des.length ? des.map(d => `<a class="li" href="#/design/${o.id}?v=${d.id}"><span class="row"><span class="ver" style="width:64px;padding:0;border:none"><span class="th" style="height:52px">${d.src ? `<img src="${d.src}" alt="">` : 'v' + d.version}</span></span><span class="t"><b>Versi ${d.version}${d.final ? ' · final' : ''}</b><span>${ft(d.at)} · ${esc(U(d.by)?.name)}</span></span></span>${pill(DES_ST, d.status)}</a>`).join('') : '<div class="mut" style="padding:12px 0">Belum ada desain. Designer sudah mendapat notifikasi.</div>'}</div>
+     <a class="btn light" href="#/design/${o.id}">Buka diskusi desain</a>`;
+  } else if (tab === 'spk') {
+    const all = DB.spks.filter(s => s.orderId === o.id);
+    body = all.length ? all.map(s => `<div class="card">${kv('No. SPK', `<a href="#/spk/${s.id}">${s.no}</a>`)}${kv('Pabrik', F(s.factoryId).name)}${kv('Deadline SPK', fd(s.deadline))}${kv('Status', pill(SPK_ST, s.status))}${canPrice(u) ? kv('Harga produksi', rp(lastPrice(s)) + '/pcs' + (s.agreed ? ' (disepakati)' : '')) : ''}${s.status === 'ditolak' ? kv('Alasan tolak', esc(s.reason), 'mut') : ''}</div>`).join('') + (canPrice(u) ? '' : '<div class="small center">Harga produksi hanya terlihat Owner &amp; Manajer Produksi</div>')
+      : `<div class="card"><span class="mut">${fin ? 'Desain final sudah ada, SPK belum diterbitkan.' : 'SPK bisa diterbitkan setelah desain disetujui.'}</span></div>`;
+    if (u.role === 'manajer' && o.status === 'siap_spk' && !spk) body += `<a class="btn" href="#/spk/new/${o.id}">Terbitkan SPK</a>`;
+  } else if (tab === 'produksi') {
+    body = `<div class="card">${w ? `<div class="alert ${w[1]}">${w[0]} dari deadline SPK ${fd(spk.deadline)} dan belum masuk QC</div>` : ''}${timeline(spk && spk.status !== 'dikirim' && spk.status !== 'negosiasi' ? spk : null, true)}</div>`;
+  } else if (tab === 'invoice') {
+    body = inv ? `<div class="card">${kv('No. invoice', inv.no)}${kv('Total', rp(inv.total))}${kv('Terbayar', rp(inv.paid))}${kv('Sisa', `<b style="color:var(--warn)">${rp(inv.balance)}</b>`)}${kv('Status', pill(INV_ST, inv.status))}</div><a class="btn light" href="#/invoice/${inv.id}">Lihat invoice</a>`
+      : '<div class="card"><span class="mut">Invoice terbit otomatis saat SPK diterima pabrik.</span></div>';
+  }
+  return shell(o.no, `${esc(c.name)} · ${qtyOrder(o)} pcs`, `
+   <div class="pills">${pill(ORDER_ST, o.status)}${spk ? `<span class="pill">${F(spk.factoryId).name}</span>` : ''}${w ? `<span class="pill ${w[1]}">${w[0]}</span>` : ''}${inv ? pill(INV_ST, inv.status) : ''}</div>
+   <div class="tabs">${tabs.map(([k, l]) => `<a href="#/order/${o.id}?tab=${k}" class="${tab === k ? 'on' : ''}">${l}</a>`).join('')}</div>${body}`, { back: u.role === 'designer' ? '#/orders' : '#/orders' });
+}
+
+/* =================== DESIGN =================== */
+PAGES.design = (p, q, u) => {
+  const o = O(p[0]); if (!o) return go('#/orders');
+  const des = designsOf(o.id); const cur = des.find(d => d.id === q.v) || des.slice(-1)[0];
+  const cm = cur ? DB.comments.filter(c => c.designId === cur.id) : [];
+  const isAdmin = ['admin', 'owner'].includes(u.role), isDes = u.role === 'designer';
+  const locked = !['menunggu_desain', 'revisi_desain'].includes(o.status);
+  let actions = '';
+  if (cur && isAdmin && cur.status === 'diajukan' && !locked) actions = `<div class="btns"><button type="button" class="btn danger" data-act="desRevise" data-id="${cur.id}">Minta revisi</button><button type="button" class="btn ok" data-act="desApprove" data-id="${cur.id}">Setujui desain</button></div><div class="small center">Setujui = versi ini final, order Siap SPK, Manajer Produksi dapat notifikasi</div>`;
+  const upload = (isDes || isAdmin) && !locked ? `<form class="card" data-form="desUpload" data-id="${o.id}"><div class="sec">Unggah versi ${des.length + 1}</div><div class="fld"><label for="desFile">File desain (JPG/PNG/PDF/AI/CDR, maks 20 MB)</label><input id="desFile" class="inp" style="padding:10px" type="file" name="file" accept="image/*,.pdf,.ai,.cdr" required></div>${fld('Catatan untuk admin', 'note', '', { area: 1, ph: 'Apa yang berubah di versi ini' })}<button class="btn">Unggah desain</button></form>` : '';
+  return shell('Desain &amp; diskusi', `${o.no} · ${esc(C(o.customerId).name)}`, `
+   <div class="pills">${pill(ORDER_ST, o.status)}<span class="pill">${esc(itemsTxt(o))}</span><span class="pill">${qtyOrder(o)} pcs</span></div>
+   ${des.length ? `<div class="vers">${des.map(d => `<a class="ver ${cur && d.id === cur.id ? 'on' : ''}" href="#/design/${o.id}?v=${d.id}&keep"><span class="th">${d.src ? `<img src="${d.src}" alt="Desain versi ${d.version}">` : 'v' + d.version}</span><b style="font-size:13px">v${d.version}${d.final ? ' · final' : ''}</b>${pill(DES_ST, d.status)}</a>`).join('')}</div>
+   <div class="card"><div class="prev">${cur.src ? `<img src="${cur.src}" alt="Pratinjau desain versi ${cur.version}" data-act="zoom">` : `<div class="center" style="padding:16px">${ic('file', 40)}<div style="font-weight:700;margin-top:8px">${esc(cur.name)}</div><div class="small">File non-gambar, unduh untuk melihat</div></div>`}</div>
+    ${kv('File', esc(cur.name))}${kv('Diunggah', `${esc(U(cur.by)?.name)} · ${ft(cur.at)}`)}${cur.note ? kv('Catatan', esc(cur.note)) : ''}</div>
+   <div class="sec">Komentar v${cur.version}</div>
+   ${cm.map(c => `<div class="bub ${c.by === u.id ? 'out' : 'in'}" style="max-width:100%"><b style="font-size:13px">${esc(U(c.by)?.name)} · ${ROLES[U(c.by)?.role]}</b>\n${esc(c.body)}<small>${ft(c.at)}</small></div>`).join('') || '<div class="mut">Belum ada komentar</div>'}
+   <form data-form="desComment" data-id="${cur.id}" class="row"><input class="inp" name="body" placeholder="Tulis komentar…" aria-label="Komentar" required><button class="btn" style="width:auto" aria-label="Kirim">${ic('send', 20)}</button></form>
+   ${actions}` : '<div class="card"><span class="mut">Belum ada desain untuk order ini.</span></div>'}
+   ${upload}
+   ${locked && o.status !== 'batal' ? '<div class="alert ok">Desain sudah final. Perubahan desain setelah ini lewat order baru / revisi SPK.</div>' : ''}`, { back: isDes ? '#/orders' : `#/order/${o.id}?tab=desain` });
+};
+
+/* =================== SPK =================== */
+PAGES.spk = (p, q, u) => {
+  if (p[0] === 'new') return pageSpkNew(p[1], q, u);
+  if (p[0]) return pageSpkDetail(p[0], u);
+  const mine = s => u.role !== 'kepala' || s.factoryId === u.factoryId;
+  const st = q.st || (u.role === 'kepala' ? 'masuk' : 'berjalan');
+  const grp = { masuk: s => ['dikirim', 'negosiasi'].includes(s.status), berjalan: s => ['dikirim', 'negosiasi', 'diterima'].includes(s.status), diterima: s => s.status === 'diterima', selesai: s => s.status === 'selesai', ditolak: s => s.status === 'ditolak', semua: () => true };
+  const list = DB.spks.filter(s => mine(s) && (grp[st] || grp.semua)(s)).sort((a, b) => b.at.localeCompare(a.at));
+  const ready = u.role === 'manajer' || u.role === 'owner' ? DB.orders.filter(o => o.status === 'siap_spk' && !spkOf(o.id)) : [];
+  const chip = (k, l) => `<a class="chip ${st === k ? 'on' : ''}" href="#/spk?st=${k}">${l}</a>`;
+  return shell(u.role === 'kepala' ? 'SPK Masuk' : 'SPK', u.role === 'kepala' ? F(u.factoryId).name : 'Surat Perintah Kerja', `
+   ${ready.length ? `<div class="card" style="gap:0"><b style="padding-bottom:4px">Order siap SPK</b>${ready.map(o => `<div class="li"><span class="t"><b>${o.no} · ${esc(C(o.customerId).name)}</b><span>${qtyOrder(o)} pcs · deadline ${fd(o.deadline)}</span></span>${u.role === 'manajer' ? `<a class="btn sm" style="width:auto" href="#/spk/new/${o.id}">Terbitkan</a>` : ''}</div>`).join('')}</div>` : ''}
+   <div class="chips">${u.role === 'kepala' ? chip('masuk', 'Perlu dijawab') : chip('berjalan', 'Berjalan')}${chip('diterima', 'Diterima')}${chip('selesai', 'Selesai')}${chip('ditolak', 'Ditolak')}${chip('semua', 'Semua')}</div>
+   <div class="card tight">${list.map(s => spkLi(s, u)).join('') || '<div class="mut" style="padding:16px 0">Tidak ada SPK</div>'}</div>`);
+};
+function pageSpkNew(oid, q, u) {
+  const o = O(oid);
+  if (!o || u.role !== 'manajer') return shell('Terbitkan SPK', '', '<div class="card">Hanya Manajer Produksi yang bisa menerbitkan SPK.</div>', { back: '#/spk' });
+  const fin = designsOf(o.id).find(d => d.final);
+  if (!fin || o.status !== 'siap_spk') return shell('Terbitkan SPK', o.no, '<div class="alert bad">SPK tidak bisa diterbitkan sebelum desain disetujui.</div>', { back: '#/spk' });
+  const rejected = DB.spks.filter(s => s.orderId === o.id && s.status === 'ditolak').map(s => s.factoryId);
+  const dl = addDays(o.deadline, -5);
+  const def = s => !OPTIONAL.includes(s) || (s === 'bordir' && o.needsBordir) || (s === 'sablon' && o.needsSablon) || (s === 'jahit_apd' && o.needsApd);
+  return shell('Terbitkan SPK', `${o.no} · ${esc(C(o.customerId).name)}`, `
+   <form data-form="spkSave" data-id="${o.id}" style="display:flex;flex-direction:column;gap:12px">
+   <div class="card"><div class="row" style="justify-content:space-between"><b>${esc(itemsTxt(o))}</b><span class="pill ok">Desain final v${fin.version}</span></div><span class="mut">${qtyOrder(o)} pcs · ${[o.needsSablon && 'sablon', o.needsBordir && 'bordir', o.needsApd && 'jahit APD'].filter(Boolean).join(', ') || 'tanpa proses tambahan'}</span></div>
+   <div class="card"><div class="sec">Pabrik</div>${DB.factories.filter(f => f.active).map(f => { const n = DB.spks.filter(s => s.factoryId === f.id && s.status === 'diterima').length; const rj = rejected.includes(f.id); return `<label class="chk"><input type="radio" name="factoryId" value="${f.id}" required ${rj ? 'disabled' : ''}><span class="grow"><b>${f.name}</b> <span class="mut">· ${n} SPK aktif${rj ? ' · sudah menolak' : ''}</span></span></label>`; }).join('')}</div>
+   <div class="card" style="gap:0"><div class="sec" style="margin-bottom:6px">Tahap dipakai</div>${STAGES.map(([k, n]) => `<label class="chk"><input type="checkbox" name="st_${k}" ${def(k) ? 'checked' : ''} ${OPTIONAL.includes(k) ? '' : 'disabled'}><span class="grow">${n}</span>${OPTIONAL.includes(k) ? '<span class="small">opsional</span>' : '<span class="small">wajib</span>'}</label>`).join('')}</div>
+   <div class="card"><div class="sec">Deadline</div>${kv('Deadline order', fd(o.deadline))}
+     ${fld('Deadline SPK', 'deadline', dl, { type: 'date', req: 1, hint: `Otomatis ${fd(dl)} (order − 5 hari). Kalau diubah, isi alasan.` })}
+     ${fld('Alasan ubah deadline', 'deadlineReason', '', { ph: 'Wajib bila tanggal diubah' })}</div>
+   <div class="card"><div class="sec">Harga &amp; instruksi</div>
+     ${fld('Harga produksi usulan / pcs (Rp)', 'proposed', '', { num: 1, req: 1, ph: '18000', hint: 'Hanya terlihat Owner, Manajer Produksi &amp; kepala pabrik tujuan' })}
+     ${fld('Instruksi kerja', 'instructions', o.notes, { area: 1 })}${kv('Lampiran', esc(fin.name))}</div>
+   <div id="spkErr" class="alert bad hidden" role="alert"></div>
+   <button class="btn" type="submit">${ic('send', 18)}Kirim SPK ke pabrik</button></form>`, { back: '#/spk' });
+}
+function pageSpkDetail(id, u) {
+  const s = DB.spks.find(x => x.id === id); if (!s) return go('#/spk');
+  if (u.role === 'kepala' && s.factoryId !== u.factoryId) return shell('SPK', '', '<div class="card">SPK ini bukan untuk pabrik Anda.</div>', { back: '#/spk' });
+  const o = O(s.orderId), fin = designsOf(o.id).find(d => d.final), ng = DB.nego.filter(n => n.spkId === s.id);
+  const seePrice = canPrice(u) || u.role === 'kepala';
+  const last = ng.slice(-1)[0];
+  let act = '';
+  const open = ['dikirim', 'negosiasi'].includes(s.status);
+  if (u.role === 'kepala' && open && last && last.by === u.id) act = `<div class="alert info">Tawaran Anda sudah dikirim, menunggu tanggapan Manajer Produksi</div>`;
+  else if (u.role === 'kepala' && open) act = `<form class="card" data-form="negoKepala" data-id="${s.id}"><div class="sec">Jawaban pabrik</div>${kv('Harga saat ini', `<b>${rp(lastPrice(s))}/pcs</b>`)}${fld('Tawaran Anda / pcs (untuk Tawar)', 'price', '', { num: 1, ph: 'Rp …' })}${fld('Pesan / alasan', 'msg', '', { ph: 'Wajib untuk Tolak' })}
+     <div class="btns"><button class="btn danger" name="act" value="tolak">Tolak</button><button class="btn light" name="act" value="tawar">Tawar</button><button class="btn ok" name="act" value="terima">Terima</button></div>
+     <div class="small center">Terima = produksi mulai di tahap Kain dan invoice ke customer terbit otomatis</div></form>`;
+  if (u.role === 'manajer' && open && last && last.by !== u.id) act = `<form class="card" data-form="negoManajer" data-id="${s.id}"><div class="sec">Tanggapi tawaran pabrik</div>${kv('Tawaran pabrik', `<b>${rp(last.price)}/pcs</b>`)}${fld('Tawar balik / pcs', 'price', '', { num: 1, ph: 'Rp …' })}${fld('Pesan', 'msg', '')}
+     <div class="btns"><button class="btn light" name="act" value="tawar">Tawar balik</button><button class="btn ok" name="act" value="setuju">Setujui harga pabrik</button></div>
+     <div class="small center">Setelah harga disetujui, kepala pabrik menekan Terima untuk mulai produksi</div></form>`;
+  if (u.role === 'manajer' && open && (!last || last.by === u.id)) act = `<div class="alert info">Menunggu jawaban ${F(s.factoryId).name}</div>`;
+  if (u.role === 'manajer' && s.status === 'ditolak' && !spkOf(o.id)) act = `<div class="alert bad">Ditolak: ${esc(s.reason)}</div><a class="btn" href="#/spk/new/${o.id}">Alihkan ke pabrik lain</a>`;
+  return shell(s.no, `${F(s.factoryId).name} · dari ${esc(U(s.by)?.name)}`, `
+   <div class="pills">${pill(SPK_ST, s.status)}<span class="pill">${qtyOrder(o)} pcs</span><span class="pill warn">Deadline ${fd(s.deadline)}</span></div>
+   <div class="card">${kv('Order', `<a href="#/order/${o.id}">${o.no}</a> · ${esc(itemsTxt(o))}`)}${u.role !== 'kepala' ? kv('Customer', esc(C(o.customerId).name)) : ''}${kv('Ukuran', o.items.map(it => SIZES.filter(z => it.sizes[z]).map(z => `${z} ${it.sizes[z]}`).join(' · ')).join(' | '))}
+    ${kv('Tahap', s.stages.map(k => SN[k]).join(' → '))}${s.deadlineReason ? kv('Alasan deadline', esc(s.deadlineReason)) : ''}${kv('Instruksi', esc(s.instructions || '-'))}${seePrice ? kv('Harga produksi', `<b>${rp(lastPrice(s))}/pcs</b>${s.agreed ? ' · disepakati' : ''}`) : ''}
+    ${fin ? `<div class="row"><img class="ph" src="${fin.src || photoPh('File')}" alt="Desain final" data-act="zoom"><span class="mut">Desain final v${fin.version} · ${esc(fin.name)}</span></div>` : ''}
+    <a class="btn ghost sm" href="#/print/spk/${s.id}">${ic('print', 18)}Cetak SPK</a></div>
+   ${seePrice ? `<div class="sec">Riwayat penawaran</div>${ng.map(n => { const mine = n.by === u.id; return `<div class="bub ${mine ? 'out' : 'in'}" style="width:85%"><b style="font-size:13px">${esc(U(n.by)?.name)} · ${{ usul: 'usulan', tawar: 'menawar', terima: 'menerima', tolak: 'menolak', setuju: 'menyetujui' }[n.action]}</b>\n<span style="font-size:19px;font-weight:800">${rp(n.price)}</span><span class="small"> /pcs</span>${n.msg ? '\n' + esc(n.msg) : ''}<small>${ft(n.at)}</small></div>`; }).join('')}` : ''}
+   ${act}
+   ${s.status === 'diterima' || s.status === 'selesai' ? `<div class="card"><div class="sec">Progres produksi</div>${timeline(s, true)}</div>` : ''}`, { back: '#/spk' });
+}
+
+/* =================== PAPAN =================== */
+PAGES.papan = (p, q, u) => {
+  const fid = u.role === 'kepala' ? u.factoryId : (q.f || 'all');
+  const spks = DB.spks.filter(s => s.status === 'diterima' && (fid === 'all' || s.factoryId === fid));
+  const cols = STAGES.map(([k, n]) => {
+    const cards = spks.map(s => [s, stagesOf(s.id).find(x => x.type === k)]).filter(([s, st]) => st && ['menunggu', 'dikerjakan', 'rework', 'menunggu_rework'].includes(st.status));
+    return `<div class="kcol"><h4><span>${n}</span><span class="small">${cards.length}</span></h4>${cards.map(([s, st]) => { const o = O(s.orderId), w = spkWarn(s); return `<a class="kc ${w && w[1] === 'bad' ? 'late' : ''}" href="#/order/${o.id}?tab=produksi"><b>${o.no}</b><span>${esc(C(o.customerId).name)}</span><span class="small">${qtyOrder(o)} pcs · ${F(s.factoryId).name.replace('Pabrik ', 'P')}</span><span class="pills">${pill(STG_ST, st.status)}${w ? `<span class="pill ${w[1]}">${w[0]}</span>` : ''}</span></a>`; }).join('') || '<div class="small center" style="padding:14px 0">Kosong</div>'}</div>`;
+  }).join('');
+  const chip = (k, l) => `<a class="chip ${fid === k ? 'on' : ''}" href="#/papan?f=${k}">${l}</a>`;
+  const lateN = spks.filter(s => spkWarn(s)?.[1] === 'bad').length;
+  return shell('Papan produksi', `${spks.length} SPK berjalan · ${lateN} terlambat`, `
+   ${u.role !== 'kepala' ? `<div class="chips">${chip('all', 'Semua pabrik')}${DB.factories.map(f => chip(f.id, f.name)).join('')}</div>` : ''}
+   <div class="kan">${cols}</div><div class="small center">Geser ke samping untuk tahap berikutnya</div>`);
+};
+
+/* =================== TUGAS TIM =================== */
+PAGES.tugas = (p, q, u) => {
+  if (u.role !== 'ketua') return go('#/');
+  const team = T(u.teamId);
+  const list = DB.stages.filter(s => s.teamId === u.teamId && ['menunggu', 'dikerjakan', 'rework'].includes(s.status)).map(s => [s, DB.spks.find(x => x.id === s.spkId)]).filter(([, sp]) => sp && sp.status === 'diterima');
+  const waitQc = team.stage === 'qc' ? DB.stages.filter(s => s.teamId === u.teamId && s.status === 'menunggu_rework').length : 0;
+  const cards = list.map(([s, sp]) => {
+    const o = O(sp.orderId), w = spkWarn(sp);
+    const qty = s.status === 'rework' ? s.reworkQty : qtyOrder(o);
+    const btn = s.status === 'menunggu' ? `<button type="button" class="btn" data-act="stStart" data-id="${s.id}">Mulai</button>`
+      : s.status === 'rework' && !s.startedAt2 ? `<button type="button" class="btn" data-act="stStart" data-id="${s.id}">Mulai rework</button>`
+      : `<button type="button" class="btn ok" data-act="${team.stage === 'qc' ? 'qcForm' : 'stFinish'}" data-id="${s.id}">${ic('task', 18)}${team.stage === 'qc' ? 'Isi hasil QC' : 'Selesai'}</button>`;
+    return `<div class="card"><div class="row" style="justify-content:space-between"><b style="font-size:16px">${o.no}</b><span class="pills">${pill(STG_ST, s.status)}${w ? `<span class="pill ${w[1]}">${w[0]}</span>` : ''}</span></div>
+      <span class="mut">${esc(itemsTxt(o))} · <b style="color:var(--ink)">${qty} pcs</b> · deadline SPK ${fd(sp.deadline)}</span>
+      ${s.status === 'rework' ? `<div class="alert bad">Rework dari QC: ${esc(s.reworkReason || '-')}</div>` : ''}
+      ${s.status === 'dikerjakan' || s.startedAt2 ? kv('Mulai', ft(s.startedAt2 || s.startedAt)) : ''}
+      <div class="row"><a class="btn light sm" href="#/spk/${sp.id}" style="width:auto">Instruksi</a>${btn}</div></div>`;
+  }).join('');
+  return shell(team.name, `${F(u.factoryId).name} · ${esc(u.name)}`, `
+   <div class="pills"><span class="pill m">${list.length} tugas</span>${list.filter(([s]) => s.status === 'rework').length ? `<span class="pill bad">${list.filter(([s]) => s.status === 'rework').length} rework</span>` : ''}${waitQc ? `<span class="pill warn">${waitQc} menunggu barang rework</span>` : ''}</div>
+   ${cards || '<div class="card center"><b>Belum ada tugas</b><span class="mut">Tugas muncul saat tahap sebelumnya selesai</span></div>'}`);
+};
+PAGES.riwayat = (p, q, u) => {
+  const list = DB.stages.filter(s => s.teamId === u.teamId && s.status === 'selesai').sort((a, b) => (b.finishedAt || '').localeCompare(a.finishedAt || ''));
+  return shell('Riwayat', T(u.teamId)?.name || '', list.map(s => { const sp = DB.spks.find(x => x.id === s.spkId), o = O(sp.orderId); return `<div class="card"><div class="row" style="justify-content:space-between"><b>${o.no}</b>${pill(STG_ST, 'selesai')}</div><span class="mut">${s.qtyDone} pcs${s.qtyReject ? ' · reject ' + s.qtyReject : ''} · selesai ${ft(s.finishedAt)}</span><div class="photos">${photosOf(s.id).map(x => `<img class="ph" src="${x.src}" alt="Foto progres" data-act="zoom">`).join('')}</div></div>`; }).join('') || '<div class="card center mut">Belum ada riwayat</div>');
+};
+
+/* =================== INVOICES =================== */
+PAGES.invoices = (p, q, u) => {
+  if (!['admin', 'owner'].includes(u.role)) return go('#/');
+  const st = q.st || 'belum', list = DB.invoices.filter(i => st === 'semua' || (st === 'belum' ? i.status !== 'lunas' : i.status === st)).sort((a, b) => b.at.localeCompare(a.at));
+  const chip = (k, l) => `<a class="chip ${st === k ? 'on' : ''}" href="#/invoices?st=${k}">${l}</a>`;
+  const sisa = list.reduce((s, i) => s + i.balance, 0);
+  return shell('Invoice', `${list.length} invoice · sisa ${rp(sisa)}`, `
+   <div class="chips">${chip('belum', 'Belum lunas')}${chip('jatuh_tempo', 'Jatuh tempo')}${chip('dp', 'DP')}${chip('lunas', 'Lunas')}${chip('semua', 'Semua')}</div>
+   <div class="card tight">${list.map(i => { const o = O(i.orderId); return `<a class="li" href="#/invoice/${i.id}"><span class="t"><b>${i.no} · ${esc(C(o.customerId).name)}</b><span>Total ${rp(i.total)} · sisa ${rp(i.balance)} · tempo ${fd(i.due)}</span></span>${pill(INV_ST, i.status)}</a>`; }).join('') || '<div class="mut" style="padding:16px 0">Tidak ada invoice</div>'}</div>
+   <div class="small center">Invoice terbit otomatis saat SPK diterima pabrik</div>`);
+};
+PAGES.invoice = (p, q, u) => {
+  const i = DB.invoices.find(x => x.id === p[0]); if (!i) return go('#/invoices');
+  recalc(i);
+  const o = O(i.orderId), c = C(o.customerId), sp = DB.spks.find(s => s.id === i.spkId), pays = DB.payments.filter(x => x.invoiceId === i.id);
+  const url = trackUrl(o);
+  const qr = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=6&data=${encodeURIComponent(url)}`;
+  return shell(i.no, `Ref. ${o.no} · ${sp?.no || '-'}`, `
+   <div class="hero" style="padding-top:2px"><small>Sisa tagihan</small><div class="big">${rp(i.balance)}</div><small>${esc(c.name)} · ${pill(INV_ST, i.status)}</small></div>
+   <div class="card">${o.items.map(it => kv(`${esc(it.product)} ${esc(it.color)} · ${qtyItem(it)} × ${rp(it.price)}`, rp(qtyItem(it) * num(it.price)))).join('')}${kv('Total', `<b>${rp(i.total)}</b>`)}${kv('Terbayar', `<span style="color:var(--ok)">${rp(i.paid)}</span>`)}${kv('Jatuh tempo', fd(i.due))}<div class="small">Terisi otomatis dari order &amp; SPK saat SPK diterima ${sp ? F(sp.factoryId).name : ''} (${ft(i.at)})</div></div>
+   <div class="card"><div class="row" style="align-items:flex-start;gap:14px"><img src="${qr}" width="110" height="110" alt="QR code tracking" style="border-radius:10px;border:1px solid var(--line);flex:none"><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><b>Link tracking customer</b><span class="small" style="word-break:break-all">${esc(url)}</span><a href="#/t/${o.token}" style="font-weight:700;font-size:14px">Lihat sebagai customer</a><button type="button" class="btn light sm" data-act="copy" data-text="${esc(url)}">${ic('link', 18)}Salin link</button></div></div></div>
+   ${i.status !== 'lunas' ? `<form class="card" data-form="payment" data-id="${i.id}"><div class="sec">Catat pembayaran</div>
+     <div class="row">${Object.entries(PAY_T).map(([k, l], n) => `<label class="tog"><input type="radio" name="type" value="${k}" ${n === (i.paid ? 1 : 0) ? 'checked' : ''}>${l}</label>`).join('')}</div>
+     ${fld('Jumlah (Rp)', 'amount', '', { num: 1, req: 1, ph: String(i.balance) })}${fld('Tanggal bayar', 'date', today(), { type: 'date', req: 1 })}
+     <div class="fld"><label for="proof">Bukti transfer</label><input id="proof" class="inp" style="padding:10px" type="file" name="proof" accept="image/*" capture="environment"></div>
+     <button class="btn ok">Simpan pembayaran</button></form>` : '<div class="alert ok">Invoice sudah lunas</div>'}
+   <div class="card" style="gap:0"><b style="padding-bottom:4px">Riwayat pembayaran</b>${pays.map(x => `<div class="li"><span class="t"><b>${PAY_T[x.type]} · ${rp(x.amount)}</b><span>${fd(x.date)} · dicatat ${esc(U(x.by)?.name || '-')}</span></span>${x.proof ? `<img class="ph" style="width:56px;height:48px" src="${x.proof}" alt="Bukti transfer" data-act="zoom">` : '<span class="small">tanpa bukti</span>'}</div>`).join('') || '<div class="mut" style="padding:12px 0">Belum ada</div>'}</div>
+   <div class="btns"><button type="button" class="btn wa" data-act="sendWa" data-id="${i.id}">${ic('wa', 18)}Kirim ke WA</button><a class="btn ghost" href="#/print/invoice/${i.id}">${ic('print', 18)}Cetak PDF</a></div>`, { back: '#/invoices' });
+};
+
+/* =================== LAPORAN =================== */
+PAGES.laporan = (p, q, u) => {
+  if (!canPrice(u)) return go('#/');
+  const tab = q.tab || 'margin', fid = q.f || 'all', per = q.m || 'all';
+  const months = [...new Set(DB.orders.map(o => o.createdAt.slice(0, 7)))].sort().reverse();
+  const inPer = o => per === 'all' || o.createdAt.slice(0, 7) === per;
+  const spkFor = o => DB.spks.filter(s => s.orderId === o.id && ['diterima', 'selesai'].includes(s.status)).slice(-1)[0];
+  const orders = DB.orders.filter(o => inPer(o) && o.status !== 'batal' && (fid === 'all' || spkFor(o)?.factoryId === fid));
+  let rows = [], html = '';
+  if (tab === 'margin') {
+    rows = [['No. order', 'Customer', 'Pabrik', 'Qty', 'Omzet', 'Biaya produksi', 'Margin']];
+    let om = 0, by = 0;
+    orders.forEach(o => { const s = spkFor(o); if (!s) return; const q_ = qtyOrder(o), omz = totalOrder(o), b = q_ * num(s.agreed ?? lastPrice(s)); om += omz; by += b; rows.push([o.no, C(o.customerId).name, F(s.factoryId).name, q_, omz, b, omz - b]); });
+    const perF = DB.factories.map(f => { const r = rows.slice(1).filter(x => x[2] === f.name); const m = r.reduce((s, x) => s + x[6], 0), omz = r.reduce((s, x) => s + x[4], 0); return [f.name, m, omz]; });
+    const mx = Math.max(1, ...perF.map(x => x[1]));
+    html = `<div class="hero" style="margin:0;border-radius:18px;padding:16px 20px"><small>Margin</small><div class="big">${rp(om - by)}</div><small>Omzet ${rp(om)} − biaya produksi ${rp(by)}</small></div>
+     <div class="card"><div class="sec">Margin per pabrik</div>${perF.map(([n, m, omz]) => `<div class="fld"><div class="kv"><span><b style="color:var(--ink)">${n}</b></span><span>${rp(m)}${omz ? ' · ' + Math.round(m / omz * 100) + '%' : ''}</span></div><div class="meter"><i style="width:${Math.max(0, m / mx * 100)}%"></i></div></div>`).join('')}</div>
+     <div class="card tight">${rows.slice(1).map(r => `<div class="li"><span class="t"><b>${r[0]} · ${esc(r[1])}</b><span>${r[2]} · ${r[3]} pcs · omzet ${rp(r[4])}</span></span><b style="color:${r[6] >= 0 ? 'var(--ok)' : 'var(--bad)'}">${rp(r[6])}</b></div>`).join('') || '<div class="mut" style="padding:12px 0">Belum ada data</div>'}</div>`;
+  } else if (tab === 'order') {
+    rows = [['Status', 'Jumlah order', 'Pcs', 'Nilai']];
+    Object.entries(ORDER_ST).forEach(([k, v]) => { const r = DB.orders.filter(o => inPer(o) && o.status === k); rows.push([v[0], r.length, r.reduce((s, o) => s + qtyOrder(o), 0), r.reduce((s, o) => s + totalOrder(o), 0)]); });
+    html = `<div class="card tight">${rows.slice(1).map(r => `<div class="li"><span class="t"><b>${r[0]}</b><span>${r[2]} pcs · ${rp(r[3])}</span></span><span class="pill m">${r[1]}</span></div>`).join('')}</div>`;
+  } else if (tab === 'produksi') {
+    rows = [['Pabrik', 'SPK berjalan', 'SPK selesai', 'Pcs dikerjakan', 'Terlambat']];
+    DB.factories.filter(f => fid === 'all' || f.id === fid).forEach(f => { const ss = DB.spks.filter(s => s.factoryId === f.id && inPer(O(s.orderId))); rows.push([f.name, ss.filter(s => s.status === 'diterima').length, ss.filter(s => s.status === 'selesai').length, ss.filter(s => ['diterima', 'selesai'].includes(s.status)).reduce((a, s) => a + qtyOrder(O(s.orderId)), 0), ss.filter(s => spkWarn(s)?.[1] === 'bad').length]); });
+    html = rows.slice(1).map(r => `<div class="card"><b>${r[0]}</b>${kv('SPK berjalan', r[1])}${kv('SPK selesai', r[2])}${kv('Pcs', r[3])}${kv('Terlambat', `<span style="color:${r[4] ? 'var(--bad)' : 'inherit'}">${r[4]}</span>`)}</div>`).join('');
+  } else {
+    rows = [['No. invoice', 'Customer', 'Total', 'Terbayar', 'Sisa', 'Jatuh tempo', 'Status']];
+    DB.invoices.filter(i => i.balance > 0 && orders.includes(O(i.orderId))).sort((a, b) => b.balance - a.balance).forEach(i => rows.push([i.no, C(O(i.orderId).customerId).name, i.total, i.paid, i.balance, i.due, INV_ST[i.status][0]]));
+    const tot = rows.slice(1).reduce((s, r) => s + r[4], 0);
+    html = `<div class="hero" style="margin:0;border-radius:18px;padding:16px 20px"><small>Total piutang</small><div class="big">${rp(tot)}</div><small>${rows.length - 1} invoice belum lunas</small></div><div class="card tight">${rows.slice(1).map(r => `<div class="li"><span class="t"><b>${r[0]} · ${esc(r[1])}</b><span>tempo ${fd(r[5])} · ${r[6]}</span></span><b style="color:var(--bad)">${rp(r[4])}</b></div>`).join('') || '<div class="mut" style="padding:12px 0">Tidak ada piutang</div>'}</div>`;
+  }
+  window.__report = { name: `laporan-${tab}-${per}`, rows };
+  const qs = (k, v) => { const o = { tab, f: fid, m: per, [k]: v }; return '#/laporan?' + new URLSearchParams(o); };
+  return shell('Laporan', `${ROLES[u.role]} · ${per === 'all' ? 'semua periode' : BLN[+per.slice(5) - 1] + ' ' + per.slice(0, 4)}`, `
+   <div class="chips">${[['margin', 'Margin'], ['order', 'Order'], ['produksi', 'Produksi'], ['piutang', 'Piutang']].map(([k, l]) => `<a class="chip ${tab === k ? 'on' : ''}" href="${qs('tab', k)}">${l}</a>`).join('')}</div>
+   <div class="row">${fld('Periode', 'rpM', per, { sel: [['all', 'Semua'], ...months.map(m => [m, BLN[+m.slice(5) - 1] + ' ' + m.slice(0, 4)])], attr: 'data-change="repFilter" data-k="m"' })}${fld('Pabrik', 'rpF', fid, { sel: [['all', 'Semua'], ...DB.factories.map(f => [f.id, f.name])], attr: 'data-change="repFilter" data-k="f"' })}</div>
+   ${html}
+   <div class="btns"><button type="button" class="btn ghost" data-act="exportCsv">${ic('file', 18)}Export Excel</button><button type="button" class="btn ghost" data-act="print">${ic('print', 18)}Export PDF</button></div>`);
+};
+
+/* =================== MASTER =================== */
+PAGES.master = (p, q, u) => {
+  if (u.role !== 'owner') return shell('Lainnya', '', `<div class="card"><b>${esc(u.name)}</b><span class="mut">${u.email} · ${ROLES[u.role]}</span></div><button type="button" class="btn red" data-act="logout">${ic('out', 18)}Keluar</button>`);
+  const tab = q.tab || 'pabrik';
+  let body = '';
+  if (tab === 'pabrik') body = `<div class="card tight">${DB.factories.map(f => `<div class="li"><span class="t"><b>${f.name}</b><span>Kepala: ${esc(U(f.headId)?.name)} · ${DB.teams.filter(t => t.factoryId === f.id).length} tim</span></span>${f.active ? pill({ a: ['Aktif', 'ok'] }, 'a') : pill({ a: ['Nonaktif', 'n'] }, 'a')}</div>`).join('')}</div>
+    <form class="card" data-form="addFactory"><div class="sec">Tambah pabrik</div>${fld('Nama pabrik', 'name', `Pabrik ${DB.factories.length + 1}`, { req: 1 })}${fld('Nama kepala produksi', 'head', '', { req: 1 })}<button class="btn">Tambah pabrik + 9 tim</button><div class="small">Akun kepala & ketua tim dibuat otomatis (password ${PASS})</div></form>`;
+  if (tab === 'tim') body = DB.factories.map(f => `<div class="card" style="gap:0"><b style="padding-bottom:4px">${f.name}</b>${DB.teams.filter(t => t.factoryId === f.id).map(t => `<div class="li"><span class="t"><b>${t.name}</b><span>Ketua: ${esc(U(t.leaderId)?.name)} · ${U(t.leaderId)?.email}</span></span></div>`).join('')}</div>`).join('');
+  if (tab === 'produk') body = ['products', 'materials'].map(k => `<form class="card" data-form="addMaster" data-k="${k}"><div class="sec">${k === 'products' ? 'Jenis produk' : 'Bahan'}</div><div class="pills">${DB[k].map(x => `<span class="pill">${esc(x)}</span>`).join('')}</div><div class="row"><input class="inp" name="v" placeholder="Tambah ${k === 'products' ? 'produk' : 'bahan'}" aria-label="Tambah" required><button class="btn" style="width:auto">Tambah</button></div></form>`).join('') + `<div class="card"><div class="sec">Ukuran</div><div class="pills">${SIZES.map(z => `<span class="pill">${z}</span>`).join('')}</div></div>`;
+  if (tab === 'user') body = `<div class="card tight">${DB.users.filter(x => x.role !== 'ketua').concat(DB.users.filter(x => x.role === 'ketua')).map(x => `<div class="li"><span class="t"><b>${esc(x.name)}</b><span>${x.email} · ${ROLES[x.role]}${x.factoryId ? ' · ' + F(x.factoryId)?.name : ''}</span></span>${x.id === u.id ? '<span class="pill m">Anda</span>' : `<button type="button" class="btn ${x.active ? 'light' : 'ghost'} sm" style="width:auto" data-act="toggleUser" data-id="${x.id}">${x.active ? 'Nonaktifkan' : 'Aktifkan'}</button>`}</div>`).join('')}</div>`;
+  if (tab === 'data') body = `<div class="card"><b>Data contoh</b><span class="mut">Semua data prototipe tersimpan di browser ini. Reset untuk kembali ke data awal.</span><button type="button" class="btn red" data-act="reset">Reset data contoh</button></div>
+    <div class="card"><b>Integrasi WhatsApp</b><span class="mut">Belum tersambung. Pesan dikirim lewat link wa.me (buka WhatsApp di HP/PC).</span></div><a class="btn light" href="#/log">Lihat log aktivitas</a>`;
+  return shell('Pengaturan', 'Data master &amp; pengguna', `<div class="chips">${[['pabrik', 'Pabrik'], ['tim', 'Tim'], ['produk', 'Produk & bahan'], ['user', 'Pengguna'], ['data', 'Data']].map(([k, l]) => `<a class="chip ${tab === k ? 'on' : ''}" href="#/master?tab=${k}">${l}</a>`).join('')}</div>${body}
+   <button type="button" class="btn red" data-act="logout">${ic('out', 18)}Keluar</button>`);
+};
+PAGES.log = (p, q, u) => {
+  if (u.role !== 'owner') return go('#/');
+  return shell('Log aktivitas', `${DB.logs.length} catatan`, `<div class="card tight">${DB.logs.slice(0, 150).map(l => `<div class="li" style="align-items:flex-start"><span class="t"><b>${esc(l.action)}</b><span>${esc(U(l.userId)?.name || 'Sistem')} · ${ft(l.at)}${l.old !== null || l.new !== null ? ` · ${esc(String(l.old ?? '-'))} → ${esc(String(l.new ?? '-'))}` : ''}</span></span><span class="pill">${esc(l.entity)}</span></div>`).join('')}</div>`, { back: '#/master?tab=data' });
+};
+PAGES.notif = (p, q, u) => {
+  const list = DB.notifs.filter(n => n.userId === u.id);
+  return shell('Notifikasi', `${list.filter(n => !n.read).length} belum dibaca`, `
+   ${list.some(n => !n.read) ? `<button type="button" class="btn light sm" data-act="readAll">Tandai semua dibaca</button>` : ''}
+   <div class="card tight">${list.map(n => `<a class="li" href="${n.link || '#/'}" data-act="openNotif" data-id="${n.id}" style="${n.read ? '' : 'font-weight:700'}"><span class="t"><b style="${n.read ? 'font-weight:600' : ''}">${esc(n.msg)}</b><span>${ft(n.at)}</span></span>${n.read ? '' : '<span class="badge" style="min-width:10px;height:10px;padding:0"></span>'}</a>`).join('') || '<div class="mut" style="padding:16px 0">Belum ada notifikasi</div>'}</div>`);
+};
+
+/* =================== TRACKING (publik) =================== */
+function pageTrack(tok) {
+  const o = DB.orders.find(x => x.token === tok);
+  if (!o || !tok || tok.length < 32) return `<div class="trk-hero"><div style="font-size:24px;font-weight:800">Pesanan tidak ditemukan</div><div style="margin-top:6px">Periksa kembali link dari invoice Anda.</div></div>`;
+  const s = DB.spks.filter(x => x.orderId === o.id && ['diterima', 'selesai'].includes(x.status)).slice(-1)[0];
+  const inv = invOf(o.id); if (inv) recalc(inv);
+  const cs = curStage(s);
+  const where = o.status === 'batal' ? 'Pesanan dibatalkan' : !s ? (['menunggu_desain', 'revisi_desain'].includes(o.status) ? 'Tahap desain' : 'Menunggu jadwal produksi') : ['selesai_produksi'].includes(o.status) ? 'Selesai diproduksi' : ['dikirim', 'selesai'].includes(o.status) ? 'Sudah dikirim' : cs ? 'Divisi ' + SN[cs.type] : 'Produksi';
+  const admin = DB.users.find(x => x.role === 'admin');
+  const waText = encodeURIComponent(`Halo admin, saya mau tanya pesanan ${o.no}`);
+  return `<div class="trk-hero"><div style="font-size:12px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.85)">[NAMA KONVEKSI] · LACAK PESANAN</div>
+    <div style="margin-top:14px;font-size:13px;color:rgba(255,255,255,.88)">Pesanan Anda sedang di</div>
+    <div style="font-size:28px;line-height:34px;font-weight:800">${where}</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.9);margin-top:4px">${o.no} · ${esc(itemsTxt(o))} · ${qtyOrder(o)} pcs · perkiraan selesai ${fd(o.deadline)}</div></div>
+   <main class="mn" style="max-width:640px;padding-bottom:40px">
+    <div class="card">${s ? timeline(s, true, true) : '<span class="mut">Linimasa produksi muncul setelah pesanan masuk pabrik.</span>'}</div>
+    ${inv ? `<div class="card"><div class="sec">Tagihan ${inv.no}</div>${kv('Total', rp(inv.total))}${kv('Sudah dibayar', `<span style="color:var(--ok)">${rp(inv.paid)}</span>`)}${kv('Sisa', `<b style="color:var(--warn)">${rp(inv.balance)}</b>`)}${kv('Status', pill(INV_ST, inv.status))}</div>` : ''}
+    <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${esc(C(o.customerId).phone)}?text=${waText}">${ic('wa', 18)}Tanya admin via WhatsApp</a>
+    <div class="small center">Halaman ini hanya bisa dibuka lewat link pribadi Anda. Nomor admin di prototipe = nomor contoh.</div>
+   </main>`;
+}
+
+/* =================== PRINT =================== */
+function pagePrint(kind, id) {
+  const u = me();
+  const head = (title, no) => `<div class="noprint" style="position:sticky;top:0;display:flex;gap:10px;padding:12px;background:var(--grad)"><a class="btn light" href="javascript:history.back()" style="width:auto">${ic('back', 18)}Kembali</a><button class="btn" style="width:auto;background:#fff;color:var(--m)" data-act="print">${ic('print', 18)}Cetak / simpan PDF</button></div>
+   <div class="doc"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:3px solid var(--m);padding-bottom:12px"><div><b style="font-size:16px">[NAMA KONVEKSI]</b><div class="small">[alamat usaha] · [no. telepon]</div></div><div style="text-align:right"><h1>${title}</h1><b>${no}</b></div></div>`;
+  const tbl = o => `<table><thead><tr><th>Produk</th><th>Bahan / warna</th><th>Ukuran</th><th class="r">Qty</th>${kind !== 'spk' ? '<th class="r">Harga</th><th class="r">Subtotal</th>' : ''}</tr></thead><tbody>${o.items.map(it => `<tr><td>${esc(it.product)}</td><td>${esc(it.material)} · ${esc(it.color)}</td><td>${SIZES.filter(z => it.sizes[z]).map(z => `${z}:${it.sizes[z]}`).join(' ')}</td><td class="r">${qtyItem(it)}</td>${kind !== 'spk' ? `<td class="r">${rp(it.price)}</td><td class="r">${rp(qtyItem(it) * num(it.price))}</td>` : ''}</tr>`).join('')}</tbody></table>`;
+  if (kind === 'order') { const o = O(id), c = C(o.customerId); return head('ORDER', o.no) + `<p>Kepada: <b>${esc(c.name)}</b> · +${esc(c.phone)}<br>Tanggal: ${fd(o.createdAt.slice(0, 10))} · <b>Tanggal selesai dijanjikan: ${fd(o.deadline)}</b></p>${tbl(o)}<p style="text-align:right">Total <b>${rp(totalOrder(o))}</b><br>DP ${rp(o.dp)}<br>Sisa <b>${rp(totalOrder(o) - o.dp)}</b></p>${o.notes ? `<p>Catatan: ${esc(o.notes)}</p>` : ''}</div>`; }
+  if (kind === 'invoice') { const i = DB.invoices.find(x => x.id === id); recalc(i); const o = O(i.orderId), c = C(o.customerId), url = trackUrl(o); return head('INVOICE', i.no) + `<p>Kepada: <b>${esc(c.name)}</b> · +${esc(c.phone)}<br>Ref. order ${o.no} · Jatuh tempo ${fd(i.due)}</p>${tbl(o)}<div style="display:flex;justify-content:space-between;gap:16px;margin-top:12px"><div><img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=4&data=${encodeURIComponent(url)}" width="120" height="120" alt="QR tracking"><div class="small" style="max-width:260px;word-break:break-all">Lacak pesanan: ${esc(url)}</div></div><div style="text-align:right">Total <b>${rp(i.total)}</b><br>Terbayar ${rp(i.paid)}<br><span style="font-size:18px">Sisa <b>${rp(i.balance)}</b></span><br>Status: ${INV_ST[i.status][0]}</div></div></div>`; }
+  if (kind === 'spk') { const s = DB.spks.find(x => x.id === id), o = O(s.orderId); return head('SURAT PERINTAH KERJA', s.no) + `<p>Kepada: <b>${F(s.factoryId).name}</b> · ${esc(U(F(s.factoryId).headId)?.name)}<br>Ref. order ${o.no} · <b>Deadline SPK: ${fd(s.deadline)}</b></p>${tbl(o)}<p>Tahap: ${s.stages.map(k => SN[k]).join(' → ')}</p>${canPrice(u) || u?.role === 'kepala' ? `<p>Harga produksi: <b>${rp(lastPrice(s))}/pcs</b></p>` : ''}<p>Instruksi: ${esc(s.instructions || '-')}</p><p style="margin-top:48px;display:flex;justify-content:space-between"><span>Manajer Produksi<br><br><br>${esc(U(s.by)?.name)}</span><span>Kepala Pabrik<br><br><br>${esc(U(F(s.factoryId).headId)?.name)}</span></p></div>`; }
+  return '';
+}
+
+/* =================== ACTIONS =================== */
+function finishStage(s, extra) {
+  Object.assign(s, extra, { status: 'selesai', finishedAt: now() });
+  const sp = DB.spks.find(x => x.id === s.spkId), o = O(sp.orderId), all = stagesOf(sp.id);
+  log('tahap', s.id, `${SN[s.type]} selesai (${o.no})`, 'dikerjakan', 'selesai');
+  if (s.rework) {
+    s.rework = false; s.startedAt2 = null;
+    const qc = all.find(x => x.type === 'qc'); qc.status = 'menunggu';
+    notify(T(qc.teamId).leaderId, `Barang rework ${o.no} kembali ke QC`, '#/tugas');
+    return `Rework selesai, barang kembali ke QC`;
+  }
+  const next = all.find(x => x.seq > s.seq && x.status === 'belum');
+  if (next) {
+    next.status = 'menunggu';
+    notify(T(next.teamId).leaderId, `${o.no} masuk ke ${T(next.teamId).name}`, '#/tugas');
+    return `Pindah ke ${SN[next.type]}`;
+  }
+  sp.status = 'selesai'; o.status = 'selesai_produksi';
+  log('order', o.id, `${o.no} selesai produksi`, 'produksi', 'selesai_produksi');
+  notify([...usersBy('admin'), 'u_yudi'], `${o.no} selesai produksi, siap ditagih & dikirim`, '#/order/' + o.id);
+  return 'Produksi selesai, admin diberi tahu';
+}
+function acceptSpk(s, price, msg) {
+  const o = O(s.orderId), u = me();
+  s.agreed = price; s.status = 'diterima';
+  DB.nego.push({ id: uid(), spkId: s.id, by: u.id, price, msg, action: 'terima', at: now() });
+  STAGES.forEach(([k], i) => DB.stages.push({ id: uid(), spkId: s.id, type: k, seq: i + 1, teamId: `t_${s.factoryId}_${k}`, status: s.stages.includes(k) ? 'belum' : 'dilewati', qtyDone: 0, qtyReject: 0, startedAt: null, finishedAt: null, notes: '', rework: false, reworkQty: 0 }));
+  const first = stagesOf(s.id).find(x => x.status === 'belum'); first.status = 'menunggu';
+  o.status = 'produksi';
+  notify(T(first.teamId).leaderId, `${o.no} masuk ke ${T(first.teamId).name}`, '#/tugas');
+  let inv = invOf(o.id);
+  if (inv) { inv.spkId = s.id; log('invoice', inv.id, `Referensi SPK ${inv.no} diganti`, null, s.no); }
+  else {
+    inv = { id: uid(), no: nextNo('INV'), orderId: o.id, spkId: s.id, total: totalOrder(o), paid: 0, balance: 0, due: o.deadline, status: 'belum_bayar', at: now() };
+    DB.invoices.push(inv);
+    if (num(o.dp) > 0) DB.payments.push({ id: uid(), invoiceId: inv.id, type: 'dp', amount: num(o.dp), date: today(), proof: null, by: o.createdBy, at: now() });
+    recalc(inv);
+    log('invoice', inv.id, `${inv.no} terbit otomatis`, null, rp(inv.total));
+  }
+  notify([...usersBy('admin'), ...usersBy('owner')], `${s.no} diterima ${F(s.factoryId).name}. Invoice ${inv.no} terbit, kirim ke WA customer`, '#/invoice/' + inv.id);
+  notify('u_yudi', `${s.no} diterima ${F(s.factoryId).name} di ${rp(price)}/pcs`, '#/spk/' + s.id);
+  log('spk', s.id, `${s.no} diterima`, null, rp(price));
+}
+const ACT = {
+  close: () => closeSheet(),
+  fill: el => { const f = $('form[data-form=login]'); f.email.value = el.dataset.email; f.password.value = PASS; f.scrollIntoView({ behavior: 'smooth' }); f.querySelector('button[type=submit]').focus(); },
+  fillTeam: () => { const f = $('form[data-form=login]'); const fi = $('[name=lgF]').value.replace('p', ''), st = $('[name=lgS]').value.replace('_', ''); f.email.value = `${st}.p${fi}@simpro.id`; f.password.value = PASS; f.scrollIntoView({ behavior: 'smooth' }); },
+  forgot: () => sheet(shHead('Lupa password') + `<span class="mut">Di aplikasi asli, link reset dikirim ke email dan berlaku 60 menit. Di prototipe ini semua akun memakai password <b>${PASS}</b>.</span><button class="btn" data-act="close">Mengerti</button>`),
+  logout: () => { localStorage.removeItem(SKEY); go('#/'); },
+  account: () => { const u = me(); sheet(shHead('Akun') + `<div class="card"><b>${esc(u.name)}</b><span class="mut">${u.email} · ${ROLES[u.role]}${u.factoryId ? ' · ' + F(u.factoryId).name : ''}</span></div><a class="btn light" href="#/notif">${ic('bell', 18)}Notifikasi</a>${u.role === 'owner' ? `<a class="btn light" href="#/log">${ic('clock', 18)}Log aktivitas</a>` : ''}<button class="btn red" data-act="logout">${ic('out', 18)}Keluar</button>`); },
+  moreMenu: () => { const m = MENU[me().role].slice(4); sheet(shHead('Menu lainnya') + m.map(([h, l, i]) => `<a class="btn light" href="${h}" style="justify-content:flex-start">${ic(i, 20)}${l}</a>`).join('') + `<button class="btn red" data-act="logout">${ic('out', 18)}Keluar</button>`); },
+  zoom: el => { const z = document.createElement('div'); z.className = 'zoom'; z.innerHTML = `<img src="${el.src}" alt="${esc(el.alt)}">`; z.onclick = () => z.remove(); document.body.appendChild(z); },
+  print: () => print(),
+  copy: el => { navigator.clipboard?.writeText(el.dataset.text).then(() => toast('Link disalin'), () => toast(el.dataset.text)); },
+  simChat: () => {
+    const samples = [['Bu Maya', 'Kak, bisa bikin kaos keluarga 30 pcs?'], ['Rizky Futsal', 'Jersey futsal 15 set full print berapa?'], ['Pak Darto', 'Seragam batik guru 45 orang bisa?']];
+    const [n, m] = samples[Math.floor(Math.random() * samples.length)];
+    const phone = '6281' + Math.floor(100000000 + Math.random() * 899999999);
+    const cust = DB.customers.find(c => c.phone === phone);
+    DB.chats.push({ id: uid(), customerId: cust?.id || null, phone, name: n, status: 'baru', unread: 1, lastAt: now(), msgs: [{ dir: 'in', body: m, at: now() }] });
+    notify([...usersBy('admin')], `${n} mengirim chat baru`, '#/chat'); save(); render(); toast('Chat masuk (simulasi)');
+  },
+  chatToCust: el => {
+    const c = DB.chats.find(x => x.id === el.dataset.id);
+    let cu = DB.customers.find(x => x.phone === c.phone);
+    if (cu) toast('Nomor sudah terdaftar, ditautkan ke customer lama');
+    else { cu = { id: uid(), name: c.name, phone: c.phone, address: '', email: '' }; DB.customers.push(cu); toast('Customer baru dibuat'); log('customer', cu.id, `Customer ${cu.name} dibuat dari chat`); }
+    c.customerId = cu.id; save(); render();
+  },
+  chatToOrder: el => {
+    const c = DB.chats.find(x => x.id === el.dataset.id);
+    if (!c.customerId) { let cu = DB.customers.find(x => x.phone === c.phone); if (!cu) { cu = { id: uid(), name: c.name, phone: c.phone, address: '', email: '' }; DB.customers.push(cu); } c.customerId = cu.id; }
+    if (c.status === 'baru') c.status = 'diproses';
+    save(); DRAFT = null; go('#/order/new?c=' + c.customerId);
+  },
+  custNew: () => sheet(shHead('Customer baru') + `<form data-form="custSave" style="display:flex;flex-direction:column;gap:12px">${fld('Nama', 'name', '', { req: 1 })}${fld('No. WhatsApp', 'phone', '', { req: 1, num: 1, ph: '62812…' })}${fld('Alamat', 'address', '', { area: 1 })}<button class="btn">Simpan</button></form>`),
+  addItem: () => { readDraft($('form[data-form=orderSave]')); DRAFT.items.push(blankItem()); render(); },
+  delItem: el => { readDraft($('form[data-form=orderSave]')); DRAFT.items.splice(+el.dataset.i, 1); render(); },
+  cancelOrder: el => sheet(shHead('Batalkan order') + `<form data-form="cancelOrder" data-id="${el.dataset.id}" style="display:flex;flex-direction:column;gap:12px">${fld('Alasan pembatalan', 'reason', '', { req: 1, area: 1 })}<button class="btn red">Batalkan order</button></form>`),
+  ship: el => { const o = O(el.dataset.id); o.status = 'dikirim'; log('order', o.id, `${o.no} dikirim`, 'selesai_produksi', 'dikirim'); save(); render(); toast('Order ditandai dikirim'); },
+  finishOrder: el => { const o = O(el.dataset.id); o.status = 'selesai'; log('order', o.id, `${o.no} selesai`, 'dikirim', 'selesai'); save(); render(); toast('Order selesai'); },
+  desApprove: el => {
+    const d = DB.designs.find(x => x.id === el.dataset.id), o = O(d.orderId);
+    designsOf(o.id).forEach(x => x.final = false); d.status = 'disetujui'; d.final = true; o.status = 'siap_spk';
+    log('desain', d.id, `Desain v${d.version} ${o.no} disetujui`, 'diajukan', 'disetujui');
+    notify(['u_yudi'], `${o.no} siap SPK (desain v${d.version} final)`, '#/spk/new/' + o.id); notify(d.by, `Desain v${d.version} ${o.no} disetujui`, '#/design/' + o.id);
+    save(); render(); toast('Desain final. Order siap SPK');
+  },
+  desRevise: el => sheet(shHead('Minta revisi') + `<form data-form="desRevise" data-id="${el.dataset.id}" style="display:flex;flex-direction:column;gap:12px">${fld('Apa yang perlu diubah?', 'body', '', { req: 1, area: 1 })}<button class="btn red">Kirim permintaan revisi</button></form>`),
+  stStart: el => { const s = DB.stages.find(x => x.id === el.dataset.id); if (s.status === 'rework') s.startedAt2 = now(); else { s.status = 'dikerjakan'; s.startedAt = now(); } log('tahap', s.id, `${SN[s.type]} mulai`, 'menunggu', 'dikerjakan'); save(); render(); toast('Tahap dimulai'); },
+  stFinish: el => {
+    const s = DB.stages.find(x => x.id === el.dataset.id), sp = DB.spks.find(x => x.id === s.spkId), o = O(sp.orderId);
+    const qty = s.status === 'rework' ? s.reworkQty : qtyOrder(o);
+    sheet(shHead(`Selesaikan ${SN[s.type]}`) + `<form data-form="stFinish" data-id="${s.id}" style="display:flex;flex-direction:column;gap:12px"><span class="mut">${o.no} · ${qty} pcs</span>
+      <div class="row">${fld('Jumlah selesai', 'done', qty, { num: 1, req: 1 })}${fld('Reject', 'reject', 0, { num: 1 })}</div>
+      <label class="btn ghost" for="phIn">${ic('camera', 18)}Ambil / pilih foto progres (wajib)</label><input id="phIn" type="file" name="photos" accept="image/*" capture="environment" multiple class="hidden" data-change="photoPrev">
+      <div id="phPrev" class="photos"></div>
+      ${fld('Keterangan foto', 'caption', `Hasil ${SN[s.type]}`)}${fld('Catatan (opsional)', 'notes', '', { ph: 'Misal: 2 pcs XL kurang kancing' })}
+      <div id="phErr" class="alert bad hidden" role="alert">Foto progres wajib diunggah</div>
+      <button class="btn ok">Simpan &amp; kirim ke tahap berikutnya</button></form>`);
+  },
+  qcForm: el => {
+    const s = DB.stages.find(x => x.id === el.dataset.id), sp = DB.spks.find(x => x.id === s.spkId), o = O(sp.orderId);
+    const prev = stagesOf(sp.id).filter(x => x.seq < s.seq && x.status === 'selesai');
+    sheet(shHead('Hasil QC') + `<form data-form="qcSave" data-id="${s.id}" style="display:flex;flex-direction:column;gap:12px"><span class="mut">${o.no} · ${qtyOrder(o)} pcs masuk QC</span>
+      <div class="row">${fld('Lolos', 'pass', qtyOrder(o), { num: 1, req: 1 })}${fld('Reject', 'reject', 0, { num: 1, req: 1 })}</div>
+      ${fld('Alasan reject', 'reason', '', { ph: 'Jahitan miring, noda, salah ukuran…' })}
+      ${fld('Kirim rework ke tahap', 'target', prev.slice(-1)[0]?.id, { sel: prev.map(x => [x.id, `${SN[x.type]} · ${T(x.teamId).name}`]) })}
+      <label class="btn ghost" for="phIn">${ic('camera', 18)}Ambil / pilih foto (wajib)</label><input id="phIn" type="file" name="photos" accept="image/*" capture="environment" multiple class="hidden" data-change="photoPrev">
+      <div id="phPrev" class="photos"></div>
+      <div id="phErr" class="alert bad hidden" role="alert">Foto wajib diunggah</div>
+      <div class="alert warn">Reject &gt; 0 → barang dikirim ke tahap tujuan sebagai Rework, QC menunggu barang kembali</div>
+      <button class="btn ok">Simpan hasil QC</button></form>`);
+  },
+  sendWa: el => {
+    const i = DB.invoices.find(x => x.id === el.dataset.id), o = O(i.orderId), c = C(o.customerId);
+    const msg = `Halo ${c.name},\n\nBerikut invoice pesanan Anda:\nNo. invoice: ${i.no}\nOrder: ${o.no} (${itemsTxt(o)}, ${qtyOrder(o)} pcs)\nTotal: ${rp(i.total)}\nTerbayar: ${rp(i.paid)}\nSisa: ${rp(i.balance)}\nJatuh tempo: ${fd(i.due)}\n\nLacak pesanan & foto progres:\n${trackUrl(o)}\n\nTerima kasih.`;
+    log('invoice', i.id, `${i.no} dikirim ke WA`); save();
+    open(`https://wa.me/${c.phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  },
+  toggleUser: el => { const x = U(el.dataset.id); x.active = !x.active; log('user', x.id, `${x.name} ${x.active ? 'diaktifkan' : 'dinonaktifkan'}`); save(); render(); },
+  reset: () => sheet(shHead('Reset data contoh?') + `<span class="mut">Semua order, foto, dan perubahan di browser ini akan dihapus dan diganti data awal.</span><button class="btn red" data-act="resetYes">Ya, reset</button>`),
+  resetYes: () => { localStorage.removeItem(KEY); localStorage.removeItem(SKEY); DRAFT = null; load(); go('#/'); toast('Data contoh di-reset'); },
+  readAll: () => { DB.notifs.forEach(n => { if (n.userId === me().id) n.read = true; }); save(); render(); },
+  openNotif: el => { const n = DB.notifs.find(x => x.id === el.dataset.id); n.read = true; save(); go(n.link || '#/'); },
+  exportCsv: () => {
+    const r = window.__report; if (!r) return;
+    const csv = '﻿' + r.rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = r.name + '.csv'; a.click();
+    toast('File CSV diunduh (bisa dibuka di Excel)');
+  },
+};
+const CHANGE = {
+  chatStatus: el => { const c = DB.chats.find(x => x.id === el.dataset.id); log('chat', c.id, `Status chat ${c.name}`, c.status, el.value); c.status = el.value; save(); toast('Status chat diperbarui'); },
+  custPick: el => $('#newCust').classList.toggle('hidden', !!el.value),
+  repFilter: el => { const h = new URLSearchParams(location.hash.split('?')[1] || ''); h.set(el.dataset.k, el.value); go('#/laporan?' + h); },
+  photoPrev: el => { const pv = $('#phPrev'); pv.innerHTML = ''; [...el.files].forEach(f => { const im = document.createElement('img'); im.className = 'ph'; im.alt = 'Pratinjau foto'; im.src = URL.createObjectURL(f); pv.appendChild(im); }); $('#phErr')?.classList.add('hidden'); },
+};
+const FORM = {
+  login: f => {
+    const u = DB.users.find(x => x.email.toLowerCase() === f.email.value.trim().toLowerCase());
+    if (!u || f.password.value !== PASS) { $('#lgErr').textContent = 'Email atau password salah'; return $('#lgErr').classList.remove('hidden'); }
+    if (!u.active) { $('#lgErr').textContent = 'Akun dinonaktifkan Owner'; return $('#lgErr').classList.remove('hidden'); }
+    localStorage.setItem(SKEY, u.id); go(u.role === 'ketua' ? '#/tugas' : '#/'); toast(`Masuk sebagai ${ROLES[u.role]}`);
+  },
+  chatSearch: f => go('#/chat?q=' + encodeURIComponent(f.q.value)),
+  custSearch: f => go('#/customers?q=' + encodeURIComponent(f.q.value)),
+  orderSearch: f => go(`#/orders?st=${f.st.value}&q=${encodeURIComponent(f.q.value)}`),
+  chatReply: f => { const c = DB.chats.find(x => x.id === f.dataset.id); c.msgs.push({ dir: 'out', body: f.body.value, at: now(), by: me().id }); c.lastAt = now(); if (c.status === 'baru') c.status = 'diproses'; save(); render(); toast('Terkirim (simulasi)'); },
+  custSave: f => {
+    const phone = f.phone.value.replace(/\D/g, '').replace(/^0/, '62');
+    const dup = DB.customers.find(c => c.phone === phone && c.id !== f.dataset.id);
+    if (dup) return toast('Nomor sudah dipakai ' + dup.name);
+    if (f.dataset.id) { const c = C(f.dataset.id); Object.assign(c, { name: f.name.value, phone, address: f.address.value, email: f.email?.value || '' }); log('customer', c.id, 'Customer diubah'); }
+    else { const c = { id: uid(), name: f.name.value, phone, address: f.address.value, email: '' }; DB.customers.push(c); log('customer', c.id, `Customer ${c.name} dibuat`); }
+    save(); closeSheet(); render(); toast('Customer disimpan');
+  },
+  orderSave: f => {
+    const d = readDraft(f), err = $('#ordErr'), u = me();
+    const fail = m => { err.textContent = m; err.classList.remove('hidden'); err.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    if (!d.customerId && (!d.newName.trim() || !d.newPhone.trim())) return fail('Pilih customer atau isi nama & nomor customer baru');
+    if (d.items.some(it => qtyItem(it) <= 0)) return fail('Jumlah setiap item harus lebih dari 0');
+    if (d.items.some(it => num(it.price) <= 0)) return fail('Isi harga jual per pcs');
+    if (daysTo(d.deadline) <= 0) return fail('Deadline order harus setelah hari ini');
+    if (daysTo(d.deadline) < 6) return fail('Deadline terlalu dekat: deadline SPK (−5 hari) sudah lewat');
+    let cid = d.customerId;
+    if (!cid) { const phone = d.newPhone.replace(/\D/g, '').replace(/^0/, '62'); let c = DB.customers.find(x => x.phone === phone); if (!c) { c = { id: uid(), name: d.newName.trim(), phone, address: '', email: '' }; DB.customers.push(c); } cid = c.id; }
+    const o = { id: uid(), no: nextNo('ORD'), customerId: cid, items: d.items.map(it => ({ ...it, price: num(it.price) })), needsBordir: d.b, needsSablon: d.s, needsApd: d.a, deadline: d.deadline, dp: num(d.dp), status: 'menunggu_desain', notes: d.notes, token: token(), createdAt: now(), createdBy: u.id, cancelReason: '' };
+    if (o.dp > totalOrder(o)) return fail('DP melebihi total');
+    DB.orders.push(o); DRAFT = null;
+    log('order', o.id, `${o.no} dibuat`, null, rp(totalOrder(o)));
+    notify(usersBy('designer'), `Order baru menunggu desain: ${o.no} · ${C(cid).name}`, '#/design/' + o.id);
+    save(); go('#/order/' + o.id); toast('Order disimpan. Designer diberi tahu');
+  },
+  cancelOrder: f => { const o = O(f.dataset.id); log('order', o.id, `${o.no} dibatalkan`, o.status, 'batal'); o.status = 'batal'; o.cancelReason = f.reason.value; DB.spks.filter(s => s.orderId === o.id && ['dikirim', 'negosiasi'].includes(s.status)).forEach(s => { s.status = 'ditolak'; s.reason = 'Order dibatalkan'; }); save(); closeSheet(); render(); toast('Order dibatalkan'); },
+  desUpload: async f => {
+    const file = f.file.files[0]; if (!file) return;
+    if (file.size > 20 * 1024 * 1024) return toast('File maksimal 20 MB');
+    const o = O(f.dataset.id), v = designsOf(o.id).length + 1, src = await fileToData(file, 1100, 0.72);
+    const d = { id: uid(), orderId: o.id, version: v, name: file.name, src, status: 'diajukan', final: false, by: me().id, at: now(), note: f.note.value };
+    DB.designs.push(d); if (o.status === 'revisi_desain') o.status = 'menunggu_desain';
+    log('desain', d.id, `Desain v${v} ${o.no} diunggah`);
+    notify(usersBy('admin'), `Desain v${v} ${o.no} diunggah ${me().name}`, '#/design/' + o.id);
+    save(); go(`#/design/${o.id}?v=${d.id}`); toast(`Versi ${v} diunggah`);
+  },
+  desComment: f => { const d = DB.designs.find(x => x.id === f.dataset.id), o = O(d.orderId); DB.comments.push({ id: uid(), designId: d.id, by: me().id, body: f.body.value, at: now() }); notify(me().role === 'designer' ? usersBy('admin') : [d.by], `Komentar baru di desain v${d.version} ${o.no}`, `#/design/${o.id}?v=${d.id}`); save(); render(); },
+  desRevise: f => { const d = DB.designs.find(x => x.id === f.dataset.id), o = O(d.orderId); d.status = 'revisi'; o.status = 'revisi_desain'; DB.comments.push({ id: uid(), designId: d.id, by: me().id, body: 'Revisi: ' + f.body.value, at: now() }); log('desain', d.id, `Revisi desain v${d.version} ${o.no}`, 'diajukan', 'revisi'); notify(d.by, `Revisi diminta untuk ${o.no} v${d.version}`, '#/design/' + o.id); save(); closeSheet(); render(); toast('Permintaan revisi dikirim ke designer'); },
+  spkSave: f => {
+    const o = O(f.dataset.id), err = $('#spkErr'), dl0 = addDays(o.deadline, -5);
+    const fail = m => { err.textContent = m; err.classList.remove('hidden'); err.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    const fid = (f.querySelector('[name=factoryId]:checked') || {}).value; if (!fid) return fail('Pilih pabrik');
+    if (f.deadline.value !== dl0 && !f.deadlineReason.value.trim()) return fail('Deadline SPK diubah, isi alasannya');
+    if (f.deadline.value > o.deadline) return fail('Deadline SPK tidak boleh setelah deadline order');
+    if (num(f.proposed.value) <= 0) return fail('Isi harga produksi usulan');
+    const stages = STAGES.map(([k]) => k).filter(k => !OPTIONAL.includes(k) || f['st_' + k].checked);
+    const s = { id: uid(), no: nextNo('SPK'), orderId: o.id, factoryId: fid, deadline: f.deadline.value, deadlineReason: f.deadlineReason.value, proposed: num(f.proposed.value), agreed: null, instructions: f.instructions.value, stages, status: 'dikirim', by: me().id, at: now(), reason: '' };
+    DB.spks.push(s); DB.nego.push({ id: uid(), spkId: s.id, by: me().id, price: s.proposed, msg: '', action: 'usul', at: now() });
+    log('spk', s.id, `${s.no} diterbitkan ke ${F(fid).name}`, null, rp(s.proposed));
+    notify(F(fid).headId, `SPK baru ${s.no} dari ${me().name}`, '#/spk/' + s.id);
+    save(); go('#/spk/' + s.id); toast('SPK dikirim ke ' + F(fid).name);
+  },
+  negoKepala: (f, e) => {
+    const s = DB.spks.find(x => x.id === f.dataset.id), act = e.submitter?.value, price = num(f.price.value), msg = f.msg.value.trim(), u = me();
+    if (act === 'terima') { acceptSpk(s, lastPrice(s), msg); save(); render(); return toast('SPK diterima. Produksi mulai di Kain, invoice terbit'); }
+    if (act === 'tawar') { if (price <= 0) return toast('Isi harga tawaran'); DB.nego.push({ id: uid(), spkId: s.id, by: u.id, price, msg, action: 'tawar', at: now() }); s.status = 'negosiasi'; s.agreed = null; log('spk', s.id, `${s.no} ditawar`, rp(lastPrice(s)), rp(price)); notify('u_yudi', `${F(s.factoryId).name} menawar ${s.no} jadi ${rp(price)}/pcs`, '#/spk/' + s.id); save(); render(); return toast('Tawaran dikirim ke Manajer Produksi'); }
+    if (act === 'tolak') { if (!msg) return toast('Isi alasan penolakan'); DB.nego.push({ id: uid(), spkId: s.id, by: u.id, price: lastPrice(s), msg, action: 'tolak', at: now() }); s.status = 'ditolak'; s.reason = msg; log('spk', s.id, `${s.no} ditolak`, null, msg); notify('u_yudi', `${s.no} ditolak ${F(s.factoryId).name}: ${msg}`, '#/spk/' + s.id); save(); render(); return toast('SPK ditolak'); }
+  },
+  negoManajer: (f, e) => {
+    const s = DB.spks.find(x => x.id === f.dataset.id), act = e.submitter?.value, price = num(f.price.value), msg = f.msg.value.trim(), u = me(), last = DB.nego.filter(n => n.spkId === s.id).slice(-1)[0];
+    if (act === 'setuju') { DB.nego.push({ id: uid(), spkId: s.id, by: u.id, price: last.price, msg: msg || 'Harga disetujui, silakan terima SPK', action: 'setuju', at: now() }); s.status = 'dikirim'; log('spk', s.id, `Harga ${s.no} disetujui`, null, rp(last.price)); }
+    else { if (price <= 0) return toast('Isi harga tawar balik'); DB.nego.push({ id: uid(), spkId: s.id, by: u.id, price, msg, action: 'tawar', at: now() }); s.status = 'negosiasi'; log('spk', s.id, `${s.no} tawar balik`, rp(last.price), rp(price)); }
+    notify(F(s.factoryId).headId, `Tanggapan Pak Yudi untuk ${s.no}`, '#/spk/' + s.id); save(); render(); toast('Terkirim ke kepala pabrik');
+  },
+  stFinish: async f => {
+    const s = DB.stages.find(x => x.id === f.dataset.id), files = [...f.photos.files];
+    if (!files.length) return $('#phErr').classList.remove('hidden');
+    const btn = f.querySelector('button.ok'); btn.disabled = true; btn.textContent = 'Menyimpan foto…';
+    for (const file of files.slice(0, 4)) { const src = await fileToData(file, 1000, 0.62); if (src) DB.photos.push({ id: uid(), stageId: s.id, src, caption: f.caption.value, at: now(), by: me().id }); }
+    const msg = finishStage(s, { qtyDone: num(f.done.value), qtyReject: num(f.reject.value), notes: f.notes.value });
+    save(); closeSheet(); render(); toast(msg);
+  },
+  qcSave: async f => {
+    const s = DB.stages.find(x => x.id === f.dataset.id), files = [...f.photos.files], pass = num(f.pass.value), rej = num(f.reject.value);
+    if (!files.length) return $('#phErr').classList.remove('hidden');
+    if (rej > 0 && !f.target.value) return toast('Pilih tahap tujuan rework');
+    if (rej > 0 && !f.reason.value.trim()) return toast('Isi alasan reject');
+    const btn = f.querySelector('button.ok'); btn.disabled = true; btn.textContent = 'Menyimpan…';
+    for (const file of files.slice(0, 4)) { const src = await fileToData(file, 1000, 0.62); if (src) DB.photos.push({ id: uid(), stageId: s.id, src, caption: 'QC', at: now(), by: me().id }); }
+    DB.qc.push({ id: uid(), stageId: s.id, pass, reject: rej, reason: f.reason.value, reworkStageId: rej > 0 ? f.target.value : null, at: now() });
+    s.qtyDone = pass; s.qtyReject = (s.qtyReject || 0) + rej;
+    if (rej > 0) {
+      const t = DB.stages.find(x => x.id === f.target.value), o = O(DB.spks.find(x => x.id === s.spkId).orderId);
+      Object.assign(t, { status: 'rework', rework: true, reworkQty: rej, reworkReason: f.reason.value, startedAt2: null });
+      s.status = 'menunggu_rework';
+      log('qc', s.id, `QC ${o.no}: ${rej} reject → rework ${SN[t.type]}`, null, f.reason.value);
+      notify(T(t.teamId).leaderId, `Rework ${rej} pcs ${o.no} dari QC: ${f.reason.value}`, '#/tugas');
+      save(); closeSheet(); render(); return toast(`${rej} pcs dikirim ke ${SN[t.type]} sebagai rework`);
+    }
+    const msg = finishStage(s, {}); save(); closeSheet(); render(); toast('QC lolos. ' + msg);
+  },
+  payment: async f => {
+    const i = DB.invoices.find(x => x.id === f.dataset.id), amt = num(f.amount.value);
+    if (amt <= 0) return toast('Isi jumlah pembayaran');
+    if (amt > i.balance) return toast('Jumlah melebihi sisa tagihan ' + rp(i.balance));
+    const proof = await fileToData(f.proof.files[0], 900, 0.6);
+    const before = i.status;
+    DB.payments.push({ id: uid(), invoiceId: i.id, type: f.querySelector('[name=type]:checked').value, amount: amt, date: f.date.value, proof, by: me().id, at: now() });
+    recalc(i); log('pembayaran', i.id, `Bayar ${i.no}`, before, `${rp(amt)} → ${INV_ST[i.status][0]}`);
+    notify(usersBy('owner'), `Pembayaran ${rp(amt)} masuk untuk ${i.no}`, '#/invoice/' + i.id);
+    save(); render(); toast(i.status === 'lunas' ? 'Invoice lunas' : 'Pembayaran dicatat');
+  },
+  addMaster: f => { const k = f.dataset.k, v = f.v.value.trim(); if (v && !DB[k].includes(v)) DB[k].push(v); log('master', null, `Tambah ${k === 'products' ? 'produk' : 'bahan'} ${v}`); save(); render(); },
+  addFactory: f => {
+    const n = DB.factories.length + 1, fid = 'p' + n + uid().slice(0, 3);
+    DB.factories.push({ id: fid, name: f.name.value, address: '', headId: 'u_head_' + fid, active: true });
+    DB.users.push({ id: 'u_head_' + fid, name: f.head.value, email: `pabrik${n}@simpro.id`, role: 'kepala', active: true, factoryId: fid, teamId: null });
+    STAGES.forEach(([k, nm]) => { const tid = `t_${fid}_${k}`, lid = `u_${fid}_${k}`; DB.teams.push({ id: tid, name: 'Tim ' + nm, factoryId: fid, stage: k, leaderId: lid }); DB.users.push({ id: lid, name: `Ketua ${nm} (${f.name.value})`, email: `${k.replace('_', '')}.p${n}@simpro.id`, role: 'ketua', active: true, factoryId: fid, teamId: tid }); });
+    log('master', fid, `Pabrik ${f.name.value} ditambahkan`); save(); render(); toast(`${f.name.value} + 9 tim dibuat. Login kepala: pabrik${n}@simpro.id`);
+  },
+};
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  const act = a.dataset.act; if (!ACT[act]) return;
+  if (a.tagName === 'A') e.preventDefault();
+  ACT[act](a, e);
+});
+document.addEventListener('submit', e => { const f = e.target; const k = f.dataset.form; if (!k || !FORM[k]) return; e.preventDefault(); FORM[k](f, e); });
+document.addEventListener('change', e => { const k = e.target.dataset.change; if (k && CHANGE[k]) CHANGE[k](e.target); });
+document.addEventListener('input', e => { if (e.target.dataset.calc) calcOrderForm(); });
+document.addEventListener('contextmenu', e => { if (!e.target.closest('input,textarea,.selectable')) e.preventDefault(); });
+load();
+render();
+new MutationObserver(() => { if ($('form[data-form=orderSave]') && $('#sum') && !$('#sum').innerHTML) calcOrderForm(); }).observe($('#root'), { childList: true });
+</script>
+</body>
+</html>
