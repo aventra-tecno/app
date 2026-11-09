@@ -17,7 +17,7 @@ function annCards(items) {
 export function renderLogin(root, { recovery = false } = {}) {
   root.innerHTML = `<div class="login">
     <section class="login-brand">
-      <div class="brand-mark"><span class="logo" id="lg-ini">SG</span><span id="lg-name">${esc(APP_NAME)}</span></div>
+      <div class="brand-mark"><span class="logo logo-img" id="lg-ini"><img src="assets/logo.svg" alt="" width="44" height="44"></span><span id="lg-name">${esc(APP_NAME)}</span></div>
       <div class="ann-wrap">
         <div class="ann-head"><span>${icon('bell', 18)} Pengumuman</span><span class="ann-date">${esc(dayStr())}</span></div>
         <div class="ann-list" id="ann-desk"><div class="ann-empty">Memuat…</div></div>
@@ -27,7 +27,7 @@ export function renderLogin(root, { recovery = false } = {}) {
     <section class="login-side">
       <div class="login-card">
         <div class="login-top">
-          <div class="brand-mark"><span class="logo" id="lg-ini-m">SG</span><div><b id="lg-name-m">${esc(APP_NAME)}</b><div class="lt-date">${esc(dayStr())}</div></div></div>
+          <div class="brand-mark"><span class="logo logo-img" id="lg-ini-m"><img src="assets/logo.svg" alt="" width="44" height="44"></span><div><b id="lg-name-m">${esc(APP_NAME)}</b><div class="lt-date">${esc(dayStr())}</div></div></div>
         </div>
         <div id="login-body"></div>
         <section class="ann-mobile hidden" id="ann-mob-wrap"><div class="ann-head"><span>${icon('bell', 18)} Pengumuman</span></div><div class="ann-list" id="ann-mob"></div></section>
@@ -50,7 +50,6 @@ export function renderLogin(root, { recovery = false } = {}) {
     if (error || !data) { root.querySelector('#ann-desk').innerHTML = annCards([]); return; }
     const name = data.nama_toko || APP_NAME;
     ['#lg-name', '#lg-name-m'].forEach((s) => { const e = root.querySelector(s); if (e) e.textContent = name; });
-    ['#lg-ini', '#lg-ini-m'].forEach((s) => { const e = root.querySelector(s); if (e) e.textContent = initials(name); });
     const items = data.items || [];
     root.querySelector('#ann-desk').innerHTML = annCards(items);
     if (items.length) { root.querySelector('#ann-mob').innerHTML = annCards(items); root.querySelector('#ann-mob-wrap').classList.remove('hidden'); }
@@ -134,7 +133,7 @@ function newPasswordForm(body) {
 
 export function renderPending(root, profile) {
   root.innerHTML = `<div class="login"><section class="login-side"><div class="login-card stack">
-    <div class="brand-mark"><span class="logo" style="width:44px;height:44px;border-radius:12px;background:var(--accent);display:grid;place-items:center">SG</span>${esc(APP_NAME)}</div>
+    <div class="brand-mark"><span class="logo logo-img"><img src="assets/logo.svg" alt="" width="44" height="44"></span>${esc(APP_NAME)}</div>
     <h2>${profile && profile.active === false ? 'Akun dinonaktifkan' : 'Akun menunggu jabatan'}</h2>
     <p class="muted" style="margin:0">Halo ${esc(profile?.full_name || '')}, akunmu sudah terdaftar tetapi belum diberi jabatan oleh owner (atau sedang dinonaktifkan). Minta owner membuka menu <b>Pegawai &amp; jabatan</b>.</p>
     <button class="btn btn-lg" id="po">Keluar</button>
