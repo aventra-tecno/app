@@ -311,3 +311,13 @@ export const STATUS_LABEL = {
   dikirim: ['Dikirim', 'green'], selesai: ['Selesai', 'green'], cancel: ['Cancel', 'red'], retur: ['Retur', 'red']
 };
 export const statusTag = (s) => { const [l, c] = STATUS_LABEL[s] || [s, '']; return `<span class="tag ${c}">${esc(l)}</span>`; };
+
+// 2.30: kombinasi warna aplikasi — 'biru' (navy, bawaan) atau 'hitam' (hitam + kuning). Dipilih owner di Pengaturan.
+export const THEMES = { biru: { label: 'Biru', bar: '#26348B' }, hitam: { label: 'Hitam', bar: '#1A1D1B' } };
+export function applyTheme(t) {
+  const th = THEMES[t] ? t : 'biru';
+  document.documentElement.dataset.theme = th;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEMES[th].bar);
+  try { localStorage.setItem('ui-theme', th); } catch (_) {}
+  return th;
+}
