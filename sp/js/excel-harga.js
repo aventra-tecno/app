@@ -86,7 +86,7 @@ export function buildHargaBook({ products, stores = [], rows = [], settings = {}
   const cN = cs({ h: 'center' }), cT = cs({ fmt: '@' }), cTx = cs({}), cR = cs({ fmt: RP }), cRz = cs({ fmt: RP, fill: RED_SOFT }), cP = cs({ fmt: '0%', h: 'center' });
   pl.forEach((p, i) => {
     const r = PL_HEAD + 1 + i;
-    const R = supOf(p), d = p.diskon_pct ?? (p.price_group === 'set' ? Number(R.diskon_set_pct) : Number(R.diskon_beli_pct));
+    const R = supOf(p), d = p.diskon_pct ?? (p.price_group === 'set' ? Number(R.diskon_set_pct) : p.price_group === 'tanpa' ? 0 : Number(R.diskon_beli_pct));
     ws.set(r, 1, i + 1, cN); ws.set(r, 2, String(p.sku || ''), cT); ws.set(r, 3, p.name || '', cTx); ws.set(r, 4, p.category || '', cTx); ws.set(r, 5, R.name, cN);
     ws.set(r, 6, Number(p.macallan || 0), cR); ws.set(r, 7, Number(p.harga_beli || 0), Number(p.harga_beli) ? cR : cRz);
     ws.set(r, 8, Number(p.harga_shopee || 0), cR); ws.set(r, 9, Number(d || 0) / 100, cP); ws.set(r, 10, p.price_locked ? 'YA' : '', cN);
