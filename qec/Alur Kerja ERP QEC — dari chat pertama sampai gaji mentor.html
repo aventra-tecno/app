@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alur Kerja ERP QEC — dari chat pertama sampai gaji mentor</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--pri:#0E7C7A;--ink:#10302F;--mut:#4F6766;--line:#DCEBEA;--bg:#F1F8F8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Open Sans',system-ui,sans-serif}
+h1,h2,h3,svg text{font-family:'Poppins','Open Sans',system-ui,sans-serif}
+header{position:relative;overflow:hidden;color:#fff;background:linear-gradient(135deg,#0E8A88,#20B7B5 65%,#32BDBB);padding:26px 28px 30px}
+header::before{content:"";position:absolute;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.09);right:-90px;top:-140px}
+header h1{margin:0;font-size:26px;font-weight:800;position:relative}
+header p{margin:6px 0 0;font-size:14.5px;font-weight:700;color:#F1F804;position:relative}
+.legend{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:16px;font-size:13px;position:relative}
+.legend span{display:flex;align-items:center;gap:8px}
+.wrap{overflow-x:auto;padding:20px 20px 10px}
+.wrap svg{display:block;min-width:2240px;width:2240px;height:auto;background:#fff;border:1px solid var(--line);border-radius:18px}
+.hint{font-size:12.5px;color:var(--mut);padding:0 24px}
+section{max-width:1100px;margin:10px auto 40px;padding:0 20px}
+h2{font-size:18px;margin:26px 0 10px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.ph{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px}
+.ph h3{margin:0 0 10px;font-size:15px}
+.ph ol{margin:0;padding-left:20px;font-size:13.5px;line-height:1.55;color:#2A3050}
+.ph li b{color:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Alur kerja ERP QEC</h1>
+  <p>Dari chat WhatsApp pertama sampai gaji mentor dibayar, dalam 6 fase dan 7 aktor.</p>
+  <div class="legend">
+    <span><svg width="44" height="10" aria-hidden="true"><line x1="0" y1="5" x2="36" y2="5" stroke="#fff" stroke-width="2"/><path d="M36 1l7 4-7 4z" fill="#fff"/></svg>Alur utama (otomatis)</span>
+    <span><svg width="44" height="10" aria-hidden="true"><line x1="0" y1="5" x2="36" y2="5" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/><path d="M36 1l7 4-7 4z" fill="#fff"/></svg>Opsional / eskalasi</span>
+    <span><svg width="18" height="18" aria-hidden="true"><path d="M9 1l8 8-8 8-8-8z" fill="none" stroke="#fff" stroke-width="2"/></svg>Keputusan</span>
+  </div>
+</header>
+<div class="wrap"><svg id="dia" viewBox="0 0 2240 980" role="img" aria-label="Diagram swimlane alur kerja ERP QEC"></svg></div>
+<p class="hint">Geser ke samping untuk melihat seluruh alur..</p>
+
+<section>
+  <h2>Rincian langkah</h2>
+  <div class="steps" id="steps"></div>
+</section>
+
+<script>
+/* ===== aktor (jalur) ===== */
+const LANES = [
+  {k:'santri', n:'Santri / Wali', c:'#0E8A88', ic:'santri'},
+  {k:'bot',    n:'Bot WhatsApp',  c:'#1E9E4F', ic:'bot'},
+  {k:'cs',     n:'CS / Media',    c:'#7C3AED', ic:'cs'},
+  {k:'owner',  n:'Owner (Ricky)', c:'#C2410C', ic:'owner'},
+  {k:'mentor', n:'Mentor',        c:'#2563EB', ic:'mentor'},
+  {k:'keu',    n:'Keuangan',      c:'#B45309', ic:'keu'},
+  {k:'sys',    n:'Sistem ERP',    c:'#475569', ic:'sys'}
+];
+const PHASES = ['Tanya & daftar','Bayar','Matching mentor','Belajar','Perpanjangan','Gaji & laporan'];
+const ICONS = {
+  santri:'<circle cx="12" cy="7" r="3.5"/><path d="M8.5 5.5c1-2 6-2 7 0"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/><path d="M9 15l3 2 3-2"/>',
+  bot:'<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 17h5"/><circle cx="12" cy="3.5" r="1"/>',
+  cs:'<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19c0 1.5-2 2.5-5 2.5"/>',
+  owner:'<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/><path d="M5 19h14"/>',
+  mentor:'<circle cx="12" cy="6" r="3"/><path d="M6 13c1.5-2 10.5-2 12 0"/><path d="M3 15h7a2 2 0 0 1 2 2v4a2 2 0 0 0-2-2H3zM21 15h-7a2 2 0 0 0-2 2v4a2 2 0 0 1 2-2h7z"/>',
+  keu:'<rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18"/><circle cx="16" cy="15" r="1.6"/>',
+  sys:'<ellipse cx="12" cy="5.5" rx="7.5" ry="2.5"/><path d="M4.5 5.5v13c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5v-13M4.5 12c0 1.4 3.4 2.5 7.5 2.5s7.5-1.1 7.5-2.5"/>'
+};
+
+/* ===== geometri ===== */
+const LX = 190, COL = 170, BW = 150, BH = 58, TOP = 70, LH = 125;
+const cx = k => LX + k*COL + COL/2;
+const cy = l => TOP + l*LH + LH/2;
+
+/* ===== langkah: [no, kolom, jalur, teks] ===== */
+const S = [
+  [1, 0,0,'Chat WA /\nklik iklan'],
+  [2, 0,1,'Balas < 1 menit\n+ katalog paket'],
+  [3, 1,0,'Pilih paket,\ndurasi, 4/8 sesi'],
+  [4, 1,2,'Jawab pertanyaan\nyang dieskalasi'],
+  [5, 2,6,'Hitung invoice\ndiskon + daftar'],
+  [6, 2,1,'Kirim invoice\n+ link bayar'],
+  [7, 2,0,'Bayar QRIS /\nVA / e-wallet'],
+  [8, 3,6,'Webhook lunas\n→ jurnal kas'],
+  [9, 3,5,'Pantau\npembayaran'],
+  [10,3,1,'Kirim e-modul\ngratis'],
+  [11,4,6,'Broadcast lowongan\nfilter area & blokir'],
+  [12,4,4,'Mentor klik\n"Saya minat"'],
+  [13,4,3,'Pantau lowongan\nsepi'],
+  [14,5,6,'Kunci 4 kandidat\ncegah bentrok'],
+  [15,5,1,'Kirim profil +\nvoice note'],
+  [16,5,0,'Pilih 1 mentor'],
+  [17,6,6,'Buat jadwal +\ngrup kelas 1:1'],
+  [18,6,1,'Reminder H-1\n& 1 jam sebelum'],
+  [19,7,4,'Mengajar, lalu isi\nabsen + progres'],
+  [20,7,0,'Terima progres\n/ ajukan izin'],
+  [21,7,6,'Potong kuota izin\ntolak bila habis'],
+  [22,8,6,'Sisa 1 sesi\n→ alert'],
+  [23,8,3,'Setujui invoice\nperpanjangan'],
+  [24,8,1,'Kirim invoice\ntanpa biaya daftar'],
+  [25,8,0,'Lanjut?'],
+  [26,9,1,'Maaf + link\ntestimoni'],
+  [27,9,6,'Kontrak baru\nmentor sama'],
+  [28,10,6,'Tutup kontrak\ncek 40 / 60 hari'],
+  [29,10,5,'Hitung pokok\n+ bonus retensi'],
+  [30,11,5,'Bayar gaji\n+ kirim slip'],
+  [31,11,4,'Terima slip\ngaji'],
+  [32,11,3,'Rekap bulanan\n& dashboard KPI']
+];
+const DEC = 25;
+const POS = {}; S.forEach(([n,k,l]) => POS[n] = {k,l,x:cx(k),y:cy(l)});
+
+/* ===== panah: [dari, ke, opsi] ===== */
+const A = [
+  [1,2],[2,3,{off:-5}],[2,4,{dash:1,label:'eskalasi',f:.5,side:'r',off:5}],[3,5],[5,6],[6,7],[7,8],
+  [8,9],[8,10,{route:'right'}],[8,11],[11,12],[12,13,{dash:1,label:'pelamar < 4',side:'r'}],[12,14],
+  [14,15],[15,16],[16,17],[17,18],[18,19],[19,20],[19,21,{label:'hadir / izin',side:'r'}],[21,22],
+  [22,23],[23,24],[24,25],[25,26,{label:'tidak',off:-5,side:'l',f:.5}],[25,27,{label:'ya',off:5,side:'r',f:.62}],
+  [26,28],[27,28],[28,29],[29,30],[30,31],[31,32]
+];
+
+/* ===== gambar ===== */
+const NS = 'http://www.w3.org/2000/svg';
+const dia = document.getElementById('dia');
+let out = `<defs>${LANES.map(L=>`<marker id="m-${L.k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${L.c}"/></marker>`).join('')}
+<marker id="m-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8A91AD"/></marker></defs>`;
+
+/* pita fase */
+PHASES.forEach((p,i)=>{
+  const x = LX + i*2*COL;
+  out += `<rect x="${x}" y="0" width="${2*COL}" height="980" fill="${i%2?'#FFFFFF':'#F3FAFA'}"/>`;
+  out += `<text x="${x+COL}" y="40" text-anchor="middle" font-size="15" font-weight="800" fill="#0E7C7A">${i+1} · ${p}</text>`;
+});
+out += `<line x1="0" y1="${TOP}" x2="2240" y2="${TOP}" stroke="#DCEBEA"/>`;
+
+/* jalur + kepala aktor */
+LANES.forEach((L,i)=>{
+  const y = TOP + i*LH;
+  out += `<line x1="0" y1="${y+LH}" x2="2240" y2="${y+LH}" stroke="#DCEBEA"/>`;
+  out += `<rect x="0" y="${y}" width="${LX}" height="${LH}" fill="${L.c}" fill-opacity="0.08"/>`;
+  out += `<circle cx="44" cy="${y+LH/2}" r="26" fill="${L.c}"/>`;
+  out += `<g transform="translate(${44-14} ${y+LH/2-14}) scale(1.1667)" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[L.ic]}</g>`;
+  const [a,b] = L.n.split(' (');
+  out += `<text x="80" y="${y+LH/2+(b?-2:5)}" font-size="14" font-weight="800" fill="#10302F">${a}</text>`;
+  if(b) out += `<text x="80" y="${y+LH/2+16}" font-size="12" fill="#4F6766">(${b}</text>`;
+});
+out += `<line x1="${LX}" y1="0" x2="${LX}" y2="980" stroke="#C9DFDD"/>`;
+
+/* panah orthogonal di celah antar kolom */
+function edge(a,b,o={}){
+  const A0 = POS[a], B0 = POS[b], dash = o.dash, off = o.off||0;
+  const st = dash ? '#8A91AD' : LANES[A0.l].c, mk = dash ? 'm-gray' : 'm-'+LANES[A0.l].k;
+  const hw = n => n===DEC ? 46 : BW/2, hh = n => n===DEC ? 36 : BH/2;
+  let d, vx, y1, y2;
+  if(o.route==='right'){
+    vx = A0.x + COL/2 + off; y1 = A0.y; y2 = B0.y;
+    d = `M${A0.x+hw(a)} ${A0.y}H${vx}V${B0.y}H${B0.x+hw(b)}`;
+  } else if(A0.k === B0.k){
+    const down = B0.y > A0.y; vx = A0.x;
+    y1 = A0.y + (down?hh(a):-hh(a)); y2 = B0.y + (down?-hh(b):hh(b));
+    d = `M${vx} ${y1}V${y2}`;
+  } else if(A0.l === B0.l){
+    d = `M${A0.x+hw(a)} ${A0.y}H${B0.x-hw(b)}`;
+  } else {
+    vx = B0.x - COL/2 + off; y1 = A0.y; y2 = B0.y;
+    d = `M${A0.x+hw(a)} ${A0.y}H${vx}V${B0.y}H${B0.x-hw(b)}`;
+  }
+  let s = `<path d="${d}" fill="none" stroke="${st}" stroke-width="2" ${dash?'stroke-dasharray="6 5"':''} marker-end="url(#${mk})"/>`;
+  if(o.label){
+    const f = o.f ?? .5, ly = y1 + (y2-y1)*f + 4, right = o.side !== 'l';
+    s += `<text x="${vx + (right?8:-8)}" y="${ly}" text-anchor="${right?'start':'end'}" font-size="12" font-weight="800" fill="${st}" paint-order="stroke" stroke="#fff" stroke-width="4">${o.label.replace('<','&lt;')}</text>`;
+  }
+  return s;
+}
+A.forEach(([a,b,o]) => out += edge(a,b,o));
+
+/* putaran: kontrak baru → kembali ke belajar */
+{
+  const a = POS[27], b = POS[17], yb = 960;
+  out += `<path d="M${a.x} ${a.y+BH/2}V${yb}H${b.x}V${b.y+BH/2}" fill="none" stroke="#475569" stroke-width="2" stroke-dasharray="2 0" marker-end="url(#m-sys)"/>`;
+  out += `<text x="${(a.x+b.x)/2}" y="${yb-8}" text-anchor="middle" font-size="12.5" font-weight="800" fill="#475569" paint-order="stroke" stroke="#fff" stroke-width="4">ulang siklus belajar dengan kontrak baru</text>`;
+}
+
+/* kotak langkah */
+S.forEach(([n,k,l,t])=>{
+  const {x,y} = POS[n], L = LANES[l];
+  const lines = t.split('\n');
+  if(n===DEC){
+    out += `<path d="M${x-46} ${y}L${x} ${y-36}L${x+46} ${y}L${x} ${y+36}Z" fill="#fff" stroke="${L.c}" stroke-width="2.2"/>`;
+    out += `<text x="${x}" y="${y+5}" text-anchor="middle" font-size="13.5" font-weight="800" fill="#10302F">${t}</text>`;
+  } else {
+    out += `<rect x="${x-BW/2}" y="${y-BH/2}" width="${BW}" height="${BH}" rx="12" fill="#fff" stroke="${L.c}" stroke-width="1.6"/>`;
+    out += `<rect x="${x-BW/2}" y="${y-BH/2}" width="${BW}" height="${BH}" rx="12" fill="${L.c}" fill-opacity="0.07"/>`;
+    lines.forEach((ln,i)=> out += `<text x="${x+6}" y="${y + (lines.length===1?5:-3+i*17)}" text-anchor="middle" font-size="12.5" font-weight="${i===0?700:500}" fill="#10302F">${ln.replace('<','&lt;')}</text>`);
+  }
+  const bx = n===DEC ? x-40 : x-BW/2+2, by = n===DEC ? y-26 : y-BH/2+2;
+  out += `<circle cx="${bx}" cy="${by}" r="11" fill="${L.c}"/><text x="${bx}" y="${by+4}" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">${n}</text>`;
+});
+dia.innerHTML = out;
+
+/* ===== rincian per fase ===== */
+const DET = [
+  ['1 · Tanya & daftar', [
+    ['Santri','chat WA atau klik iklan Google/Meta Ads.'],
+    ['Bot','membalas < 1 menit: sapaan, katalog 3 paket aktif, tombol daftar.'],
+    ['Santri','memilih paket, durasi, jumlah sesi (4/8), umur — di bot atau mini-web.'],
+    ['CS','hanya menjawab pertanyaan yang bot tidak bisa (eskalasi).']]],
+  ['2 · Bayar', [
+    ['Sistem','menghitung invoice: harga × sesi, diskon 5% (≥ 8 sesi) + 5% (anak offline), daftar Rp30.000, buku Rp20.000.'],
+    ['Bot','mengirim invoice + link bayar.'],
+    ['Santri','membayar lewat QRIS / VA / e-wallet.'],
+    ['Sistem','menerima webhook lunas, mencatat jurnal kas masuk.'],
+    ['Bot','mengirim e-modul gratis ke santri baru.'],
+    ['Keuangan','memantau pembayaran masuk (tanpa input manual).']]],
+  ['3 · Matching mentor', [
+    ['Sistem','broadcast lowongan ke mentor aktif; offline difilter area; mentor blokir/istirahat tidak menerima.'],
+    ['Mentor','klik "Saya minat".'],
+    ['Sistem','mengunci 4 pelamar pertama dan menahan slot jadwalnya 24 jam. Paket Reguler: langsung auto-assign.'],
+    ['Bot','mengirim profil + voice note tilawah ke santri.'],
+    ['Santri','memilih 1 mentor; kandidat lain dilepas.'],
+    ['Owner','hanya turun tangan jika lowongan sepi.']]],
+  ['4 · Belajar', [
+    ['Sistem','membuat jadwal sesi dan grup/kanal kelas 1:1.'],
+    ['Bot','mengirim reminder H-1 dan 1 jam sebelum sesi.'],
+    ['Mentor','mengajar, lalu mengisi absen + progres lewat link.'],
+    ['Santri','menerima laporan progres; bisa ajukan izin / reschedule lewat bot.'],
+    ['Sistem','memotong kuota izin; izin melebihi kuota ditolak otomatis.']]],
+  ['5 · Perpanjangan', [
+    ['Sistem','sisa 1 sesi → alert ke Owner.'],
+    ['Owner','menyetujui invoice perpanjangan (tanpa biaya daftar).'],
+    ['Bot','mengirim invoice ke santri.'],
+    ['Santri','memutuskan lanjut atau berhenti.'],
+    ['Lanjut','kontrak baru dengan mentor yang sama, kembali ke fase Belajar.'],
+    ['Berhenti','bot mengirim pesan maaf + link testimoni.']]],
+  ['6 · Gaji & laporan', [
+    ['Sistem','menutup kontrak, mengecek tenggat: ≤ 40 hari dapat bonus, > 60 hari mentor istirahat.'],
+    ['Keuangan','melihat hitungan pokok + bonus retensi Rp20.000 (jika santri lanjut).'],
+    ['Keuangan','membayar gaji dan mengirim slip ke WA mentor.'],
+    ['Owner','melihat rekap bulanan dan dashboard KPI.']]]
+];
+document.getElementById('steps').innerHTML = DET.map(([h,li])=>`<div class="ph"><h3>${h}</h3><ol>${li.map(([who,t])=>`<li><b>${who}</b> ${t}</li>`).join('')}</ol></div>`).join('');
+</script>
+</body>
+</html>
