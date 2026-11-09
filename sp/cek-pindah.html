@@ -43,7 +43,7 @@
 <body>
 <header>
   <h1>Cek pindah repository</h1>
-  <p>falcoraea.github.io/sp → aventra-tecno.github.io/app/sp · semua yang bisa dicek otomatis dicek di sini</p>
+  <p>falcoraea.github.io/sp → app.aventra.id/app/sp · semua yang bisa dicek otomatis dicek di sini</p>
 </header>
 <main>
   <section class="card sum">
@@ -61,6 +61,8 @@ const ORIGIN = location.origin;                                    // https://av
 const OLD_APP = 'https://falcoraea.github.io/sp/';
 const OLD_ROOT = 'https://falcoraea.github.io/';
 const OLD_PKG = 'io.github.falcoraea.twa';
+const DOMAIN = 'app.aventra.id';
+const isNew = (t) => t.includes(DOMAIN + '/app/sp/') || t.includes('aventra-tecno.github.io/app/sp/');
 const LS = { get: (k, d) => { try { return JSON.parse(localStorage.getItem('cekpindah:' + k)) ?? d; } catch (_) { return d; } },
              set: (k, v) => { try { localStorage.setItem('cekpindah:' + k, JSON.stringify(v)); } catch (_) {} } };
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -74,6 +76,7 @@ async function supaClient() { if (supa !== null) return supa; try { supa = (awai
 // ---------- daftar pengecekan ----------
 const G = [
   { n: 1, title: 'Aplikasi di alamat baru', items: [
+    { id: 'dom', t: 'Dibuka lewat domain app.aventra.id (HTTPS)', run: async () => location.host === DOMAIN ? (location.protocol === 'https:' ? ['ok', location.origin] : ['bad', 'Belum HTTPS — centang Enforce HTTPS di Settings › Pages repo aventra-tecno.github.io']) : ['warn', `Sekarang dibuka di ${location.host}. Setelah domain aktif, buka https://${DOMAIN}/app/sp/cek-pindah.html`] },
     { id: 'page', t: 'Halaman aplikasi terbuka', run: async () => { const h = await get(NEW_APP + 'index.html'); return h.includes('manifest') ? ['ok', NEW_APP] : ['bad', 'index.html terbaca tapi isinya bukan aplikasi']; } },
     { id: 'ver', t: 'Versi terbit lewat GitHub Actions', run: async () => { const v = await get(NEW_APP + 'version.json', 'json'); return v.build && v.build !== 'dev' ? ['ok', `v${v.version} · build ${v.build} · ${v.date || ''}`] : ['warn', 'version.json belum diisi workflow. Cek tab Actions & Settings › Pages › Source = GitHub Actions']; } },
     { id: 'manifest', t: 'manifest.json benar (untuk Android & install)', run: async () => {
@@ -89,7 +92,7 @@ const G = [
       const r = await navigator.serviceWorker.getRegistration(NEW_APP);
       return r ? ['ok', 'Terdaftar untuk ' + r.scope] : ['warn', 'Buka aplikasinya sekali di perangkat ini, lalu cek lagi'];
     } },
-    { id: 'appRoot', t: 'Halaman /app/ (akar repo app) terbuka', run: async () => (await exists(new URL('../', NEW_APP).href)) ? ['ok', 'Boleh diganti halaman khususmu sendiri, tidak memengaruhi /app/sp/'] : ['warn', 'Belum ada index.html di akar repo app (tidak wajib)'] },
+    { id: 'appRoot', t: 'Halaman /app/ mengarah ke aventra.id', run: async () => { const h = await get(new URL('../', NEW_APP).href + 'index.html').catch(() => ''); return h.includes('aventra.id/') && !h.includes('/app/sp') ? ['ok', 'Mengalihkan ke https://aventra.id'] : h ? ['warn', 'index.html di akar repo app belum versi terbaru (pengalihan ke aventra.id)'] : ['warn', 'Belum ada index.html di akar repo app']; } },
   ] },
   { n: 2, title: 'Login, data & Telegram', items: [
     { id: 'login', t: 'Sudah login di alamat baru', run: async () => {
@@ -144,14 +147,15 @@ const G = [
   ] },
   { n: 4, title: 'Alamat lama jadi pengalihan', items: [
     { id: 'oldidx', t: 'falcoraea.github.io/sp/ mengalihkan ke alamat baru', run: async () => {
-      const h = await get(OLD_APP + 'index.html'); return h.includes('aventra-tecno.github.io/app/sp/') ? ['ok', 'Pengalihan terpasang'] : h.includes('manifest') ? ['bad', 'Masih aplikasi lama — langkah 7 belum dikerjakan'] : ['warn', 'Isi tidak dikenali'];
+      const h = await get(OLD_APP + 'index.html'); return isNew(h) ? ['ok', h.includes(DOMAIN) ? 'Pengalihan ke app.aventra.id terpasang' : 'Pengalihan masih ke aventra-tecno.github.io (tetap jalan) — unggah versi terbaru folder repo-lama-sp'] : h.includes('manifest') ? ['bad', 'Masih aplikasi lama — langkah 7 belum dikerjakan'] : ['warn', 'Isi tidak dikenali'];
     } },
     { id: 'oldsw', t: 'sw.js lama sudah versi penghapus cache', run: async () => { const t = await get(OLD_APP + 'sw.js'); return /penghapus/.test(t) ? ['ok', 'HP lama akan dibersihkan otomatis'] : ['bad', 'Masih sw.js aplikasi lama — unggah sw.js dari folder repo-lama-sp']; } },
-    { id: 'oldkat', t: 'Link katalog lama ikut dialihkan', run: async () => { const t = await get(OLD_APP + 'katalog.html'); return t.includes('aventra-tecno.github.io/app/sp/') ? ['ok', 'katalog.html?t=… ikut pindah'] : ['bad', 'Unggah katalog.html dari folder repo-lama-sp']; } },
+    { id: 'oldkat', t: 'Link katalog lama ikut dialihkan', run: async () => { const t = await get(OLD_APP + 'katalog.html'); return isNew(t) ? ['ok', 'katalog.html?t=… ikut pindah'] : ['bad', 'Unggah katalog.html dari folder repo-lama-sp']; } },
     { id: 'oldwf', t: 'Workflow lama tidak menimpa pengalihan', run: async () => { const t = await get(OLD_APP + 'version.json').catch(() => null); return t && /"build"/.test(t) ? ['warn', 'version.json lama masih ada — tidak masalah, asal index.html & sw.js sudah pengalihan'] : ['ok', 'Aman']; } },
   ] },
   { n: 5, title: 'Dicentang manual (tidak bisa dicek otomatis)', manual: [
-    ['m_supa', 'Supabase › Authentication › URL Configuration: Site URL & Redirect URLs = alamat baru'],
+    ['m_dns', 'DNS aventra.id: CNAME app → aventra-tecno.github.io, dan domain terverifikasi di GitHub'],
+    ['m_supa', 'Supabase › Authentication › URL Configuration: Site URL & Redirect URLs = https://app.aventra.id/app/sp/'],
     ['m_reset', 'Tes "Lupa password": link di email membuka alamat baru'],
     ['m_push', 'Edge Function send-push sudah di-deploy ulang (file baru)'],
     ['m_mayar', 'Tes bayar tagihan: setelah bayar kembali ke alamat baru'],
