@@ -1623,3 +1623,115 @@ html.no-scroll { overflow: hidden; overscroll-behavior: none; }
 .sp-logo span { background: none !important; overflow: hidden; padding: 0; }
 .sp-logo span img { width: 100%; height: 100%; display: block; }
 .brand-mark .logo.logo-img, .side-brand .logo.logo-img { box-shadow: 0 0 0 2px rgba(255,255,255,.22), 0 6px 14px -6px rgba(0,0,0,.45); }
+.ins-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ins-steps li { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; line-height: 1.45; }
+.ins-n { flex: none; width: 26px; height: 26px; border-radius: 99px; display: grid; place-items: center; background: #26348B; color: #fff; font-weight: 800; font-size: 13px; }
+.ins-k { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: #EEF0FA; color: #1F6FEB; vertical-align: middle; font-weight: 800; }
+
+/* =====================================================================
+   2.30 — KOMBINASI WARNA (owner › Pengaturan): biru (bawaan) / hitam
+   + menu bawah: menu tengah tidak lagi bulat, bar menu bawah melengkung halus ke atas
+   ===================================================================== */
+:root { --t1: #2E3D99; --t2: #26348B; --t3: #1D2876; --t-hi: #4A5BC4; --t-glow: rgba(92,112,224,.45); --t-acc: #FFD66B; }
+html[data-theme="hitam"] { --t1: #3A3F3B; --t2: #1E2120; --t3: #111312; --t-hi: #50564F; --t-glow: rgba(242,176,30,.16); --t-acc: #F2B01E;
+  --m-navy: #1E2120; --m-navy-2: #111312; --m-navy-soft: #F5EFD9; }
+
+/* ---------- menu bawah (HP): lengkung halus di tengah ---------- */
+@media (max-width: 899px) {
+  .tabbar { background:
+      radial-gradient(circle at 93% -10%, rgba(255,255,255,.08) 0 64px, rgba(255,255,255,0) 65px),
+      radial-gradient(circle at 4% 130%, rgba(255,255,255,.065) 0 58px, rgba(255,255,255,0) 59px),
+      linear-gradient(150deg, var(--t1) 0%, var(--t2) 45%, var(--t3) 100%); }
+  /* bukit lengkung di atas bar, warnanya menyambung dengan bar */
+  .tabbar::before { content: ''; position: absolute; left: 50%; top: -22px; width: 150px; height: 23px; transform: translateX(-50%); pointer-events: none;
+    background: linear-gradient(150deg, var(--t1) 0%, var(--t2) 45%, var(--t3) 100%); background-size: 100vw 90px; background-position: 50% 0;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 23' preserveAspectRatio='none'%3E%3Cpath d='M0 23 C34 23 42 1 75 1 C108 1 116 23 150 23 Z' fill='%23000'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 23' preserveAspectRatio='none'%3E%3Cpath d='M0 23 C34 23 42 1 75 1 C108 1 116 23 150 23 Z' fill='%23000'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+    filter: drop-shadow(0 -6px 8px rgba(10,16,60,.18)); }
+  html[data-theme="hitam"] .tabbar::before { filter: drop-shadow(0 -6px 8px rgba(0,0,0,.25)); }
+  /* menu ke-3: tanpa lingkaran, naik ke dalam lengkungan, sedikit lebih besar */
+  .tabbar > .tab:nth-child(3) { position: relative; }
+  .tabbar > .tab:nth-child(3) .ic { width: 52px; height: 40px; margin-top: -16px; padding: 0; border: 0; border-radius: 14px; display: grid; place-items: center;
+    background: transparent; box-shadow: none; color: rgba(226,231,255,.75); --solid-in: var(--t2); }
+  .tabbar > .tab:nth-child(3) .ic svg { width: 27px; height: 27px; }
+  .tabbar > .tab:nth-child(3) .ic-fill svg { stroke: #fff; width: 27px; height: 27px; }
+  .tabbar > .tab:nth-child(3) .ic-fill svg [fill] { fill: #fff; }
+  .tabbar > .tab:nth-child(3).on .ic { background: rgba(255,255,255,.16); color: #fff; box-shadow: none; --solid-in: var(--t2); }
+  .tabbar > .tab:nth-child(3) .lbl { color: rgba(226,231,255,.66); font-weight: 600; }
+  .tabbar > .tab:nth-child(3).on .lbl { color: #fff; font-weight: 700; }
+  .tab.on .ic { --solid-in: var(--t2); }
+  .tab .ic .badge-dot { border-color: var(--t2); }
+  .tab-lock { color: var(--t2); border-color: var(--t2); }
+}
+
+/* ---------- tema HITAM di HP ---------- */
+@media (max-width: 899px) {
+  html[data-theme="hitam"] .topbar { background: radial-gradient(90% 120% at 100% 0%, rgba(242,176,30,.20) 0%, rgba(242,176,30,0) 42%), radial-gradient(120% 150% at 0% 0%, #3B403C 0%, #1E2120 45%, #111312 100%);
+    box-shadow: 0 12px 28px -14px rgba(0,0,0,.7); }
+  html[data-theme="hitam"] .topbar .icon-btn .badge-dot, html[data-theme="hitam"] .tb-logo.has-bill::after { border-color: #1E2120; }
+  html[data-theme="hitam"] body[data-page="dashboard"] .topbar { background: #1E2120; }
+  html[data-theme="hitam"] body[data-page="dashboard"] .topbar.scrolled { background: radial-gradient(90% 120% at 100% 0%, rgba(242,176,30,.20) 0%, rgba(242,176,30,0) 42%), radial-gradient(120% 150% at 0% 0%, #3B403C 0%, #1E2120 45%, #111312 100%); }
+  html[data-theme="hitam"] body[data-page="dashboard"] .bill-bar { background: #1E2120; }
+  html[data-theme="hitam"] .dash-hero::before { background:
+      radial-gradient(circle at 96% 62%, rgba(255,255,255,.06) 0 108px, rgba(255,255,255,0) 109px),
+      radial-gradient(circle at 74% 104%, rgba(255,255,255,.04) 0 70px, rgba(255,255,255,0) 71px),
+      radial-gradient(circle at -4% 88%, rgba(255,255,255,.045) 0 86px, rgba(255,255,255,0) 87px),
+      radial-gradient(90% 70% at 100% 100%, rgba(242,176,30,.14), transparent 62%),
+      linear-gradient(180deg, #1E2120 0%, #222523 48%, #121413 100%); box-shadow: 0 16px 30px -18px rgba(0,0,0,.6); }
+  html[data-theme="hitam"] .dash-hero .kpi.dark { background: linear-gradient(135deg, #3B403C 0%, #1E2120 50%, #111312 100%); }
+  html[data-theme="hitam"] .dash-hero .kpi.dark .label { color: #D6D3C8 !important; }
+  html[data-theme="hitam"] .dash-hero .chip.on { color: #1A1D1B; }
+  html[data-theme="hitam"] .card.dark, html[data-theme="hitam"] .kpi.dark, html[data-theme="hitam"] .hero, html[data-theme="hitam"] .login-top { background: linear-gradient(150deg, #3B403C 0%, #1E2120 45%, #111312 100%) !important; }
+}
+/* kotak ikon & tombol yang memakai warna utama ikut tema */
+html[data-theme="hitam"] .si-navy, html[data-theme="hitam"] .hu-ic, html[data-theme="hitam"] .ins-ic:not(.apk), html[data-theme="hitam"] .ins-n { background: linear-gradient(145deg, #4A4F4B, #1A1D1B); }
+html[data-theme="hitam"] .btn.btn-see, html[data-theme="hitam"] .btn.btn-install { background: #F5F1E6; border-color: #DDD6C2; color: #1A1D1B; }
+html[data-theme="hitam"] .seg .chip.on { color: #1A1D1B; }
+
+/* ---------- tema BIRU di desktop: samakan dengan HP ---------- */
+@media (min-width: 900px) {
+  html:not([data-theme="hitam"]) .sidebar { background:
+      radial-gradient(circle at 105% 4%, rgba(255,255,255,.07) 0 120px, rgba(255,255,255,0) 121px),
+      radial-gradient(circle at -10% 96%, rgba(255,255,255,.05) 0 110px, rgba(255,255,255,0) 111px),
+      linear-gradient(170deg, #2E3D99 0%, #26348B 45%, #1D2876 100%); }
+  html:not([data-theme="hitam"]) .side-brand span { color: #C9D0F2; }
+  html:not([data-theme="hitam"]) .side-link { color: #E3E7FF; }
+  html:not([data-theme="hitam"]) .side-link:hover { background: rgba(255,255,255,.09); color: #fff; }
+  html:not([data-theme="hitam"]) .side-link.on { background: #fff; color: #26348B; box-shadow: 0 4px 12px -4px rgba(10,16,60,.5); }
+  html:not([data-theme="hitam"]) .side-sec { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.10); }
+  html:not([data-theme="hitam"]) .side-sec.flat { background: none; border-color: transparent; }
+  html:not([data-theme="hitam"]) .side-sec.acc.open { background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.16); }
+  html:not([data-theme="hitam"]) .sg-btn, html:not([data-theme="hitam"]) .side-group { color: #C3CBF3; }
+  html:not([data-theme="hitam"]) .side-sec.acc .side-items .side-link.on { border-left-color: #fff; }
+  html:not([data-theme="hitam"]) .sg-ic { background: color-mix(in srgb, var(--gc) 26%, #26348B); }
+  html:not([data-theme="hitam"]) .side-search { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.14); color: #C3CBF3; }
+  html:not([data-theme="hitam"]) .side-search input::placeholder, html:not([data-theme="hitam"]) .side-search kbd { color: #AEB7E6; border-color: rgba(255,255,255,.2); }
+  html:not([data-theme="hitam"]) .side-foot { border-top-color: rgba(255,255,255,.14); }
+  html:not([data-theme="hitam"]) .side-mini .side-sec { border-top-color: rgba(255,255,255,.12); }
+  html:not([data-theme="hitam"]) .chip.on { background: #26348B; border-color: #26348B; color: #fff; }
+  html:not([data-theme="hitam"]) .btn-dark, html:not([data-theme="hitam"]) .icon-btn.dark { background: #26348B; border-color: #26348B; color: #fff; }
+  html:not([data-theme="hitam"]) .btn-dark:hover { background: #1D2876; }
+  html:not([data-theme="hitam"]) .btn-primary { background: #26348B; border-color: #26348B; color: #fff; }
+  html:not([data-theme="hitam"]) .btn-primary:hover { background: #1D2876; color: #fff; }
+  html:not([data-theme="hitam"]) .topbar .icon-btn.bell, html:not([data-theme="hitam"]) .topbar .icon-btn.bell.on { background: #26348B; border-color: #26348B; color: #fff; }
+  html:not([data-theme="hitam"]) .card.dark, html:not([data-theme="hitam"]) .kpi.dark, html:not([data-theme="hitam"]) .card.kpi.dark { background: linear-gradient(150deg, #2E3D99 0%, #26348B 45%, #1D2876 100%); border-color: transparent; color: #fff; }
+  html:not([data-theme="hitam"]) .hero { background: linear-gradient(150deg, #2E3D99 0%, #26348B 45%, #1D2876 100%); }
+}
+
+/* pilihan kombinasi warna di Pengaturan */
+.theme-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.theme-opt { display: flex; gap: 12px; align-items: center; padding: 12px; border: 2px solid var(--line); border-radius: 14px; cursor: pointer; background: #fff; position: relative; }
+.theme-opt:has(input:checked) { border-color: #26348B; box-shadow: 0 0 0 3px rgba(38,52,139,.12); }
+html[data-theme="hitam"] .theme-opt:has(input:checked) { border-color: #1A1D1B; box-shadow: 0 0 0 3px rgba(242,176,30,.3); }
+.theme-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.th-prev { flex: none; width: 74px; height: 54px; border-radius: 10px; position: relative; overflow: hidden; background: #F3F4F8; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
+.th-prev i { position: absolute; display: block; }
+.th-prev .th-bar { left: 0; right: 0; top: 0; height: 14px; }
+.th-prev .th-side { left: 0; top: 0; bottom: 0; width: 18px; }
+.th-prev .th-card { left: 24px; right: 6px; top: 20px; height: 14px; border-radius: 4px; }
+.th-prev .th-dot { left: 24px; top: 40px; width: 22px; height: 8px; border-radius: 4px; }
+.th-biru .th-bar, .th-biru .th-side, .th-biru .th-card { background: linear-gradient(150deg, #2E3D99, #1D2876); }
+.th-biru .th-dot { background: #fff; box-shadow: inset 0 0 0 1.5px #26348B; }
+.th-hitam .th-bar, .th-hitam .th-side, .th-hitam .th-card { background: linear-gradient(150deg, #3B403C, #111312); }
+.th-hitam .th-dot { background: #F2B01E; }
+.th-t b { display: block; font-size: 15px; }
