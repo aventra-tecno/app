@@ -59,7 +59,7 @@ async function localTest() {
   toast('Kecilkan aplikasi sekarang — notifikasi muncul 5 detik lagi', 'ok');
   setTimeout(() => reg.showNotification('Tes notifikasi melayang', { body: 'Kalau ini turun di atas layar, notifikasi sudah benar.', icon: 'assets/icon-192.png', badge: 'assets/badge-96.png', tag: 'sg-tes', renotify: true, vibrate: [200, 80, 200], data: { link: '#/notifikasi' } }), 5000);
 }
-function headsUpGuide() {
+export function headsUpGuide() {
   const android = /Android/i.test(navigator.userAgent);
   modal({ title: 'Notifikasi melayang', body: `<div class="stack">
     ${android ? `<ol class="hu-steps">
