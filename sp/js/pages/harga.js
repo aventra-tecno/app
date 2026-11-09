@@ -84,7 +84,7 @@ export default {
     };
     const num0 = (v) => String(Number(v || 0)).replace('.', ',');
     // teks persentase untuk judul kolom, mis. "−25% / −30%" dan "Macallan +20%"
-    const beliTxt = (r) => (!Number(r.diskon_beli_pct) && !r.set_keyword ? '= Macallan' : '−' + num0(r.diskon_beli_pct) + '%' + (r.set_keyword ? ' / −' + num0(r.diskon_set_pct) + '%' : ''));
+    const beliTxt = (r) => (!Number(r.diskon_beli_pct) && !r.set_keyword ? '= Macallan' : '−' + num0(r.diskon_beli_pct) + '%' + (r.set_keyword ? ' / −' + num0(r.diskon_set_pct) + '%' : '') + (r.tanpa_keywords ? ' / 0%' : ''));
     const shopeeTxt = (r) => r.shopee_mode === 'rumus' ? 'Macallan ' + [Number(r.shopee_plus_pct) ? '+' + num0(r.shopee_plus_pct) + '%' : '', Number(r.shopee_plus_rp) ? (r.shopee_plus_rp < 0 ? '−' : '+') + rp(Math.abs(r.shopee_plus_rp)) : ''].filter(Boolean).join(' ') : r.shopee_mode === 'file' ? 'ikut file' : 'manual';
     const rulesIn = () => ({
       diskon_beli_pct: pf(el.querySelector('#rb').value), diskon_set_pct: pf(el.querySelector('#rs').value),
@@ -119,7 +119,12 @@ export default {
     const paintFilters = () => {
       const list = products();
       const c = { all: list.length, locked: list.filter((p) => p.price_locked).length, pending: list.filter((p) => p.pending_price).length, zero: list.filter((p) => !Number(p.harga_beli)).length, thin: list.filter(thin).length };
-      el.querySelector('#filters').innerHTML = chips('f', [['all', `Semua (${c.all})`], ['locked', `Dikunci (${c.locked})`], ['pending', `Beda dengan file baru (${c.pending})`], ['zero', `Modal kosong (${c.zero})`], ['thin', `Margin < 10% (${c.thin})`]], filter);
+      // 2.32: kelompok persen — potongan harga beli dari Macallan & tambahan harga Shopee dari Macallan
+      const dG = new Map(), sG = new Map();
+      list.forEach((p) => { const d = beliPct(p), sp = shpPct(p); if (d != null) dG.set(d, (dG.get(d) || 0) + 1); if (sp != null) sG.set(sp, (sG.get(sp) || 0) + 1); });
+      const dChips = [...dG].sort((a, b) => a[0] - b[0]).map(([d, n]) => ['d:' + d, `${d === 0 ? 'Tanpa potongan' : 'Beli ' + (d > 0 ? '−' : '+') + Math.abs(d) + '%'} (${n})`]);
+      const sChips = [...sG].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([v, n]) => ['s:' + v, `Shopee ${v >= 0 ? '+' : '−'}${Math.abs(v)}% (${n})`]);
+      el.querySelector('#filters').innerHTML = chips('f', [['all', `Semua (${c.all})`], ...dChips, ...sChips, ['locked', `Dikunci (${c.locked})`], ['pending', `Beda dengan file baru (${c.pending})`], ['zero', `Modal kosong (${c.zero})`], ['thin', `Margin < 10% (${c.thin})`]], filter);
     };
     const visible = () => products().filter((p) => {
       if (search && !(p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search) || (normSku(search) && normSku(p.sku).includes(normSku(search))))) return false;
@@ -127,9 +132,18 @@ export default {
       if (filter === 'pending') return !!p.pending_price;
       if (filter === 'zero') return !Number(p.harga_beli);
       if (filter === 'thin') return thin(p);
+      if (filter.startsWith('d:')) return beliPct(p) === +filter.slice(2);
+      if (filter.startsWith('s:')) return shpPct(p) === +filter.slice(2);
       return true;
     });
     const val = (p, f) => (changed.get(p.id)?.[f] ?? p[f]);
+    // persen nyata dari Macallan (dibulatkan): potongan harga beli & tambahan harga Shopee
+    const beliPct = (p) => { const m = +p.macallan, b = +p.harga_beli; return m > 0 && b > 0 ? Math.round((1 - b / m) * 100) : null; };
+    const shpPct = (p) => { const m = +p.macallan, sp = +p.harga_shopee; return m > 0 && sp > 0 ? Math.round((sp / m - 1) * 100) : null; };
+    const pctBadges = (p) => {
+      const d = beliPct({ ...p, harga_beli: val(p, 'harga_beli'), macallan: val(p, 'macallan') }), sp = shpPct({ ...p, harga_shopee: val(p, 'harga_shopee'), macallan: val(p, 'macallan') });
+      return `<span class="pct-badges">${d == null ? '' : d === 0 ? '<span class="pb pb-free">Tanpa potongan</span>' : `<span class="pb ${d >= 30 ? 'pb-set' : 'pb-cut'}">Beli ${d > 0 ? '−' : '+'}${Math.abs(d)}%</span>`}${sp == null ? '' : `<span class="pb ${sp >= 0 ? 'pb-up' : 'pb-down'}">Shopee ${sp >= 0 ? '+' : '−'}${Math.abs(sp)}%</span>`}${p.diskon_pct != null ? '<span class="pb pb-man">diskon manual</span>' : ''}</span>`;
+    };
     const margin = (p) => { const sp = +val(p, 'harga_shopee'), b = +val(p, 'harga_beli'); return sp ? Math.round(sp * (1 - s.shopee_fee_pct / 100) - b) : null; };
     const paint = () => {
       const r = R(), list = visible().slice(0, 1000);
@@ -138,7 +152,7 @@ export default {
         ${list.map((p) => {
           const ch = changed.has(p.id), m = margin(p), pend = p.pending_price;
           return `<tr class="${ch || sel.has(p.id) ? 'hl' : ''}" data-row="${p.id}"><td><input type="checkbox" class="check" data-sel="${p.id}" ${sel.has(p.id) ? 'checked' : ''} aria-label="Pilih"></td>
-            <td><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}${p.diskon_pct != null ? ` · diskon ${p.diskon_pct}%` : p.price_group === 'set' && r.set_keyword ? ` · <span class="tag yellow">${esc(r.set_keyword)} ${num0(r.diskon_set_pct)}%</span>` : p.price_group === 'tanpa' ? ' · <span class="tag green">tanpa potongan</span>' : ''}</div></td>
+            <td><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}</div>${pctBadges(p)}</td>
             ${fields.map(([f]) => `<td class="right"><input class="input sm num ${p.price_locked || ch ? 'locked' : f === 'harga_beli' || (f === 'harga_shopee' && r.shopee_mode === 'rumus') ? 'calc' : ''}" style="width:104px" data-f="${f}" data-id="${p.id}" data-money value="${num(val(p, f))}" inputmode="numeric" aria-label="${f}"></td>`).join('')}
             <td class="num"><b class="${m == null ? '' : m < 0 ? 'neg' : 'pos'}">${m == null ? '–' : rp(m)}</b></td>
             <td>${pend ? `<button class="tag yellow" style="border:0;cursor:pointer" data-pend="${p.id}">Beda: ${esc(pend.sumber)} ${pend.macallan ? 'Macallan ' + num(pend.macallan) : ''}${pend.harga_shopee ? ' Shopee ' + num(pend.harga_shopee) : ''}</button>`
