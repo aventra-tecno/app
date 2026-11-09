@@ -1739,3 +1739,13 @@ html[data-theme="hitam"] .theme-opt:has(input:checked) { border-color: #1A1D1B; 
 /* 2.31 — isi complete set di master barang */
 .isi-set { margin-top: 4px; } .isi-set summary { cursor: pointer; color: #26348B; font-weight: 700; }
 .isi-set ul { margin: 4px 0 0; padding-left: 16px; font-size: 12px; color: var(--muted); display: grid; gap: 1px; }
+/* 2.32 — badge persen di Atur harga */
+.pct-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.pb { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 99px; white-space: nowrap; border: 1px solid transparent; }
+.pb-free { background: #E8F6EE; color: #17663F; border-color: #A9DBBF; }
+.pb-cut { background: #EEF0FA; color: #26348B; border-color: #C9CFEE; }
+.pb-set { background: #FFF4D6; color: #8A5A00; border-color: #F2D38A; }
+.pb-up { background: #F1EAFE; color: #5B2DB3; border-color: #D5C4F7; }
+.pb-down { background: #FDECEA; color: #B42318; border-color: #F4B9B0; }
+.pb-man { background: #F2F3F8; color: #4B5375; border-color: #DCDFEA; }
+html:not([data-theme="hitam"]) .sup-tab.on { background: linear-gradient(150deg, #2E3D99, #26348B 45%, #1D2876); border-color: #26348B; color: #fff; } html:not([data-theme="hitam"]) .sup-tab.on span { color: #FFD66B; }
