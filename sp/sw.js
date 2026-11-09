@@ -1,10 +1,10 @@
 // Service worker: aplikasi tetap terbuka cepat & bisa dipasang (PWA).
 // Naikkan VERSION setiap kali kamu upload perubahan file ke GitHub.
-const VERSION = 'v2.27.0';
+const VERSION = 'v2.28.0';
 const CACHE = 'stok-gudang-' + VERSION;
 const SHELL = [
   './', 'index.html', 'manifest.json', 'css/app.css',
-  'js/app.js', 'js/config.js', 'js/supa.js', 'js/ui.js', 'js/nav.js', 'js/store.js', 'js/auth.js', 'js/tour.js', 'js/scanner.js', 'js/shopee.js', 'js/labels.js', 'js/paging.js', 'js/version.js', 'js/push.js', 'js/xlsx-writer.js', 'js/excel-harga.js', 'js/billing.js', 'js/excel-rekap.js', 'js/pdf-read.js', 'js/modules.js', 'js/order-view.js', 'js/shortcuts.js', 'js/pages/dash-staff.js',
+  'js/app.js', 'js/config.js', 'js/supa.js', 'js/ui.js', 'js/nav.js', 'js/store.js', 'js/auth.js', 'js/tour.js', 'js/scanner.js', 'js/shopee.js', 'js/labels.js', 'js/paging.js', 'js/version.js', 'js/push.js', 'js/xlsx-writer.js', 'js/excel-harga.js', 'js/billing.js', 'js/excel-rekap.js', 'js/pdf-read.js', 'js/modules.js', 'js/order-view.js', 'js/shortcuts.js', 'js/pages/dash-staff.js', 'js/install.js',
   'assets/icon-192.png', 'assets/icon-512.png'
 ];
 
