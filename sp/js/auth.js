@@ -1,6 +1,7 @@
 import { supa, errMsg, configured } from './supa.js';
 import { esc, icon, modal, toast } from './ui.js';
 import { APP_NAME, APP_VERSION } from './config.js';
+import { showInstall, isStandalone } from './install.js';
 
 const dayStr = () => new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
 const fmtD = (v) => new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short' }).format(new Date(v));
@@ -30,7 +31,7 @@ export function renderLogin(root, { recovery = false } = {}) {
         </div>
         <div id="login-body"></div>
         <section class="ann-mobile hidden" id="ann-mob-wrap"><div class="ann-head"><span>${icon('bell', 18)} Pengumuman</span></div><div class="ann-list" id="ann-mob"></div></section>
-        <div class="login-foot">Belum punya akun? Minta owner membuatkan akun untukmu.<br><button class="btn btn-ghost btn-sm hidden" id="install-btn" style="margin-top:10px">${icon('install', 18)} Pasang aplikasi di HP / laptop</button><div class="xs muted" style="margin-top:10px">Versi v${esc(APP_VERSION)}</div></div>
+        <div class="login-foot">Belum punya akun? Minta owner membuatkan akun untukmu.<br><button class="btn btn-install hidden" id="install-btn">${icon('install', 18)} Pasang aplikasi</button><div class="xs muted" style="margin-top:10px">Versi v${esc(APP_VERSION)}</div></div>
       </div>
     </section>
   </div>`;
@@ -40,11 +41,10 @@ export function renderLogin(root, { recovery = false } = {}) {
     return;
   }
   recovery ? newPasswordForm(body) : loginForm(body);
-  const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent) && !(window.matchMedia('(display-mode: standalone)').matches || navigator.standalone);
-  if (ios) root.querySelector('.login-foot').insertAdjacentHTML('beforeend', '<div class="alert blue small" style="margin-top:12px;text-align:left">Pasang di iPhone: buka di <b>Safari</b> › ketuk <b>Bagikan</b> (kotak panah ke atas) › <b>Tambah ke Layar Utama</b>.</div>');
+  // 2.28: tombol Pasang aplikasi (pasang langsung / unduh APK) — tidak tampil kalau sudah dibuka sebagai aplikasi
   const ib = root.querySelector('#install-btn');
-  if (window.__installPrompt) ib.classList.remove('hidden');
-  ib.onclick = () => window.__installPrompt && window.__installPrompt.prompt();
+  if (!isStandalone()) ib.classList.remove('hidden');
+  ib.onclick = () => showInstall();
   // pengumuman dari owner (boleh dibaca sebelum login)
   supa.rpc('login_board').then(({ data, error }) => {
     if (error || !data) { root.querySelector('#ann-desk').innerHTML = annCards([]); return; }
