@@ -1,4 +1,5 @@
 import { supa } from '../supa.js';
+import { showInstall, isStandalone } from '../install.js';
 import { store } from '../store.js';
 import { esc, toast, toastErr, pageHead, icon, ROLE_LABEL } from '../ui.js';
 import { APP_VERSION } from '../config.js';
@@ -35,7 +36,7 @@ export default {
       e.target.reset(); toast('Password diganti', 'ok');
     });
     const inst = el.querySelector('#inst');
-    if (window.__installPrompt) { inst.classList.remove('hidden'); inst.onclick = () => window.__installPrompt.prompt(); }
+    if (!isStandalone()) { inst.classList.remove('hidden'); inst.onclick = () => showInstall(); }
     el.querySelector('#lo').onclick = async () => { await supa.auth.signOut(); location.hash = ''; };
   }
 };
