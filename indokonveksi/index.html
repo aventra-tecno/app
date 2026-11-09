@@ -215,6 +215,36 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .doc th,.doc td{border-bottom:1px solid #E5D9DC;padding:8px 6px;text-align:left;vertical-align:top}
 .doc th{background:var(--tint);color:var(--md);font-size:12px}
 .doc .r{text-align:right}
+
+/* v1.1 — layar lebar: memenuhi desktop */
+.fstack{display:flex;flex-direction:column;gap:12px}
+@media(min-width:900px){
+  .hd{padding:18px 32px}
+  .hd-row{max-width:none}
+  .mn{max-width:none;padding:24px 32px 40px;gap:16px}
+  .hero{margin:-24px -32px 0;padding:12px 32px 28px;border-radius:0 0 26px 26px}
+  .kcol{flex:1 0 210px}
+  .login{flex-direction:row;min-height:100vh}
+  .lg-top{flex:1;display:flex;flex-direction:column;justify-content:center;padding:64px}
+  .lg-top>*{max-width:560px;margin:0;width:100%}
+  .lg-body{flex:1;margin:0;max-width:none;padding:48px;justify-content:flex-start;overflow-y:auto;max-height:100vh}
+  .lg-body>:first-child{margin-top:auto}.lg-body>:last-child{margin-bottom:auto}
+  .lg-body>*{width:100%;max-width:560px;margin:0 auto}
+  .trk-hero{padding:40px 32px}
+  .trk-hero>*{max-width:none}
+  .trk-main{max-width:none!important;padding:24px 32px 40px!important}
+  .toast{bottom:28px}
+}
+@media(min-width:1100px){
+  .mn,.mn>form.fstack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+  .mn>form.fstack{gap:16px}
+  .mn>*,.mn>form.fstack>*{grid-column:1/-1}
+  .mn>.card:not(.tight):not(.full),.mn>form.card,.mn>form.fstack>.card:not(.full){grid-column:auto}
+  .sh{max-width:640px}
+}
+@media(min-width:1600px){
+  .mn,.mn>form.fstack{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 @media print{.noprint{display:none!important}body{background:#fff}.doc{padding:0}}
 </style>
 </head>
@@ -653,7 +683,7 @@ function pageChatDetail(id, u) {
   if (c.unread) { c.unread = 0; save(); }
   return shell(esc(c.name), '+' + esc(c.phone), `
    <div class="row">${fld('Status', 'chatSt', c.status, { sel: Object.entries(CHAT_ST).map(([k, v]) => [k, v[0]]), attr: `data-change="chatStatus" data-id="${c.id}"` })}</div>
-   <div class="card" style="background:#F3EAEC;gap:8px">${c.msgs.map(m => `<div class="bub ${m.dir}">${esc(m.body)}<small>${ft(m.at)}${m.dir === 'out' ? ' · ' + esc(U(m.by)?.name || '') : ''}</small></div>`).join('')}</div>
+   <div class="card full" style="background:#F3EAEC;gap:8px">${c.msgs.map(m => `<div class="bub ${m.dir}">${esc(m.body)}<small>${ft(m.at)}${m.dir === 'out' ? ' · ' + esc(U(m.by)?.name || '') : ''}</small></div>`).join('')}</div>
    <form data-form="chatReply" data-id="${c.id}" class="row"><input class="inp" name="body" placeholder="Tulis balasan…" aria-label="Balasan" required><button class="btn" style="width:auto" aria-label="Kirim">${ic('send', 20)}</button></form>
    <div class="btns">${c.customerId ? `<a class="btn light" href="#/customers?id=${c.customerId}">Lihat customer</a>` : `<button type="button" class="btn light" data-act="chatToCust" data-id="${c.id}">Jadikan customer</button>`}
     <button type="button" class="btn" data-act="chatToOrder" data-id="${c.id}">Buat order</button></div>
@@ -719,7 +749,7 @@ function orderForm() {
     ${fld('Harga jual / pcs (Rp)', `price_${i}`, it.price, { num: 1, req: 1, ph: '85000', attr: 'data-calc="1"' })}
     ${d.items.length > 1 ? `<button type="button" class="btn danger sm" data-act="delItem" data-i="${i}">Hapus item</button>` : ''}
    </div>`).join('');
-  return `<form data-form="orderSave" style="display:flex;flex-direction:column;gap:12px">
+  return `<form data-form="orderSave" class="fstack">
    <div class="card"><div class="sec">Customer</div>${fld('Pilih customer', 'customerId', d.customerId, { sel: custSel, attr: 'data-change="custPick"' })}
     <div id="newCust" class="${d.customerId ? 'hidden' : ''}" style="display:flex;flex-direction:column;gap:10px">${fld('Nama customer baru', 'newName', d.newName, { ph: 'Nama / instansi' })}${fld('No. WhatsApp', 'newPhone', d.newPhone, { num: 1, ph: '62812…' })}</div></div>
    ${items}
@@ -843,7 +873,7 @@ function pageSpkNew(oid, q, u) {
   const dl = addDays(o.deadline, -5);
   const def = s => !OPTIONAL.includes(s) || (s === 'bordir' && o.needsBordir) || (s === 'sablon' && o.needsSablon) || (s === 'jahit_apd' && o.needsApd);
   return shell('Terbitkan SPK', `${o.no} · ${esc(C(o.customerId).name)}`, `
-   <form data-form="spkSave" data-id="${o.id}" style="display:flex;flex-direction:column;gap:12px">
+   <form data-form="spkSave" data-id="${o.id}" class="fstack">
    <div class="card"><div class="row" style="justify-content:space-between"><b>${esc(itemsTxt(o))}</b><span class="pill ok">Desain final v${fin.version}</span></div><span class="mut">${qtyOrder(o)} pcs · ${[o.needsSablon && 'sablon', o.needsBordir && 'bordir', o.needsApd && 'jahit APD'].filter(Boolean).join(', ') || 'tanpa proses tambahan'}</span></div>
    <div class="card"><div class="sec">Pabrik</div>${DB.factories.filter(f => f.active).map(f => { const n = DB.spks.filter(s => s.factoryId === f.id && s.status === 'diterima').length; const rj = rejected.includes(f.id); return `<label class="chk"><input type="radio" name="factoryId" value="${f.id}" required ${rj ? 'disabled' : ''}><span class="grow"><b>${f.name}</b> <span class="mut">· ${n} SPK aktif${rj ? ' · sudah menolak' : ''}</span></span></label>`; }).join('')}</div>
    <div class="card" style="gap:0"><div class="sec" style="margin-bottom:6px">Tahap dipakai</div>${STAGES.map(([k, n]) => `<label class="chk"><input type="checkbox" name="st_${k}" ${def(k) ? 'checked' : ''} ${OPTIONAL.includes(k) ? '' : 'disabled'}><span class="grow">${n}</span>${OPTIONAL.includes(k) ? '<span class="small">opsional</span>' : '<span class="small">wajib</span>'}</label>`).join('')}</div>
@@ -1037,7 +1067,7 @@ function pageTrack(tok) {
     <div style="margin-top:14px;font-size:13px;color:rgba(255,255,255,.88)">Pesanan Anda sedang di</div>
     <div style="font-size:28px;line-height:34px;font-weight:800">${where}</div>
     <div style="font-size:13px;color:rgba(255,255,255,.9);margin-top:4px">${o.no} · ${esc(itemsTxt(o))} · ${qtyOrder(o)} pcs · perkiraan selesai ${fd(o.deadline)}</div></div>
-   <main class="mn" style="max-width:640px;padding-bottom:40px">
+   <main class="mn trk-main" style="padding-bottom:40px">
     <div class="card">${s ? timeline(s, true, true) : '<span class="mut">Linimasa produksi muncul setelah pesanan masuk pabrik.</span>'}</div>
     ${inv ? `<div class="card"><div class="sec">Tagihan ${inv.no}</div>${kv('Total', rp(inv.total))}${kv('Sudah dibayar', `<span style="color:var(--ok)">${rp(inv.paid)}</span>`)}${kv('Sisa', `<b style="color:var(--warn)">${rp(inv.balance)}</b>`)}${kv('Status', pill(INV_ST, inv.status))}</div>` : ''}
     <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${esc(C(o.customerId).phone)}?text=${waText}">${ic('wa', 18)}Tanya admin via WhatsApp</a>
