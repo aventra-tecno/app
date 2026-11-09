@@ -11,7 +11,7 @@ const pf = (v) => parseFloat(String(v ?? '').replace(',', '.')) || 0;
 
 // rumus (sama dengan di server)
 export const calcFor = (r, mac, p = {}) => {
-  const d = p.diskon_pct ?? (p.price_group === 'set' ? Number(r.diskon_set_pct) : Number(r.diskon_beli_pct));
+  const d = p.diskon_pct ?? (p.price_group === 'set' ? Number(r.diskon_set_pct) : p.price_group === 'tanpa' ? 0 : Number(r.diskon_beli_pct));
   return { harga_5: Math.round(mac * (1 - Number(r.potongan_5_pct) / 100)), harga_beli: Math.round(mac * (1 - d / 100)) };
 };
 export const shopeeFor = (r, mac) => {
@@ -61,8 +61,9 @@ export default {
       el.querySelector('#rules').innerHTML = `<div class="row between wrap"><h2 class="sec-title">Rumus ${esc(r.name)} (untuk barang yang tidak dikunci)</h2><span class="xs muted">Terakhir diubah ${fmtDate(r.updated_at)}</span></div>
         <div class="grid gauto fields-end">
           <label class="field">Harga beli barang biasa: Macallan dikurangi (%)<input class="input num" id="rb" value="${num0(r.diskon_beli_pct)}" inputmode="decimal"></label>
-          <label class="field">Harga beli bagian khusus: Macallan dikurangi (%)<input class="input num" id="rs" value="${num0(r.diskon_set_pct)}" inputmode="decimal"></label>
-          <label class="field">Kata kunci judul bagian khusus<input class="input" id="rk" value="${esc(r.set_keyword || '')}" placeholder="kosong = tidak ada bagian khusus"></label>
+          <label class="field">Bagian khusus (mulai bagian ini ke bawah): Macallan dikurangi (%)<input class="input num" id="rs" value="${num0(r.diskon_set_pct)}" inputmode="decimal"></label>
+          <label class="field">Kata kunci judul bagian khusus<input class="input" id="rk" value="${esc(r.set_keyword || '')}" placeholder="mis. COMPLETE SET · kosong = tidak ada"></label>
+          <label class="field">Bagian TANPA potongan (kata kunci, pisahkan koma)<input class="input" id="rt" value="${esc(r.tanpa_keywords || '')}" placeholder="mis. ACCESORIES, BOHLAM"></label>
         </div>
         <h3 class="sub-title">Harga Shopee ${esc(r.name)}</h3>
         <div class="grid gauto fields-end">
@@ -76,7 +77,7 @@ export default {
         </div>
         <div class="alert green small rumus-f" id="rprev"></div>
         <div class="grid gauto fields-end"><label class="field" style="max-width:420px">Est. potongan Shopee sebelum cair (%) · berlaku semua supplier<input class="input num" id="rf" value="${s.shopee_fee_pct}" inputmode="decimal"></label></div>
-        ${r.set_keyword ? `<div class="alert yellow small">Pricelist ${esc(r.name)} dibaca per bagian (judul <b>***...***</b>). Barang di bagian yang judulnya mengandung <b>${esc(r.set_keyword)}</b> memakai diskon bagian khusus. Setelah mengubah kata kunci, upload ulang pricelist supaya bagian barang terbaca ulang.</div>` : ''}
+        ${r.set_keyword || r.tanpa_keywords ? `<div class="alert yellow small">Pricelist ${esc(r.name)} dibaca per bagian (judul <b>***...***</b>) sesuai urutan di file: bagian biasa −${num0(r.diskon_beli_pct)}%${r.tanpa_keywords ? `, bagian <b>${esc(r.tanpa_keywords)}</b> tanpa potongan` : ''}${r.set_keyword ? `, mulai bagian <b>${esc(r.set_keyword)}</b> ke bawah −${num0(r.diskon_set_pct)}%` : ''}. Setelah mengubah aturan ini, upload ulang pricelist supaya semua barang terbaca ulang.</div>` : ''}
         <div class="alert blue small">Harga yang diubah manual diberi <b>kunci</b>. Upload pricelist / file Shopee berikutnya <b>tidak menimpa</b> harga yang dikunci, hanya memberi tanda “Beda dengan file baru”.</div>
         <div class="row wrap" style="justify-content:flex-end"><button class="btn btn-dark" id="saveRules">Simpan rumus ${esc(r.name)} & hitung ulang</button></div>`;
       paintRumus();
@@ -87,7 +88,7 @@ export default {
     const shopeeTxt = (r) => r.shopee_mode === 'rumus' ? 'Macallan ' + [Number(r.shopee_plus_pct) ? '+' + num0(r.shopee_plus_pct) + '%' : '', Number(r.shopee_plus_rp) ? (r.shopee_plus_rp < 0 ? '−' : '+') + rp(Math.abs(r.shopee_plus_rp)) : ''].filter(Boolean).join(' ') : r.shopee_mode === 'file' ? 'ikut file' : 'manual';
     const rulesIn = () => ({
       diskon_beli_pct: pf(el.querySelector('#rb').value), diskon_set_pct: pf(el.querySelector('#rs').value),
-      set_keyword: el.querySelector('#rk').value.trim() || null, shopee_mode: el.querySelector('#rm').value,
+      set_keyword: el.querySelector('#rk').value.trim() || null, tanpa_keywords: el.querySelector('#rt').value.trim() || null, shopee_mode: el.querySelector('#rm').value,
       shopee_plus_pct: pf(el.querySelector('#rpc').value), shopee_plus_rp: parseNum(el.querySelector('#rp').value), shopee_round: +el.querySelector('#rr').value || 1
     });
     const paintRumus = () => {
@@ -137,7 +138,7 @@ export default {
         ${list.map((p) => {
           const ch = changed.has(p.id), m = margin(p), pend = p.pending_price;
           return `<tr class="${ch || sel.has(p.id) ? 'hl' : ''}" data-row="${p.id}"><td><input type="checkbox" class="check" data-sel="${p.id}" ${sel.has(p.id) ? 'checked' : ''} aria-label="Pilih"></td>
-            <td><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}${p.diskon_pct != null ? ` · diskon ${p.diskon_pct}%` : p.price_group === 'set' && r.set_keyword ? ` · <span class="tag yellow">${esc(r.set_keyword)} ${num0(r.diskon_set_pct)}%</span>` : ''}</div></td>
+            <td><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}${p.diskon_pct != null ? ` · diskon ${p.diskon_pct}%` : p.price_group === 'set' && r.set_keyword ? ` · <span class="tag yellow">${esc(r.set_keyword)} ${num0(r.diskon_set_pct)}%</span>` : p.price_group === 'tanpa' ? ' · <span class="tag green">tanpa potongan</span>' : ''}</div></td>
             ${fields.map(([f]) => `<td class="right"><input class="input sm num ${p.price_locked || ch ? 'locked' : f === 'harga_beli' || (f === 'harga_shopee' && r.shopee_mode === 'rumus') ? 'calc' : ''}" style="width:104px" data-f="${f}" data-id="${p.id}" data-money value="${num(val(p, f))}" inputmode="numeric" aria-label="${f}"></td>`).join('')}
             <td class="num"><b class="${m == null ? '' : m < 0 ? 'neg' : 'pos'}">${m == null ? '–' : rp(m)}</b></td>
             <td>${pend ? `<button class="tag yellow" style="border:0;cursor:pointer" data-pend="${p.id}">Beda: ${esc(pend.sumber)} ${pend.macallan ? 'Macallan ' + num(pend.macallan) : ''}${pend.harga_shopee ? ' Shopee ' + num(pend.harga_shopee) : ''}</button>`
