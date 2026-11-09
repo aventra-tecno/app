@@ -1,5 +1,5 @@
 import { store, loadNotifs, markRead } from '../store.js';
-import { esc, chips, on, emptyState, ROLE_LABEL, icon, toast, toastErr } from '../ui.js';
+import { esc, chips, on, emptyState, ROLE_LABEL, icon, toast, toastErr, modal } from '../ui.js';
 import { pushSupported, pushPermission, sendTestPush, subscribePush, isIOS, isStandalone } from '../push.js';
 import { notifItem } from '../app.js';
 
@@ -11,7 +11,7 @@ export default {
     const isOwner = store.role === 'owner';
     const opts = [['all', 'Semua'], ['unread', 'Belum dibaca'], ['masalah', 'Masalah'], ['tugas', 'Tugas'], ...(isOwner ? ['admin', 'sopir', 'kepala_gudang', 'picker', 'packing', 'supervisor', 'keuangan', 'qc', 'cs', 'marketing'].map((r) => [r, ROLE_LABEL[r]]) : [])];
     el.innerHTML = `<div class="stack">
-      <div class="row nt-act"><button class="btn" id="rf" aria-label="Muat ulang">${icon('refresh', 16)}</button><button class="btn grow" id="ra">${icon('check', 16)} Tandai semua dibaca</button></div>
+      <div class="row nt-act"><button class="btn" id="rf" aria-label="Muat ulang">${icon('refresh', 16)}</button><button class="btn" id="hu" aria-label="Atur notifikasi melayang" title="Atur notifikasi melayang">${icon('sliders', 16)}</button><button class="btn grow" id="ra">${icon('check', 16)} Tandai semua dibaca</button></div>
       <section class="card stack" id="push"></section>
       <div id="ch"></div><div class="card flush" id="list"></div></div>`;
     // notifikasi HP otomatis aktif; kartu ini hanya muncul kalau ada yang perlu dibereskan (atau untuk super admin)
@@ -37,6 +37,7 @@ export default {
       el.querySelector('#list').innerHTML = list.length ? list.map(notifItem).join('') : emptyState('Tidak ada notifikasi.', 'bell');
     };
     refresh = paint;
+    el.querySelector('#hu').addEventListener('click', headsUpGuide);
     on(el, 'click', '[data-chips="f"] .chip', (e, b) => { f = b.dataset.v; paint(); });
     on(el, 'click', '[data-nid]', (e, a) => markRead([+a.dataset.nid]));
     el.querySelector('#ra').onclick = () => markRead(store.notifs.map((n) => n.id));
@@ -47,3 +48,26 @@ export default {
   },
   destroy() { refresh = null; }
 };
+
+// 2.27: panduan supaya notifikasi HP muncul MELAYANG (heads-up) + tes langsung di HP ini.
+// Melayang / tidaknya diatur Android per aplikasi, aplikasi web tidak bisa memaksanya.
+async function localTest() {
+  if (!('Notification' in window)) return toast('HP / browser ini tidak mendukung notifikasi', 'err');
+  if (Notification.permission !== 'granted') { const p = await Notification.requestPermission(); if (p !== 'granted') return toast('Izin notifikasi belum diberikan', 'err'); }
+  const reg = await navigator.serviceWorker?.ready;
+  if (!reg) return toast('Buka aplikasi dari ikon yang terpasang, lalu coba lagi', 'err');
+  toast('Kecilkan aplikasi sekarang — notifikasi muncul 5 detik lagi', 'ok');
+  setTimeout(() => reg.showNotification('Tes notifikasi melayang', { body: 'Kalau ini turun di atas layar, notifikasi sudah benar.', icon: 'assets/icon-192.png', badge: 'assets/badge-96.png', tag: 'sg-tes', renotify: true, vibrate: [200, 80, 200], data: { link: '#/notifikasi' } }), 5000);
+}
+function headsUpGuide() {
+  const android = /Android/i.test(navigator.userAgent);
+  modal({ title: 'Notifikasi melayang', body: `<div class="stack">
+    ${android ? `<ol class="hu-steps">
+      <li>Buka <b>Setelan HP › Aplikasi › Stok Gudang</b> (kalau dipasang dari Chrome dan tidak ada, pilih <b>Chrome</b>).</li>
+      <li>Ketuk <b>Notifikasi</b>, pastikan <b>Izinkan notifikasi</b> menyala.</li>
+      <li>Ketuk kategori notifikasinya (nama situs / Stok Gudang), lalu nyalakan <b>Pop-up di layar</b> / <b>Tampilkan sebagai pop-up</b> dan pilih <b>Peringatan / Suara</b> (bukan Senyap).</li>
+      <li>Matikan <b>Penghemat baterai</b> untuk aplikasi ini supaya notifikasi tidak terlambat.</li>
+    </ol>` : `<ol class="hu-steps"><li>iPhone: pasang dulu lewat Safari › Bagikan › Tambah ke Layar Utama.</li><li>Setelan › Notifikasi › Stok Gudang › nyalakan <b>Spanduk</b> (Banner) dan pilih <b>Menetap</b>.</li></ol>`}
+    <div class="xs muted">Nama menu bisa sedikit berbeda di tiap merek HP (Samsung, Xiaomi, Oppo, Vivo).</div></div>`,
+    actions: [{ label: 'Tutup', value: false }, { label: 'Tes di HP ini', cls: 'btn-primary', onClick: () => { localTest().catch(toastErr); return true; } }] });
+}
