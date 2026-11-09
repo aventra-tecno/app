@@ -1735,3 +1735,7 @@ html[data-theme="hitam"] .theme-opt:has(input:checked) { border-color: #1A1D1B; 
 .th-hitam .th-bar, .th-hitam .th-side, .th-hitam .th-card { background: linear-gradient(150deg, #3B403C, #111312); }
 .th-hitam .th-dot { background: #F2B01E; }
 .th-t b { display: block; font-size: 15px; }
+.hu-brand { margin: 6px 0 0; padding-left: 16px; display: grid; gap: 4px; font-size: 13px; }
+/* 2.31 — isi complete set di master barang */
+.isi-set { margin-top: 4px; } .isi-set summary { cursor: pointer; color: #26348B; font-weight: 700; }
+.isi-set ul { margin: 4px 0 0; padding-left: 16px; font-size: 12px; color: var(--muted); display: grid; gap: 1px; }
