@@ -7,7 +7,7 @@ const KIND = {
   barang_hilang: 'Selisih stok opname (barang hilang)', kirim_tanpa_packing: 'Resi dikirim tanpa scan packing',
   retur_tidak_kembali: 'Retur / cancel tidak kembali ke gudang', terima_kurang: 'Barang WIN diterima kurang',
   harga_beli_naik: 'Harga beli di atas harga master', packing_paksa: 'Packing memaksa lanjut',
-  edit_luar_jam: 'Stok diubah di luar jam kerja', tidak_ada_di_rak: 'Barang tidak ada di rak', stok_minus: 'Stok sistem minus'
+  edit_luar_jam: 'Stok diubah di luar jam kerja', tidak_ada_di_rak: 'Barang tidak ada di rak', stok_minus: 'Stok sistem minus', serah_kurang: 'Barang picker tidak sampai'
 };
 
 export default {
