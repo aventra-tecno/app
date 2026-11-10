@@ -1749,3 +1749,33 @@ html[data-theme="hitam"] .theme-opt:has(input:checked) { border-color: #1A1D1B; 
 .pb-down { background: #FDECEA; color: #B42318; border-color: #F4B9B0; }
 .pb-man { background: #F2F3F8; color: #4B5375; border-color: #DCDFEA; }
 html:not([data-theme="hitam"]) .sup-tab.on { background: linear-gradient(150deg, #2E3D99, #26348B 45%, #1D2876); border-color: #26348B; color: #fff; } html:not([data-theme="hitam"]) .sup-tab.on span { color: #FFD66B; }
+/* 2.33 — daftar dari file, cari barang, meja kepala gudang, toko offline */
+.ps-res { display: grid; gap: 2px; margin-top: -4px; }
+.ps-res:empty { display: none; }
+.ps-item { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; padding: 9px 12px; background: #fff; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; font: inherit; color: inherit; }
+.ps-item:hover, .ps-item:focus-visible { border-color: #26348B; background: #F5F6FC; }
+.le-tools { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.le-up { cursor: pointer; justify-content: center; background: #EEF0FA; color: #26348B; border-color: #C9CFEE; font-weight: 700; }
+html[data-theme="hitam"] .le-up { background: #FFF4D6; color: #6B4A00; border-color: #F2D38A; }
+.le-row { align-items: flex-start; flex-wrap: wrap; }
+.le-in { display: flex; gap: 8px; align-items: flex-end; }
+.le-in label { display: grid; gap: 2px; }
+.le-in .input { width: 76px; }
+.le-in [data-money], .le-in [data-pr] { width: 104px; }
+.le-unk summary { cursor: pointer; }
+.le-unk[open] summary { margin-bottom: 6px; }
+.meja-card summary { cursor: pointer; list-style: none; }
+.meja-card summary::-webkit-details-marker { display: none; }
+.meja-card[open] summary svg { transform: rotate(90deg); }
+.meja-card .list { margin-top: 8px; max-height: 260px; overflow: auto; }
+.seg { display: inline-flex; margin-top: 6px; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+.seg button { border: 0; background: #fff; padding: 6px 10px; font: inherit; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: #26348B; color: #fff; }
+html[data-theme="hitam"] .seg button.on { background: #1A1D1B; color: #F2B01E; }
+.seg button:disabled { opacity: .4; cursor: not-allowed; }
+.ofl-row { align-items: flex-start; flex-wrap: wrap; }
+@media (max-width: 700px) {
+  .le-row .le-in, .ofl-row .le-in { width: 100%; }
+  .le-in label { flex: 1; } .le-in .input, .le-in [data-money], .le-in [data-pr] { width: 100%; }
+}
