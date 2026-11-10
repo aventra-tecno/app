@@ -1,6 +1,7 @@
 import { supa, rpc } from '../supa.js';
 import { store } from '../store.js';
 import { esc, rp, num, fmtDateTime, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, icon, photoUrl, confirmBox, parseNum } from '../ui.js';
+import { listEditor } from '../daftar-file.js';
 
 const PO_ST = { draft: ['Draft', ''], ditugaskan: ['Ditugaskan', 'yellow'], berangkat: ['Sopir berangkat', 'yellow'], diambil: ['Sudah diambil', 'blue'], sampai: ['Sampai gudang', 'blue'], selesai: ['Selesai', 'green'], batal: ['Batal', 'red'] };
 export const poTag = (s) => `<span class="tag ${PO_ST[s]?.[1] || ''}">${PO_ST[s]?.[0] || s}</span>`;
@@ -12,14 +13,42 @@ export default {
     { sel: '#poform', title: 'Tugaskan sopir', body: 'Isi no. order di aplikasi WIN, pilih sopir, lalu simpan. Sopir langsung dapat notifikasi.' }
   ],
   async render(el, { params }) {
-    let tab = params.tab || 'need';
-    el.innerHTML = `${pageHead('Beli di WIN', 'Barang pesanan yang tidak cukup di gudang, dibeli lewat aplikasi WIN lalu diambil sopir.')}
-      <div class="stack">${chips('tab', [['need', 'Perlu dibeli'], ['po', 'Daftar PO']], tab)}<div id="body"></div></div>`;
+    const kg = store.settings.alur_kg !== false;
+    let tab = params.tab || (kg ? 'file' : 'need');
+    el.innerHTML = `${pageHead('Beli di WIN')}
+      <div class="stack">${chips('tab', [...(kg ? [['file', 'Daftar dari WIN']] : []), ['need', 'Perlu dibeli'], ['po', 'Daftar PO']], tab)}<div id="body"></div></div>`;
+    const toPO = () => { tab = 'po'; el.querySelectorAll('[data-chips="tab"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === 'po')); show(); };
     on(el, 'click', '[data-chips="tab"] .chip', (e, b) => { tab = b.dataset.v; b.parentElement.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c === b)); show(); });
-    const show = () => (tab === 'need' ? renderNeed(el.querySelector('#body'), () => { tab = 'po'; el.querySelectorAll('[data-chips="tab"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === 'po')); show(); }) : renderPOs(el.querySelector('#body')));
+    const show = () => { const b = el.querySelector('#body'); tab === 'file' ? renderFile(b, toPO) : tab === 'need' ? renderNeed(b, toPO) : renderPOs(b); };
     show();
   }
 };
+
+// 2.33: kepala gudang memesan di aplikasi WIN, lalu upload screenshot / PDF / Excel daftarnya di sini.
+// Barang dicocokkan dengan master barang; saat sopir sampai & di-scan, barang masuk meja kepala gudang.
+async function renderFile(box, afterCreate) {
+  const { data: drivers } = await supa.from('profiles').select('id, full_name').eq('role', 'sopir').eq('active', true);
+  box.innerHTML = `<div class="stack">
+    <section class="card stack"><h2 class="sec-title">Barang yang dipesan di WIN</h2><div id="le"></div></section>
+    <section class="card stack" id="poform"><div class="grid gauto">
+        <label class="field">No. order di aplikasi WIN<input class="input mono" id="win" placeholder="mis. WIN-88213450"></label>
+        <label class="field">Tugaskan sopir<select class="input" id="drv"><option value="">— pilih nanti —</option>${(drivers || []).map((d) => `<option value="${d.id}">${esc(d.full_name)}</option>`).join('')}</select></label>
+        <label class="field">Catatan<input class="input" id="note" placeholder="opsional"></label></div>
+      <button class="btn btn-primary btn-lg" id="mk" disabled>Simpan & kirim tugas ke sopir</button></section></div>`;
+  const le = listEditor(box.querySelector('#le'), { price: true, emptyText: 'Upload screenshot / PDF / Excel pesanan dari aplikasi WIN, atau cari manual.', onChange: (st) => { box.querySelector('#mk').disabled = !st.rows.length; } });
+  box.querySelector('#mk').onclick = async (e) => {
+    const rows = le.state.rows;
+    const over = rows.filter((r) => Number(r.p.harga_beli) > 0 && r.price > Number(r.p.harga_beli));
+    if (over.length && !(await confirmBox('Harga beli di atas harga master', `${over.length} barang harganya lebih tinggi dari harga master. Ini akan dilaporkan ke owner. Lanjut?`))) return;
+    e.target.disabled = true;
+    try {
+      await rpc('create_po', { p: { to_meja: true, source_file: le.state.file || null, win_order_no: box.querySelector('#win').value.trim(), driver_id: box.querySelector('#drv').value || null, note: box.querySelector('#note').value.trim(),
+        items: rows.map((r) => ({ product_id: r.p.id, qty: r.qty, unit_cost: r.price || Number(r.p.harga_beli) || 0 })) } });
+      toast('Daftar beli tersimpan' + (box.querySelector('#drv').value ? ' & tugas dikirim ke sopir' : ''), 'ok');
+      afterCreate();
+    } catch (err) { toastErr(err); e.target.disabled = false; }
+  };
+}
 
 async function renderNeed(box, afterCreate) {
   box.innerHTML = skeleton(3);
@@ -111,10 +140,10 @@ export async function openPO(id, after) {
   if (error) return toastErr(error);
   const { data: drivers } = await supa.from('profiles').select('id, full_name').eq('role', 'sopir').eq('active', true);
   const nota = p.nota_photo ? await photoUrl(p.nota_photo) : null;
-  const canEdit = ['owner', 'admin'].includes(store.role) && ['draft', 'ditugaskan'].includes(p.status);
+  const canEdit = ['owner', 'kepala_gudang', 'supervisor'].includes(store.role) && ['draft', 'ditugaskan'].includes(p.status);
   const r = await modal({
     title: p.code, wide: true,
-    body: `<div class="stack"><div class="row wrap">${poTag(p.status)}<span class="small muted">No. order WIN <b class="mono">${esc(p.win_order_no || '–')}</b></span></div>
+    body: `<div class="stack"><div class="row wrap">${poTag(p.status)}${p.to_meja ? '<span class="tag blue">ke meja kepala gudang</span>' : ''}<span class="small muted">No. order WIN <b class="mono">${esc(p.win_order_no || '–')}</b>${p.source_file ? ' · dari ' + esc(p.source_file) : ''}</span></div>
       <div class="table-wrap card flush" style="border:1px solid var(--line)"><table class="tbl po-tbl"><colgroup><col class="c-name"><col><col><col><col class="c-rp"></colgroup><thead><tr><th>Barang</th><th class="right">Beli</th><th class="right">Terima</th><th class="right" title="Untuk pesanan">Pesanan</th><th class="right">Harga</th></tr></thead><tbody>
       ${p.po_items.map((i) => `<tr class="${p.status === 'selesai' && i.received_qty < i.qty ? 'bad' : ''}"><td>${esc(i.products.name)}<div class="xs muted mono">${esc(i.products.sku)}</div></td><td class="num">${i.qty}</td><td class="num">${i.received_qty}</td><td class="num">${i.for_orders}</td><td class="num">${rp(i.unit_cost)}</td></tr>`).join('')}
       </tbody></table></div>
@@ -127,10 +156,7 @@ export async function openPO(id, after) {
     } }] : [{ label: 'Tutup', value: null }]
   });
   if (r === 'batal' && await confirmBox('Batalkan PO?', 'Barang pesanan di PO ini akan kembali ke daftar “Perlu dibeli”.', 'Batalkan PO', true)) {
-    const e1 = await supa.from('order_items').update({ po_id: null }).eq('po_id', id);
-    const e2 = await supa.from('purchase_orders').update({ status: 'batal' }).eq('id', id);
-    if (e1.error || e2.error) return toastErr(e1.error || e2.error);
-    toast('PO dibatalkan', 'ok');
+    try { await rpc('po_cancel', { p_po: id }); toast('PO dibatalkan', 'ok'); } catch (err) { return toastErr(err); }
   }
   after && after();
 }
