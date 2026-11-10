@@ -18,7 +18,10 @@ export default {
         <section class="card stack"><h2 class="sec-title">Cara pesanan masuk</h2>
           <div class="list-item" style="padding:0;border:0"><div class="grow"><b>Upload file pesanan (pencocokan otomatis SKU)</b>
             <div class="small muted">Nyalakan kalau marketplace memakai SKU / kode barang yang sama dengan pricelist. Matikan kalau tidak ada SKU: pesanan dicatat kepala gudang di menu <b>Catat pesanan</b> (scan resi + scan barang).</div></div>
-            <label class="switch"><input type="checkbox" name="upload_pesanan" ${s.upload_pesanan !== false ? 'checked' : ''} aria-label="Upload file pesanan"><span></span></label></div></section>
+            <label class="switch"><input type="checkbox" name="upload_pesanan" ${s.upload_pesanan !== false ? 'checked' : ''} aria-label="Upload file pesanan"><span></span></label></div>
+          <div class="list-item" style="padding:12px 0 0;border:0;border-top:1px solid var(--line)"><div class="grow"><b>Alur kepala gudang dulu</b>
+            <div class="small muted">Kepala gudang menugaskan picker & beli di WIN, barang dicek di meja kepala gudang, lalu admin scan resi & barang di <b>Catat pesanan</b>. Matikan untuk alur lama (resi dicatat dulu, semua barang dibeli di WIN).</div></div>
+            <label class="switch"><input type="checkbox" name="alur_kg" ${s.alur_kg !== false ? 'checked' : ''} aria-label="Alur kepala gudang dulu"><span></span></label></div></section>
         <section class="card stack" id="stores"><div class="row between wrap"><h2 class="sec-title">Toko / marketplace</h2><button type="button" class="btn btn-sm" id="addstore">${icon('plus', 16)} Tambah toko</button></div>
           <div class="small muted">Dipilih kepala gudang saat scan resi. Rekap harian bisa dilihat per toko.</div><div id="storelist"></div></section>
         <section class="card stack"><h2 class="sec-title">Biaya & laba</h2><div class="grid gauto">
@@ -44,7 +47,7 @@ export default {
       const upd = {
         nama_toko: fd.get('nama_toko').trim() || 'Stok Gudang', packing_cost: parseNum(fd.get('packing_cost')) || 0, hari_kerja: +fd.get('hari_kerja') || 26,
         shopee_fee_pct: +fd.get('shopee_fee_pct') || 0, jam_mulai: fd.get('jam_mulai'), jam_selesai: fd.get('jam_selesai'),
-        ui_theme: fd.get('ui_theme') || 'biru', retur_grace_days: +fd.get('retur_grace_days') || 2, wajib_foto_packing: fd.get('wajib_foto_packing') === 'on', upload_pesanan: fd.get('upload_pesanan') === 'on', updated_at: new Date().toISOString()
+        ui_theme: fd.get('ui_theme') || 'biru', retur_grace_days: +fd.get('retur_grace_days') || 2, wajib_foto_packing: fd.get('wajib_foto_packing') === 'on', upload_pesanan: fd.get('upload_pesanan') === 'on', ...('alur_kg' in s ? { alur_kg: fd.get('alur_kg') === 'on' } : {}), updated_at: new Date().toISOString()
       };
       const { error } = await supa.from('settings').update(upd).eq('id', 1);
       if (error) return toastErr(error);
