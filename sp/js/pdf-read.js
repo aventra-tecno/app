@@ -124,3 +124,22 @@ export async function readPdf(file) {
   if (rows.length < 2) throw new Error('Tabel di PDF tidak terbaca. Pastikan PDF berisi teks (bukan hasil scan / foto) dan punya judul kolom seperti ITEM CODE / KODE dan PRICE LIST / HARGA.');
   return rows;
 }
+
+// 2.33: baca PDF jadi baris teks (untuk daftar belanja WIN / nota), tanpa harus ada judul kolom
+export async function readPdfLines(file) {
+  const P = await pdfjs();
+  const doc = await P.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const out = [];
+  for (let n = 1; n <= doc.numPages; n++) {
+    const tc = await (await doc.getPage(n)).getTextContent();
+    const items = tc.items.filter((i) => String(i.str).trim()).map((i) => ({ str: String(i.str).replace(/\s+/g, ' ').trim(), x: i.transform[4], y: i.transform[5], w: i.width, h: i.height || Math.abs(i.transform[3]) || 8 }));
+    items.sort((a, b) => b.y - a.y || a.x - b.x);
+    const lines = [];
+    for (const it of items) {
+      const ln = lines.find((l) => Math.abs(l.y - it.y) <= Math.max(2, it.h * 0.45));
+      if (ln) ln.items.push(it); else lines.push({ y: it.y, items: [it] });
+    }
+    lines.forEach((l) => { l.items.sort((a, b) => a.x - b.x); out.push(mergePhrases(l.items).map((p) => p.text)); });
+  }
+  return out;
+}
