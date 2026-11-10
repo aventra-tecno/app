@@ -1,57 +1,28 @@
 import { esc, icon, toast, beep, modal } from './ui.js';
 
 // Kolom scan untuk 3 cara:
-// 1) Scanner Bluetooth / USB (langsung atau lewat OTG converter): alat bekerja seperti keyboard,
+// 1) Scanner Bluetooth / USB (langsung bekerja di kolom isian) (langsung atau lewat OTG converter): alat bekerja seperti keyboard,
 //    mengetik kode sangat cepat lalu Enter / Tab / tanpa akhiran. Semua didukung.
 // 2) Ketik manual + Enter.
 // 3) Kamera HP.
 // Scan tetap tertangkap walau kolom tidak sedang dipilih (selama tidak sedang mengetik di kolom lain).
 let active = null;          // handler scan halaman yang sedang tampil
 
-// ---------- mode scan: Scanner alat / Kamera HP / Ketik ----------
-const MODE_KEY = 'scan-mode', LAST_KEY = 'scanner-last', META_KEY = 'scanner-meta';
-const MODES = [['alat', 'scan', 'Scanner alat'], ['kamera', 'camera', 'Kamera HP'], ['ketik', 'list', 'Ketik']];
+// ---------- mode scan: Kamera HP / Ketik ----------
+// 2.39: tab "Scanner alat" & halaman Pengaturan scanner dihapus. Scanner USB/Bluetooth tetap langsung
+// bekerja di kolom isian (dikenali dari ketikan yang sangat cepat), tanpa perlu dipilih.
+const MODE_KEY = 'scan-mode';
+const MODES = [['kamera', 'camera', 'Kamera HP'], ['ketik', 'list', 'Ketik']];
 const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) {} return null; };
 const isMobile = () => window.matchMedia('(max-width: 899px)').matches;
-export const scannerLastSeen = () => +ls(LAST_KEY) || 0;
-export const scannerMeta = () => { try { return JSON.parse(ls(META_KEY) || 'null'); } catch (_) { return null; } };
 export function getScanMode() {
   const m = ls(MODE_KEY);
   if (MODES.some(([k]) => k === m)) return m;
-  if (ls('scan-hide-keyboard') === '1' || scannerLastSeen()) return 'alat';
   return isMobile() ? 'kamera' : 'ketik';
 }
 export function setScanMode(m) {
   ls(MODE_KEY, m);
   document.querySelectorAll('.scanwrap').forEach((w) => w.__applyMode && w.__applyMode(m));
-  window.dispatchEvent(new CustomEvent('scan-mode', { detail: m }));
-}
-const ago = (t) => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? 'baru saja' : s < 3600 ? Math.round(s / 60) + ' menit lalu' : s < 86400 ? Math.round(s / 3600) + ' jam lalu' : Math.round(s / 86400) + ' hari lalu'; };
-export function scannerStatusText() {
-  const t = scannerLastSeen();
-  let live = false; try { live = sessionStorage.getItem('scanner-ok') === '1'; } catch (_) {}
-  if (live && Date.now() - t < 30 * 60000) return { on: true, text: 'Scanner terhubung · scan terakhir ' + ago(t) };
-  if (t) return { on: false, text: 'Scanner pernah dipakai di perangkat ini (' + ago(t) + '). Scan sekali untuk memastikan masih terhubung.' };
-  return { on: false, text: 'Scanner belum terdeteksi. Sambungkan scanner lalu scan satu barcode.' };
-}
-function paintStatus() {
-  const st = scannerStatusText();
-  document.querySelectorAll('[data-sc-status]').forEach((el) => { el.classList.toggle('on', st.on); el.querySelector('span').textContent = st.text; });
-}
-
-// dipanggil setiap ada scan dari alat (ketikan sangat cepat)
-function noteHardware(meta) {
-  const modeBefore = getScanMode();
-  if (!ls(MODE_KEY)) ls(MODE_KEY, modeBefore);      // kunci pilihan saat ini supaya tidak berganti diam-diam
-  let first = true; try { first = sessionStorage.getItem('scanner-ok') !== '1'; sessionStorage.setItem('scanner-ok', '1'); } catch (_) {}
-  ls(LAST_KEY, String(Date.now()));
-  ls(META_KEY, JSON.stringify({ ms: meta.ms ?? null, suffix: meta.suffix || '-', at: Date.now() }));
-  paintStatus();
-  window.dispatchEvent(new CustomEvent('scanner-detected', { detail: meta }));
-  if (!first) return;
-  // scanner langsung aktif: otomatis pindah ke mode Scanner alat (keyboard HP disembunyikan)
-  if (modeBefore !== 'alat') setScanMode('alat');
-  toast('Scanner terhubung ✓ — siap dipakai', 'ok');
 }
 
 export function scanBox(id, placeholder = 'Scan / ketik barcode lalu Enter') {
@@ -74,7 +45,6 @@ export function bindScan(root, id, onScan, { autofocus = true } = {}) {
   const fire = async (code, meta = { source: 'ketik' }) => {
     code = String(code || '').replace(/[\r\n\t]/g, '').trim();
     if (!code || busy) return null;
-    if (meta.source === 'alat') noteHardware(meta);
     busy = true;
     try {
       const res = await onScan(code, meta);
@@ -109,14 +79,9 @@ export function bindScan(root, id, onScan, { autofocus = true } = {}) {
     if (!wrap) return;
     wrap.dataset.mode = m;
     wrap.querySelectorAll('[data-mode]').forEach((b) => { b.classList.toggle('on', b.dataset.mode === m); b.setAttribute('aria-pressed', b.dataset.mode === m); });
-    inp.setAttribute('inputmode', m === 'alat' ? 'none' : 'text');
-    inp.placeholder = m === 'alat' ? 'Arahkan scanner ke barcode…' : m === 'kamera' ? 'Ketuk Kamera, atau ketik kode' : ph;
-    const hint = wrap.querySelector('[data-hint]');
-    if (m === 'alat') {
-      hint.innerHTML = `<span class="sc-status" data-sc-status><i></i><span></span></span>`;
-      paintStatus();
-    } else hint.innerHTML = m === 'kamera' ? '<span class="muted">Ketuk tombol <b>Kamera</b> lalu arahkan ke barcode.</span>' : '<span class="muted">Ketik kode lalu tekan Enter.</span>';
-    if (m === 'alat' && document.activeElement !== inp) { inp.blur(); setTimeout(() => inp.focus({ preventScroll: true }), 60); }
+    inp.setAttribute('inputmode', 'text');
+    inp.placeholder = m === 'kamera' ? 'Ketuk Kamera, atau ketik / scan kode' : ph;
+    wrap.querySelector('[data-hint]').innerHTML = m === 'kamera' ? '<span class="muted">Ketuk tombol <b>Kamera</b> lalu arahkan ke barcode.</span>' : '<span class="muted">Ketik kode lalu tekan Enter, atau langsung tembak pakai scanner.</span>';
   };
   if (wrap) {
     wrap.__applyMode = applyMode;
@@ -127,7 +92,7 @@ export function bindScan(root, id, onScan, { autofocus = true } = {}) {
     applyMode(getScanMode());
   }
   active = { fire, inp };
-  if (autofocus && (window.matchMedia('(min-width: 900px)').matches || getScanMode() === 'alat')) setTimeout(() => inp.focus({ preventScroll: true }), 60);
+  if (autofocus && window.matchMedia('(min-width: 900px)').matches) setTimeout(() => inp.focus({ preventScroll: true }), 60);
   return { focus: () => inp.focus(), fire };
 }
 
@@ -142,7 +107,6 @@ function target() {
   return (code, meta) => {
     code = String(code || '').trim();
     if (!code) return;
-    noteHardware(meta);
     const r = fallback(code) || { ok: false, title: 'Bukan menu scan' };
     beepSafe(false);
     showScanResult({ code, ...r });

@@ -13,7 +13,7 @@ const DESC = {
   catat: 'Scan resi & barang', pesanan: 'Daftar pesanan', upload: 'File Shopee & pricelist', retur: 'Retur & cancel', rekap: 'Rekap per toko',
   beli: 'Belanja ke WIN', terima: 'Barang datang', ambil: 'Ambil dari rak', packing: 'Kemas paket', cek: 'Cek kode', stok: 'Stok & rak', barang: 'Master barang',
   harga: 'Rumus harga', laba: 'Laba per barang', gaji: 'Gaji & biaya', pegawai: 'Akun pegawai', log: 'Riwayat aktivitas', pengumuman: 'Info ke pegawai', pengaturan: 'Pengaturan toko',
-  absen: 'Absen harian', 'pengaturan-scanner': 'Scanner & kamera', panduan: 'Cara pakai', akun: 'Profil & password', dashboard: 'Ringkasan', masalah: 'Kecurangan', tugas: 'Tugas sopir', notifikasi: 'Notifikasi', superadmin: 'Alat teknis',
+  absen: 'Absen harian', panduan: 'Cara pakai', akun: 'Profil & password', dashboard: 'Ringkasan', masalah: 'Kecurangan', tugas: 'Tugas sopir', notifikasi: 'Notifikasi', superadmin: 'Alat teknis',
   kas: 'Kas, bank, hutang', laporan: 'Laba per toko', pajak: 'PPh 0,5%', kinerja: 'Nilai pegawai', 'laporan-tg': 'Rekap ke Telegram', modul: 'Buka menu baru',
   komplain: 'Komplain pembeli', katalog: 'Harga grosir', qc: 'Periksa paket', gudang: 'Stok per cabang', saran: 'Barang perlu dibeli'
 };

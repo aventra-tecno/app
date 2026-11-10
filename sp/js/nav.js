@@ -44,7 +44,6 @@ export const PAGES = {
   tagihan:    { label: 'Tagihan', icon: 'receipt', roles: ['owner'], group: 'Pengaturan', hidden: true },   // dibuka dari ikon tagihan di bar atas
   absen:      { label: 'Absen', icon: 'clock', mod: 'absensi', roles: ['owner', 'admin', 'sopir', 'kepala_gudang', 'picker', 'packing', 'keuangan', 'qc', 'cs', 'marketing'], group: 'Saya' },
   notifikasi: { label: 'Notifikasi', icon: 'bell', roles: ['*'], group: 'Saya', hidden: true },
-  'pengaturan-scanner': { label: 'Pengaturan scanner', short: 'Scanner', icon: 'bt', roles: ['*'], group: 'Saya' },
   // ----- menu khusus super admin (pembuat aplikasi) -----
   superadmin: { label: 'Ringkasan', short: 'Ringkasan', icon: 'home', roles: ['superadmin'], group: 'Super admin', sa: true },
   'sa-jabatan': { label: 'Masuk sebagai jabatan', short: 'Jabatan', icon: 'users', roles: ['superadmin'], group: 'Super admin', sa: true },

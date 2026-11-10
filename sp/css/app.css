@@ -584,11 +584,9 @@ button.tb-user { background: #fff; cursor: pointer; font: inherit; text-align: l
 .scan-modes { display: flex; gap: 4px; padding: 4px; background: var(--paper); border-radius: 12px; }
 .sm-btn { flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; border: 0; border-radius: 9px; background: none; font: inherit; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; }
 .sm-btn.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(26,29,27,.14); }
-.scanwrap[data-mode="alat"] [data-cam] { display: none; }
 .scanwrap[data-mode="kamera"] [data-cam] { min-width: 120px; }
 .scanwrap:not([data-mode="kamera"]) .cam-lbl { display: none; }
 @media (min-width: 900px) { .scanwrap:not([data-mode="kamera"]) .cam-lbl { display: inline; } }
-.scanwrap[data-mode="alat"] .input { border-color: var(--green); background: #F4FAF6; }
 .scan-hint { font-size: 12.5px; min-height: 18px; }
 .sc-status { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
 .sc-status i { width: 10px; height: 10px; border-radius: 99px; background: var(--line-2); flex: none; }

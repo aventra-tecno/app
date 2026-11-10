@@ -273,7 +273,7 @@ async function showVersion() {
 // ---------- menu profil (pojok kanan atas / logo) ----------
 function meMenuHtml() {
   const p = store.profile, role = store.role;
-  const items = [['akun', 'user', 'Profil & ganti password'], ['pengaturan-scanner', 'bt', 'Pengaturan scanner'], ['panduan', 'compass', 'Panduan aplikasi'], ['notifikasi', 'bell', 'Semua notifikasi']];
+  const items = [['akun', 'user', 'Profil & ganti password'], ['panduan', 'compass', 'Panduan aplikasi'], ['notifikasi', 'bell', 'Semua notifikasi']];
   if (role === 'superadmin') items.splice(1, 1, ['log', 'clock', 'Log aktivitas']);
   if (role === 'owner') items.unshift(['tagihan', 'receipt', 'Tagihan aplikasi', billUnpaid ? `<span class="tag red">${billUnpaid} belum dibayar</span>` : '']);
   if (role === 'owner') items.push(['modul', 'lock', 'Menu tambahan'], ['log', 'clock', 'Log aktivitas'], ['pengaturan', 'gear', 'Pengaturan toko'], ['pegawai', 'users', 'Pegawai & jabatan']);
@@ -501,7 +501,7 @@ function sideInit() {
   addEventListener('keydown', (e) => { if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName) && innerWidth >= 900) { e.preventDefault(); if (document.documentElement.classList.contains('side-mini')) { document.documentElement.classList.remove('side-mini'); LS.set('side-mini', false); } document.querySelector('#side-q')?.focus(); } });
 }
 
-const FREE_PAGES = ['akun', 'panduan', 'notifikasi', 'pengaturan-scanner', 'menu', 'superadmin'];
+const FREE_PAGES = ['akun', 'panduan', 'notifikasi', 'menu', 'superadmin'];
 async function route() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [pageRaw, qs] = hash.split('?');
