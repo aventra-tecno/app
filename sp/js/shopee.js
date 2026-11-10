@@ -198,7 +198,10 @@ export function build(rows, headerRow, type, map) {
   if (type === 'pengembalian') return { rows: data.map((r) => ({ order_no: get(r, 'order_no'), return_no: get(r, 'return_no'), reason: get(r, 'reason'), received_at: toTs(get(r, 'received_at')) })).filter((x) => x.order_no) };
   if (type === 'penghasilan') {
     const m = new Map();
+    // laporan Shopee punya baris "Order" + baris "Sku" per pesanan -> hanya baris Order (kalau tidak, dana cair terhitung dobel)
+    const by = (rows[headerRow] || []).findIndex((h) => norm(h) === 'lihatberdasarkan');
     for (const r of data) {
+      if (by > -1 && String(r[by]).trim().toLowerCase() !== 'order') continue;
       const no = get(r, 'order_no'); if (!no) continue;
       const prev = m.get(no);
       m.set(no, { order_no: no, amount: (prev?.amount || 0) + parseNum(get(r, 'amount')), paid_at: toTs(get(r, 'paid_at')) });

@@ -75,6 +75,7 @@ export default {
         <div class="row between wrap"><div><div class="xs muted">Resi · ${esc(order.store || storeName())}</div><b class="mono" style="font-size:18px">${esc(order.resi)}</b></div>${statusTag(order.status)}</div>
         <label class="field small" style="margin-top:6px">No. pesanan (opsional, supaya file Penghasilan bisa dicocokkan)
           <div class="row" style="flex-wrap:nowrap"><input class="input mono grow" id="ono" value="${esc(order.order_no === order.resi ? '' : order.order_no)}" placeholder="ketik / scan no. pesanan" ${editable ? '' : 'disabled'}>${editable ? '<button class="btn btn-sm" id="savno">Simpan</button>' : ''}</div></label>
+        ${order.shopee?.length ? `<div class="alert blue small" style="margin-top:8px"><b>Isi pesanan di Shopee:</b>${order.shopee.map((l) => `<div>×${l.qty} ${esc(l.name)}${l.var ? ` <span class="muted">(${esc(l.var)})</span>` : ''}</div>`).join('')}</div>` : ''}
         ${items?.length ? `<div class="list no-page" style="margin-top:8px">${items.map((i) => `<div class="list-item cat-item">
             <div class="grow" style="min-width:0"><b>${esc(i.name)}</b><div class="xs muted mono">${esc(i.sku || '')}</div>
               <div class="xs" style="margin-top:3px">${newFlow ? `${i.meja_qty ? `<span class="tag green">${i.meja_qty} barang WIN</span> ` : ''}${i.rack_qty ? `<span class="tag blue">${i.rack_qty} dari rak ${esc(i.products?.rack_code || '')}</span>` : ''}`

@@ -62,6 +62,13 @@ export default {
       const box = el.querySelector('#check');
       box.innerHTML = '<div class="card"><div class="skeleton" style="height:120px"></div></div>';
       try {
+        // 2.38: file khusus Shopee (Laporan Penghasilan; Pesanan Saya di alur kepala gudang)
+        if (['owner', 'admin'].includes(store.role) && /\.(xlsx|xls)$/i.test(file.name)) {
+          const { readBook, kindOf, shopeeUpload } = await import('../shopee-upload.js');
+          const book = await readBook(file);
+          const k = kindOf(book.sheets);
+          if (k === 'income' || (k && k.startsWith('orders:') && store.settings.alur_kg !== false)) { parsed = null; return shopeeUpload(file, box, book, k); }
+        }
         const rows = await readSheet(file);
         if (!rows.length) throw new Error('File kosong');
         const d = detect(rows);
