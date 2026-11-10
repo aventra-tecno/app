@@ -368,6 +368,33 @@ html[data-theme=hitam] .chip.on,html[data-theme=hitam] .tile.on{background:#1E21
   .sfind{display:flex}
 }
 @media(max-width:899px){.sfind{display:none}}
+
+/* ===== v1.3 — sidebar berbingkai & panduan interaktif ===== */
+@media(min-width:900px){
+  .sgrps{gap:8px}
+  .sgrp{border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(0,0,0,.10);padding:4px}
+  .sg-h{gap:10px;padding:9px 10px!important;border-radius:10px;color:rgba(255,255,255,.92)!important;font-size:12px!important;letter-spacing:.08em}
+  .sg-h:hover{background:rgba(255,255,255,.08)}
+  .sg-h .chev{display:flex;transition:transform .2s}
+  .sg-h span.grow{text-align:left}
+  .sgrp .sg-h span:not(.chev){transform:none!important}
+  .sgrp.closed .sg-h .chev{transform:rotate(-90deg)}
+  .sg-b{margin:2px 4px 6px;padding:6px;border-radius:10px;background:rgba(255,255,255,.07);gap:2px!important}
+  .sg-b a{min-height:40px!important}
+}
+.tour{position:fixed;inset:0;z-index:100}
+.thole{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(24,10,13,.62);outline:2px solid #FCD34D;transition:all .25s ease;pointer-events:none}
+.tcard{position:fixed;z-index:101;background:#fff;color:var(--ink);border-radius:18px;padding:16px;box-shadow:0 18px 48px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow-y:auto;animation:up .2s}
+.tcard.center{left:50%!important;top:50%!important;transform:translate(-50%,-50%);width:min(440px,92vw)!important}
+.tcard b#tourT{font-size:17px}
+.tbody{font-size:14px;line-height:21px;color:#3A2D32}
+.tprog{display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:var(--m);text-transform:uppercase;letter-spacing:.06em}
+.tbar{height:4px;border-radius:2px;background:#EFE4E6;overflow:hidden}.tbar i{display:block;height:100%;background:var(--m)}
+.tbtns{display:flex;gap:8px;align-items:center;margin-top:4px}
+.toff{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.tlegend{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;font-size:13px;line-height:24px}
+@media(max-width:699px){.tcard:not(.center){left:10px!important;right:10px!important;bottom:calc(12px + env(safe-area-inset-bottom));top:auto!important;width:auto!important}.tcard.topc{top:12px!important;bottom:auto}}
+ol.helpl li{margin-bottom:6px}
 @media print{.noprint{display:none!important}body{background:#fff}.doc{padding:0}}
 </style>
 </head>
@@ -395,7 +422,7 @@ const PAY_T = {dp:'DP',cicilan:'Cicilan',pelunasan:'Pelunasan'};
 
 /* ---------- icons ---------- */
 const IC = {
- down:'M7 10 L12 15 L17 10', copy:'M9 9 H19 V19 H9 Z M5 15 V5 H15', alert:'M12 3 L22 20 H2 Z M12 10 V14 M12 17 V17.5', trend:'M3 17 L9 11 L13 15 L21 7 M15 7 H21 V13', wallet:'M3 7 H19 V19 H3 Z M3 7 L15 3 V7 M15 13 H17', pin:'M12 21 C12 21 5 14 5 9 A7 7 0 0 1 19 9 C19 14 12 21 12 21 Z M12 11 A2 2 0 1 0 12 7 A2 2 0 1 0 12 11 Z', users:'M9 11 A3.5 3.5 0 1 0 9 4 A3.5 3.5 0 1 0 9 11 Z M2 20 C2 15 16 15 16 20 M16 4 A3.5 3.5 0 0 1 16 11 M18 15 C20 16 22 17 22 20', box:'M3 7 L12 3 L21 7 V17 L12 21 L3 17 Z M3 7 L12 11 L21 7 M12 11 V21', mega:'M3 10 V14 H7 L15 19 V5 L7 10 Z M18 9 C19.5 10.5 19.5 13.5 18 15', lock:'M6 11 H18 V21 H6 Z M8 11 V7 A4 4 0 0 1 16 7 V11', scan:'M4 8 V4 H8 M16 4 H20 V8 M20 16 V20 H16 M8 20 H4 V16 M7 12 H17', help:'M12 22 A10 10 0 1 0 12 2 A10 10 0 1 0 12 22 Z M9.5 9 A2.5 2.5 0 1 1 13 11.3 C12.3 11.7 12 12.3 12 13 V14 M12 17 V17.5',
+ down:'M7 10 L12 15 L17 10', tag:'M3 12 V4 H11 L20 13 L13 20 Z M7.5 8.5 V8.6', factory:'M3 21 V10 L9 13 V10 L15 13 V6 H20 V21 Z M7 17 H9 M12 17 H14 M17 17 H18', copy:'M9 9 H19 V19 H9 Z M5 15 V5 H15', alert:'M12 3 L22 20 H2 Z M12 10 V14 M12 17 V17.5', trend:'M3 17 L9 11 L13 15 L21 7 M15 7 H21 V13', wallet:'M3 7 H19 V19 H3 Z M3 7 L15 3 V7 M15 13 H17', pin:'M12 21 C12 21 5 14 5 9 A7 7 0 0 1 19 9 C19 14 12 21 12 21 Z M12 11 A2 2 0 1 0 12 7 A2 2 0 1 0 12 11 Z', users:'M9 11 A3.5 3.5 0 1 0 9 4 A3.5 3.5 0 1 0 9 11 Z M2 20 C2 15 16 15 16 20 M16 4 A3.5 3.5 0 0 1 16 11 M18 15 C20 16 22 17 22 20', box:'M3 7 L12 3 L21 7 V17 L12 21 L3 17 Z M3 7 L12 11 L21 7 M12 11 V21', mega:'M3 10 V14 H7 L15 19 V5 L7 10 Z M18 9 C19.5 10.5 19.5 13.5 18 15', lock:'M6 11 H18 V21 H6 Z M8 11 V7 A4 4 0 0 1 16 7 V11', scan:'M4 8 V4 H8 M16 4 H20 V8 M20 16 V20 H16 M8 20 H4 V16 M7 12 H17', help:'M12 22 A10 10 0 1 0 12 2 A10 10 0 1 0 12 22 Z M9.5 9 A2.5 2.5 0 1 1 13 11.3 C12.3 11.7 12 12.3 12 13 V14 M12 17 V17.5',
  home:'M3 11 L12 4 L21 11 V20 H14 V14 H10 V20 H3 Z', chat:'M4 5 H20 V16 H9 L5 20 V16 H4 Z',
  order:'M8 3 H16 V6 H8 Z M6 5 H5 V21 H19 V5 H18 M9 11 H15 M9 15 H13', invoice:'M6 3 H18 V21 L15 19 L12 21 L9 19 L6 21 Z M9 8 H15 M9 12 H15',
  more:'M4 4 H10 V10 H4 Z M14 4 H20 V10 H14 Z M4 14 H10 V20 H4 Z M14 14 H20 V20 H14 Z', spk:'M6 3 H14 L18 7 V21 H6 Z M14 3 V7 H18 M9 13 H15 M9 17 H13',
@@ -665,8 +692,10 @@ const NAV = [
   { h: '#/panduan', l: 'Panduan aplikasi', i: 'help', r: 'all', g: 'Saya' },
   { h: '#/akun', l: 'Akun saya', i: 'user', r: 'all', g: 'Saya' },
 ];
+const GICON = { Utama: 'home', Penjualan: 'tag', Produksi: 'factory', Laporan: 'chart', Pengaturan: 'gear', Saya: 'user' };
 const DEF_BN = { owner: ['#/', '#/masalah', '#/papan', '#/laporan'], admin: ['#/', '#/chat', '#/orders', '#/invoices'], designer: ['#/', '#/notif', '#/orders?st=desain', '#/akun'], manajer: ['#/', '#/spk', '#/papan', '#/laporan'], kepala: ['#/', '#/spk', '#/papan', '#/notif'], ketua: ['#/notif', '#/riwayat', '#/tugas', '#/cek'] };
-const modOn = k => !!(DB.modules[k] && DB.modules[k].active && (!DB.modules[k].until || DB.modules[k].until >= today()));
+const ALL_OPEN = true; /* semua menu tambahan dibuka */
+const modOn = k => ALL_OPEN || !!(DB.modules[k] && DB.modules[k].active && (!DB.modules[k].until || DB.modules[k].until >= today()));
 function navFor(u) {
   return NAV.filter(n => n.r === 'all' || n.r.split(' ').includes(u.role)).map(n => ({ ...n, l: n.h === '#/spk' && u.role === 'kepala' ? 'SPK Masuk' : n.l, locked: n.mod && !modOn(n.mod) }));
 }
@@ -704,7 +733,7 @@ function shell(title, sub, body, o = {}) {
   const groups = [...new Set(nav.map(n => n.g))];
   const closed = JSON.parse(localStorage.getItem('simpro_grp') || '[]');
   const sideItem = n => { const b = badgeOf(n, u); return `<a href="${n.h}" data-l="${esc(n.l.toLowerCase())}" class="${isOn(n.h) ? 'on' : ''}">${ic(n.i, 20)}<span class="grow">${n.l}</span>${n.locked ? ic('lock', 15) : ''}${b ? `<span class="badge ${n.badge === 'masalah' ? 'ring' : ''}">${b}</span>` : ''}</a>`; };
-  const side = groups.map(g => { const items = nav.filter(n => n.g === g); const isC = closed.includes(g) && !items.some(n => isOn(n.h)); return `<div class="sgrp ${isC ? 'closed' : ''}" data-g="${g}"><button type="button" class="sg-h" data-act="grp" data-g="${g}">${g}<span>${ic('down', 16)}</span></button><div class="sg-b">${items.map(sideItem).join('')}</div></div>`; }).join('');
+  const side = groups.map(g => { const items = nav.filter(n => n.g === g); const isC = closed.includes(g) && !items.some(n => isOn(n.h)); return `<div class="sgrp ${isC ? 'closed' : ''}" data-g="${g}"><button type="button" class="sg-h" data-act="grp" data-g="${g}" aria-expanded="${!isC}">${ic(GICON[g] || 'more', 18)}<span class="grow">${g}</span><span class="chev">${ic('down', 16)}</span></button><div class="sg-b">${items.map(sideItem).join('')}</div></div>`; }).join('');
   const mid = 2;
   const bnHtml = [...bn, { h: 'more', l: 'Lainnya', i: 'more' }].map((n, k) => {
     const b = n.h !== 'more' ? badgeOf(n, u) : 0;
@@ -763,7 +792,7 @@ const go = h => { if (location.hash === h) render(); else location.hash = h; };
 /* ---------- router ---------- */
 const PAGES = {};
 function render() {
-  closeSheet();
+  closeSheet(); if (typeof TOUR !== 'undefined' && TOUR) endTour(true);
   ROUTE = location.hash || '#/';
   document.documentElement.dataset.theme = DB.settings.theme;
   const [path, qs] = ROUTE.slice(1).split('?');
@@ -773,7 +802,7 @@ function render() {
   if (parts[0] === 't') { root.innerHTML = pageTrack(parts[1]); scrollTo(0, 0); return; }
   const real = realMe(), u = me();
   if (!u) { root.innerHTML = pageLogin(); return; }
-  if (u.role === 'sa') { root.innerHTML = pageSA(q); return; }
+  if (u.role === 'sa') { if (!SA_ENABLED) { localStorage.removeItem(SKEY); root.innerHTML = pageLogin(); return; } root.innerHTML = pageSA(q); return; }
   runWarnings();
   if (parts[0] === 'print') { root.innerHTML = pagePrint(parts[1], parts[2]); return; }
   const key = parts[0] || 'home';
@@ -786,6 +815,7 @@ function render() {
   if (html === undefined) return;
   root.innerHTML = html;
   if (!ROUTE.includes('keep')) scrollTo(0, 0);
+  setTimeout(autoTour, 550);
   if (HEADS.length) { const [m, l] = HEADS.pop(); HEADS = []; setTimeout(() => headsUp(m, l), 250); }
 }
 addEventListener('hashchange', render);
@@ -1642,6 +1672,7 @@ const FORM = {
 };
 /* =================== FITUR TAMBAHAN (sesuai panduan Aventra) =================== */
 const AKEY = 'simpro_as_v1';
+const SA_ENABLED = false; /* menu super admin sudah ada, akses dibuka nanti */
 const MODULES = {
   absensi: { n: 'Absensi', d: 'Absen masuk & pulang dari HP dengan jam server dan lokasi kantor. Rekap hadir & telat per pegawai.', p: 'Rp 49.000/bulan (contoh)', page: '#/absen' },
   kinerja: { n: 'Kinerja tim', d: 'Tahap selesai, kecepatan, dan reject per tim & pabrik — dasar bonus ketua tim.', p: 'Rp 39.000/bulan (contoh)', page: '#/kinerja' },
@@ -1683,7 +1714,8 @@ const realMe = () => DB.users.find(u => u.id === localStorage.getItem(SKEY) && u
 function migrate() {
   DB.settings = Object.assign({ bizName: 'Indokonveksi', theme: 'maroon', warnDays: 2, shipDays: 2, rejectPct: 5, priceGap: 10, photo: true, workStart: '07:00', workEnd: '17:00' }, DB.settings || {});
   DB.handled = DB.handled || {};
-  DB.modules = DB.modules || { kinerja: { active: true, until: addDays(today(), 20) } };
+  DB.modules = DB.modules || {};
+  if (ALL_OPEN) Object.keys(MODULES).forEach(k => { DB.modules[k] = { active: true, until: '2099-12-31', stop: false }; });
   DB.attendance = DB.attendance || [];
   DB.expenses = DB.expenses || [];
   DB.bill = DB.bill || { no: 'TAG-' + today().slice(2, 4) + today().slice(5, 7), due: addDays(today(), 4), status: 'belum', history: [{ no: 'TAG-' + addDays(today(), -30).slice(2, 4) + addDays(today(), -30).slice(5, 7), paidAt: addDays(today(), -27) }] };
@@ -1766,7 +1798,6 @@ function pageLogin() {
       <div class="accs">
       ${acc('Owner', 'owner@simpro.id')}${acc('Admin', 'admin@simpro.id')}${acc('Designer', 'designer@simpro.id')}${acc('Manajer Produksi (Pak Yudi)', 'yudi@simpro.id')}
       ${DB.factories.map((f, i) => acc('Kepala ' + f.name, `pabrik${i + 1}@simpro.id`)).join('')}
-      ${acc('Super admin (pembuat aplikasi)', 'superadmin@aventra.id')}
       </div>
       <div class="acc" style="flex-direction:column;align-items:stretch;gap:10px">
         <div class="t"><b>Ketua Tim</b><span>format: tahap.pabrik@simpro.id · contoh jahit.p2@simpro.id</span></div>
@@ -1844,7 +1875,7 @@ PAGES.kinerja = (p, q, u) => {
     const pcs = st.reduce((a, s) => a + (s.qtyDone || 0), 0);
     return { t, n: st.length, pcs, avg: hrs.length ? hrs.reduce((a, b) => a + b, 0) / hrs.length : 0, rej, noPh: st.filter(s => !photosOf(s.id).length).length };
   }).filter(r => r.n || r.rej);
-  return shell('Kinerja tim', 'Menu tambahan · aktif', `
+  return shell('Kinerja tim', 'Menu tambahan', `
    <div class="chips">${[['all', 'Semua pabrik'], ...DB.factories.map(f => [f.id, f.name])].map(([k, l]) => `<a class="chip ${fid === k ? 'on' : ''}" href="#/kinerja?f=${k}">${l}</a>`).join('')}</div>
    ${kpis([['Tahap selesai', rows.reduce((a, r) => a + r.n, 0)], ['Pcs dikerjakan', rows.reduce((a, r) => a + r.pcs, 0)], ['Pcs rework', rows.reduce((a, r) => a + r.rej, 0), 'bad'], ['Tanpa foto', rows.reduce((a, r) => a + r.noPh, 0), 'warn', '', 'only-d']])}
    ${listView(rows, {
@@ -1861,7 +1892,7 @@ PAGES.kas = (p, q, u) => {
   const all = [...inn, ...out].sort((a, b) => b.at.localeCompare(a.at));
   const sIn = inn.reduce((s, x) => s + x.v, 0), sOut = -out.reduce((s, x) => s + x.v, 0);
   const hutang = DB.spks.filter(s => ['diterima', 'selesai'].includes(s.status)).reduce((a, s) => a + qtyOrder(O(s.orderId)) * num(s.agreed), 0) - DB.expenses.filter(x => x.cat === 'Bayar pabrik').reduce((a, x) => a + num(x.amount), 0);
-  return shell('Keuangan &amp; kas', 'Menu tambahan · aktif', `
+  return shell('Keuangan &amp; kas', 'Menu tambahan', `
    ${kpis([['Saldo kas', rpS(sIn - sOut), 'ok'], ['Uang masuk', rpS(sIn)], ['Uang keluar', rpS(sOut), 'bad'], ['Hutang ke pabrik', rpS(Math.max(0, hutang)), 'warn']])}
    ${cols(listView(all, { title: 'Mutasi kas', empty: 'Belum ada mutasi', li: x => `<div class="li"><span class="t"><b>${esc(x.d)}</b><span>${fd(x.at)} · ${x.k}</span></span><b style="color:${x.v >= 0 ? 'var(--ok)' : 'var(--bad)'};white-space:nowrap">${rp(x.v)}</b></div>`, cols: [{ h: 'Tanggal', v: x => fd(x.at) }, { h: 'Jenis', v: x => `<span class="pill ${x.v >= 0 ? 'ok' : 'bad'}">${x.k}</span>` }, { h: 'Keterangan', v: x => esc(x.d) }, { h: 'Jumlah', r: 1, v: x => `<b style="color:${x.v >= 0 ? 'var(--ok)' : 'var(--bad)'}">${rp(x.v)}</b>` }] }),
     `<form class="card" data-form="kasSave"><div class="sec">Catat uang keluar</div>${fld('Kategori', 'cat', 'Bayar pabrik', { sel: ['Bayar pabrik', 'Bahan', 'Operasional', 'Lainnya'] })}${fld('Keterangan', 'note', '', { req: 1, ph: 'Misal: SPK-2611-0001 Pabrik 2' })}<div class="row" style="flex-wrap:wrap;align-items:flex-start">${fld('Jumlah (Rp)', 'amount', '', { num: 1, req: 1 })}${fld('Tanggal', 'date', today(), { type: 'date', req: 1 })}</div><button class="btn">Simpan</button></form>`)}`);
@@ -1914,9 +1945,9 @@ PAGES.setelan = (p, q, u) => {
 
 /* ---------- menu tambahan ---------- */
 PAGES.modul = (p, q, u) => shell('Menu tambahan', 'Buka sesuai kebutuhan', `
-  <div class="alert info">Tekan <b>Buka sekarang</b>, lalu bayar lewat QRIS / transfer / e-wallet (Mayar). Menu langsung aktif setelah lunas. Di prototipe pembayaran disimulasikan.</div>
-  <div class="tgrid">${Object.entries(MODULES).map(([k, m]) => { const on = modOn(k), st = DB.modules[k]; return `<div class="card ${q.m === k ? 'hl' : ''}"><div class="card-h"><b>${m.n}</b>${on ? `<span class="pill ok">Aktif s/d ${fd(st.until)}</span>` : `<span class="pill">${ic('lock', 12)} Terkunci</span>`}</div><span class="mut">${m.d}</span><span class="small">${m.p}</span>
-   ${on ? `<div class="row" style="flex-wrap:wrap">${m.page ? `<a class="btn light sm auto" href="${m.page}">Buka menu</a>` : ''}${st.stop ? `<button type="button" class="btn ghost sm auto" data-act="modStop" data-k="${k}">Lanjutkan lagi</button><span class="small">Tidak lanjut: terkunci setelah ${fd(st.until)}</span>` : `<button type="button" class="btn danger sm auto" data-act="modStop" data-k="${k}">Tidak lanjut</button>`}</div>` : `<button type="button" class="btn" data-act="modBuy" data-k="${k}">Buka sekarang</button>`}</div>`; }).join('')}</div>`);
+  <div class="alert ok">Semua menu tambahan sudah dibuka dan bisa dipakai semua jabatan yang berhak.</div>
+  <div class="tgrid">${Object.entries(MODULES).map(([k, m]) => { const on = modOn(k), st = DB.modules[k]; return `<div class="card ${q.m === k ? 'hl' : ''}"><div class="card-h"><b>${m.n}</b>${on ? `<span class="pill ok">Aktif</span>` : `<span class="pill">${ic('lock', 12)} Terkunci</span>`}</div><span class="mut">${m.d}</span><span class="small">${m.p}</span>
+   ${on ? `<div class="row" style="flex-wrap:wrap">${m.page ? `<a class="btn light sm auto" href="${m.page}">Buka menu</a>` : ''}</div>` : `<button type="button" class="btn" data-act="modBuy" data-k="${k}">Buka sekarang</button>`}</div>`; }).join('')}</div>`);
 
 /* ---------- tagihan ---------- */
 PAGES.tagihan = (p, q, u) => {
@@ -2067,6 +2098,7 @@ Object.assign(FORM, {
     const u = DB.users.find(x => x.email.toLowerCase() === f.email.value.trim().toLowerCase());
     if (!u || f.password.value !== (u.pass || PASS)) { $('#lgErr').textContent = 'Email atau password salah'; return $('#lgErr').classList.remove('hidden'); }
     if (!u.active) { $('#lgErr').textContent = 'Akun dinonaktifkan Owner'; return $('#lgErr').classList.remove('hidden'); }
+    if (u.role === 'sa' && !SA_ENABLED) { $('#lgErr').textContent = 'Akses super admin belum dibuka'; return $('#lgErr').classList.remove('hidden'); }
     localStorage.setItem(SKEY, u.id); localStorage.removeItem(AKEY);
     const n = DB.notifs.filter(x => x.userId === u.id && !x.read).length;
     if (n) HEADS.push([`Ada ${n} notifikasi baru untuk Anda`, '#/notif']);
@@ -2098,6 +2130,245 @@ const INPUT = {
   moreFind: el => { const v = el.value.toLowerCase().trim(); document.querySelectorAll('.mgrid .mtile').forEach(a => a.classList.toggle('hidden', !!v && !a.dataset.l.includes(v))); },
 };
 document.addEventListener('input', e => { const k = e.target.dataset.input; if (k && INPUT[k]) INPUT[k](e.target); });
+
+/* =================== PANDUAN INTERAKTIF (tur per menu) =================== */
+const B = s => `<b>${s}</b>`;
+const TOUR_TITLE = { app: 'Mengenal aplikasi', home: 'Beranda', chat: 'Inbox Chat', chat_d: 'Percakapan chat', customers: 'Customer', orders: 'Daftar order', order_new: 'Membuat order baru', order: 'Detail order', design: 'Desain & diskusi', spk: 'Daftar SPK', spk_new: 'Menerbitkan SPK', spk_d: 'Detail SPK & negosiasi', papan: 'Papan produksi', tugas: 'Tugas tim', riwayat: 'Riwayat tim', invoices: 'Daftar invoice', invoice: 'Detail invoice & pembayaran', laporan: 'Laporan', masalah: 'Kecurangan & masalah', kinerja: 'Kinerja tim', kas: 'Keuangan & kas', absen: 'Absen', pegawai: 'Pegawai & jabatan', master: 'Data master', pengumuman: 'Pengumuman', setelan: 'Pengaturan', modul: 'Menu tambahan', tagihan: 'Tagihan aplikasi', log: 'Log aktivitas', cek: 'Cek kode', notif: 'Notifikasi', panduan: 'Panduan aplikasi', akun: 'Akun saya' };
+const STATUS_LEGEND = `<div class="tlegend"><span class="pill bad">Merah</span> perlu tindakan / terlambat · <span class="pill warn">Kuning</span> menunggu / H-2 · <span class="pill blue">Biru</span> sedang berjalan · <span class="pill ok">Hijau</span> selesai / lunas · <span class="pill">Abu</span> belum mulai / dilewati</div>`;
+const TOURS = {
+  app: [
+    { t: 'Selamat datang di SIMPRO', d: `Aplikasi order &amp; produksi ${'Indokonveksi'}. Panduan ini jalan otomatis saat pertama kali membuka setiap menu. Tekan ${B('Lanjut')} untuk langkah berikutnya, ${B('Kembali')} untuk mundur, atau ${B('Lewati')}. Semua panduan bisa diputar ulang di menu ${B('Panduan aplikasi')}.` },
+    { el: '.side .sgrps', t: 'Menu samping (laptop)', d: `Menu dikelompokkan per kategori: Utama, Penjualan, Produksi, Laporan, Pengaturan, Saya. Klik judul kategori untuk membuka / melipat. Menu yang tidak boleh dibuka jabatan Anda ${B('tidak muncul')} sama sekali. Ikon gembok = menu tambahan yang belum dibuka owner.` },
+    { el: '#sideFind', t: 'Cari menu', d: `Ketik nama menu untuk menyaring. Tekan tombol ${B('/')} di keyboard untuk langsung ke kotak ini.` },
+    { el: '.bn', t: 'Menu bawah (HP)', d: `5 tombol: menu ke-3 di tengah (lengkungan bar) adalah pekerjaan utama jabatan Anda. ${B('Lainnya')} berisi semua menu, pencarian menu, dan ${B('Atur')} untuk memilih menu bawah sendiri.` },
+    { el: '.hd [data-act=help]', t: 'Tombol ?', d: 'Panduan singkat halaman yang sedang dibuka, plus tombol untuk memutar panduan ini lagi.' },
+    { el: '.hd [data-act=bellPop]', t: 'Notifikasi', d: `Angka kuning = notifikasi belum dibaca. Isinya otomatis dari kejadian: order baru, desain diunggah/disetujui, SPK baru/ditawar/diterima, invoice terbit, tahap masuk ke tim Anda, rework, pembayaran masuk, dan peringatan deadline. Tekan notifikasi untuk membuka halamannya.` },
+    { el: '.billbar', r: 'owner', t: 'Bar tagihan aplikasi', d: `Muncul kalau tagihan aplikasi Aventra belum dibayar. Tombol ${B('Bayar')} membuka menu Tagihan.` },
+    { el: '.mn', t: 'Arti warna status', d: `Warna label dipakai sama di semua menu:${STATUS_LEGEND}` },
+  ],
+  home: [
+    { el: '.mn .chips', r: 'owner', t: 'Pilih periode', d: `Hari ini, kemarin, 7 hari, atau bulan ini. Semua angka di bawah dihitung dari ${B('order yang dibuat')} pada periode itu (kecuali yang dibatalkan).` },
+    { el: '.mn .kpis', r: 'owner', t: 'Kartu angka', d: `${B('Omzet order')} = total harga jual × jumlah pcs. ${B('Sudah terbayar')} = pembayaran yang dicatat admin dengan tanggal bayar di periode ini. ${B('Biaya produksi')} = pcs × harga SPK yang disepakati pabrik. ${B('Margin kotor')} = omzet order yang sudah masuk produksi − biaya produksi. ${B('Masalah')} = kejadian belum ditangani.` },
+    { el: '.hero', r: 'owner', t: 'Ringkasan (HP)', d: 'Di HP angka utama tampil di kotak atas: margin kotor periode, omzet, terbayar, jumlah masalah, order aktif, dan order terlambat / H-2.' },
+    { el: '.c-main .card', r: 'owner', t: 'Indikasi kecurangan & masalah', d: `Kejadian yang tidak sesuai alur, dideteksi otomatis dari data SPK, QC, foto, invoice, dan log. Tekan ${B('Lihat')} untuk membuka menu Masalah dan menandai sudah ditangani.` },
+    { el: '.mn .kpis', r: 'admin', t: 'Kartu angka', d: `${B('Order aktif')} = semua order selain Selesai &amp; Batal. ${B('Terlambat / H-2')} = SPK yang mendekati / lewat deadline dan belum masuk QC. ${B('Chat belum dibaca')} dari Inbox. ${B('Belum lunas')} = jumlah sisa semua invoice. ${B('Siap SPK')} = order berdesain final yang belum dibuatkan SPK.` },
+    { el: '.hero', r: 'admin designer manajer kepala', t: 'Angka utama', d: 'Satu angka utama sesuai tugas Anda, dengan ringkasan pendek di bawahnya. Tekan kartu atau tombol untuk langsung ke pekerjaannya.' },
+    { el: '.c-side .card', r: 'admin', t: 'Aksi cepat & daftar ringkas', d: `${B('Order baru')} dan ${B('Inbox')}; di bawahnya chat terbaru (angka merah = belum dibaca) dan invoice belum lunas yang sisanya paling besar.` },
+    { el: '.tbl-card, .card.tight', r: 'owner admin manajer kepala', t: 'Mendekati deadline SPK', d: `Diambil dari SPK berstatus ${B('Diterima')} yang deadline SPK-nya tinggal ≤ H-2 (bisa diatur owner) dan tahap QC belum dimulai. ${B('H-1')} kuning = sisa 1 hari, ${B('Lewat x hari')} merah = sudah terlambat. Tekan baris untuk melihat linimasa produksi.` },
+    { el: '.mn .tbl-card, .mn .card.tight', r: 'designer', t: 'Antrian desain', d: `Order berstatus ${B('Menunggu Desain')} (belum ada desain / versi terbaru belum disetujui) dan ${B('Revisi Desain')} (admin minta revisi). Kolom versi terakhir menunjukkan status versi: Diajukan, Revisi, atau Disetujui.` },
+    { el: '.c-main .card', r: 'manajer', t: 'Siap diterbitkan SPK', d: `Order yang desainnya sudah ${B('final')} dan belum punya SPK. Tekan ${B('Terbitkan SPK')}.` },
+    { el: '.c-side .card', r: 'manajer', t: 'Negosiasi & beban pabrik', d: `SPK yang masih ${B('Dikirim')} (menunggu jawaban pabrik) atau ${B('Negosiasi')} (pabrik menawar). Beban pabrik = jumlah SPK yang sedang berjalan di tiap pabrik.` },
+    { el: '.c-side .card', r: 'kepala', t: 'SPK masuk', d: `SPK dari manajer produksi untuk pabrik Anda yang belum dijawab. Buka untuk ${B('Terima')}, ${B('Tawar')}, atau ${B('Tolak')}.` },
+    { el: '.c-side', r: 'owner', t: 'Kepatuhan alur & beban pabrik', d: `${B('Tahap selesai dengan foto')} = tahap selesai yang punya foto ÷ semua tahap selesai. ${B('SPK tepat waktu')} = SPK berjalan/selesai yang tidak terlambat. ${B('Order dengan DP')} = order yang mengisi DP. ${B('Lunas sebelum dikirim')} = order dikirim yang invoicenya lunas. Hijau ≥ 90%, kuning ≥ 70%, merah di bawahnya.` },
+  ],
+  chat: [
+    { el: '.mn form.search', t: 'Cari chat', d: 'Cari dengan nama profil WhatsApp atau nomor telepon.' },
+    { el: '.mn .chips', t: 'Filter status chat', d: `${B('Baru')} = chat masuk yang belum ditangani. ${B('Diproses')} = sudah dibalas atau dibuatkan order (berubah otomatis). ${B('Selesai')} = ditutup manual oleh admin. ${B('Semua')} = tanpa filter.` },
+    { el: '.mn .card.tight', t: 'Daftar percakapan', d: 'Setiap baris: nama, nomor, pesan terakhir, waktu, dan angka merah = jumlah pesan belum dibaca. Tulisan "customer" berarti nomor ini sudah terdaftar di data customer. Tekan untuk membuka percakapan.' },
+    { el: '[data-act=simChat]', t: 'Simulasi chat masuk', d: 'Tanpa WhatsApp Business API, chat masuk dicatat manual. Tombol ini membuat contoh chat masuk untuk latihan. Setelah modul WhatsApp API aktif, chat masuk otomatis dari webhook.' },
+  ],
+  chat_d: [
+    { el: '[name=chatSt]', t: 'Status percakapan', d: 'Ubah Baru / Diproses / Selesai. Perubahan tercatat di log.' },
+    { el: '.bub', t: 'Isi percakapan', d: 'Kiri = pesan customer, kanan = balasan admin beserta nama pengirim.' },
+    { el: 'form[data-form=chatReply]', t: 'Balas', d: 'Tulis balasan lalu kirim. Di prototipe balasan disimpan (simulasi); di versi asli dikirim lewat WhatsApp API.' },
+    { el: '[data-act=chatToCust], a[href^="#/customers?id="]', t: 'Jadikan customer', d: `Nama &amp; nomor dari chat disalin ke data customer. Kalau nomornya sudah ada, chat ${B('ditautkan')} ke customer lama (tidak dobel).` },
+    { el: '[data-act=chatToOrder]', t: 'Buat order', d: 'Langsung membuka form order dengan customer ini terisi.' },
+  ],
+  customers: [
+    { el: '.mn form.search', t: 'Cari customer', d: 'Berdasarkan nama atau nomor WhatsApp.' },
+    { el: '[data-act=custNew]', t: 'Customer baru', d: 'Tambah manual. Nomor 08… otomatis diubah ke format 628…, dan nomor yang sudah dipakai ditolak.' },
+    { el: '.mn .tbl-card, .mn .card.tight', t: 'Daftar customer', d: `${B('Order')} = jumlah order customer ini. ${B('Nilai order')} = total harga semua order yang tidak dibatalkan. Tekan untuk mengubah data dan melihat riwayat order.` },
+  ],
+  orders: [
+    { el: '.mn form.search', t: 'Cari order', d: 'Ketik no. order (ORD-YYMM-XXXX) atau nama customer.' },
+    { el: '.mn .chips', t: 'Filter status order', d: `${B('Aktif')} = semua kecuali Selesai &amp; Batal. ${B('Perlu desain')} = Menunggu / Revisi Desain. ${B('Siap SPK')} = desain final, menunggu SPK. ${B('Produksi')} = SPK diterima pabrik. ${B('Selesai produksi')} = packing selesai, tinggal tagih &amp; kirim. ${B('Selesai')} = sudah dikirim &amp; ditutup. ${B('Batal')} = dibatalkan dengan alasan.` },
+    { el: '.mn .tbl-card, .mn .card.tight', t: 'Daftar order', d: `Kolom ${B('Status')} = posisi order. Label ${B('H-x / Lewat')} di samping deadline muncul kalau SPK-nya terancam terlambat. Kolom ${B('Invoice')}: Belum Bayar / DP / Lunas / Jatuh Tempo (kosong = SPK belum diterima, invoice belum terbit).` },
+    { el: '.hd-act a, .fab', r: 'owner admin', t: 'Order baru', d: 'Membuat order manual (tanpa dari chat).' },
+  ],
+  order_new: [
+    { el: '[name=customerId]', t: 'Customer', d: 'Pilih customer yang sudah ada, atau pilih "customer baru" lalu isi nama &amp; nomor. Dari Inbox, kolom ini terisi otomatis.' },
+    { el: '[data-item="0"]', t: 'Item produk', d: `Jenis produk &amp; bahan berasal dari ${B('Data master')} (owner). Isi warna, jumlah per ukuran S–XXXL, dan harga jual per pcs. Angka pcs di pojok item dihitung otomatis.` },
+    { el: '[data-act=addItem]', t: 'Tambah item', d: 'Satu order boleh berisi beberapa item (misalnya kaos + jaket). Semua item tetap dikerjakan dalam satu SPK di satu pabrik.' },
+    { el: 'label.tog', t: 'Tambahan proses', d: `Sablon, Bordir, Jahit APD. Pilihan ini menjadi centang awal tahap di SPK; tahap yang tidak dipakai ${B('dilewati otomatis')} saat produksi.` },
+    { el: '[name=deadline]', t: 'Deadline order', d: `Tanggal selesai yang dijanjikan ke customer. ${B('Deadline SPK')} untuk pabrik dihitung otomatis 5 hari lebih cepat. Minimal 6 hari dari hari ini.` },
+    { el: '[name=dp]', t: 'DP', d: `Uang muka yang sudah diterima. Saat invoice terbit, DP ini otomatis tercatat sebagai pembayaran pertama.` },
+    { el: '#sum', t: 'Ringkasan', d: 'Jumlah pcs, total, DP, dan sisa dihitung langsung saat Anda mengetik.' },
+    { el: 'form[data-form=orderSave] button[type=submit]', t: 'Simpan order', d: `Order tersimpan dengan nomor ORD-YYMM-XXXX dan status ${B('Menunggu Desain')}. Designer langsung mendapat notifikasi.` },
+  ],
+  order: [
+    { el: '.tabs', t: 'Tab detail order', d: `${B('Ringkasan')} = item, ukuran, harga. ${B('Desain')} = semua versi. ${B('SPK')} = SPK ke pabrik (termasuk yang ditolak). ${B('Produksi')} = linimasa tahap + foto. ${B('Invoice')} = tagihan &amp; sisa.` },
+    { el: '.c-side .card', t: 'Panel status', d: `Status order, pabrik, peringatan deadline, dan status invoice. Deadline SPK berasal dari SPK; sisa tagihan dari invoice (total − semua pembayaran). Tombol salin di samping nomor order.` },
+    { el: '.c-side .btns', t: 'Cetak & batalkan', d: `${B('Cetak order')} = PDF untuk customer. ${B('Batalkan')} hanya bisa sebelum SPK diterima pabrik dan wajib alasan.` },
+    { el: '.c-side .btn.shake, [data-act=ship], [data-act=finishOrder]', r: 'owner admin', t: 'Langkah berikutnya', d: `Setelah ${B('Selesai Produksi')}: tagih sisa dulu (tombol bergetar) → setelah lunas ${B('Tandai sudah dikirim')} → ${B('Order selesai')}.` },
+  ],
+  design: [
+    { el: '.vers', t: 'Versi desain', d: `Setiap unggahan menjadi versi baru. ${B('Diajukan')} = menunggu keputusan admin. ${B('Revisi')} = admin minta perbaikan. ${B('Disetujui')} = final (hanya satu versi). Tekan versi untuk melihatnya.` },
+    { el: '.prev', t: 'Pratinjau', d: 'Gambar desain versi terpilih. Tekan untuk memperbesar. File PDF/AI/CDR tampil sebagai nama file.' },
+    { el: 'form[data-form=desComment]', t: 'Komentar per versi', d: 'Diskusi admin ↔ designer. Setiap komentar mengirim notifikasi ke pihak lain.' },
+    { el: '[data-act=desApprove]', r: 'owner admin', t: 'Minta revisi / Setujui', d: `${B('Minta revisi')} wajib isi apa yang diubah → order Revisi Desain. ${B('Setujui desain')} → versi ini final, order ${B('Siap SPK')}, manajer produksi diberi tahu.` },
+    { el: 'form[data-form=desUpload]', t: 'Unggah versi baru', d: 'JPG/PNG/PDF/AI/CDR maksimal 20 MB. Gambar dikompres otomatis. Admin mendapat notifikasi.' },
+  ],
+  spk: [
+    { el: '.mn .card, .mn .tbl-card', r: 'owner manajer', t: 'Order siap SPK', d: 'Order dengan desain final yang belum punya SPK aktif.' },
+    { el: '.mn .chips', t: 'Filter status SPK', d: `${B('Dikirim')} = menunggu jawaban pabrik. ${B('Negosiasi')} = pabrik menawar harga. ${B('Diterima')} = produksi berjalan. ${B('Selesai')} = packing selesai. ${B('Ditolak')} = pabrik menolak (perlu dialihkan).` },
+    { el: '.mn .tbl-card:last-of-type, .mn .card.tight:last-of-type', t: 'Daftar SPK', d: `${B('Tahap')} = tahap yang sedang dikerjakan. ${B('Harga/pcs')} = harga yang disepakati, atau tawaran terakhir kalau masih negosiasi (hanya Owner, Manajer, dan Kepala Pabrik tujuan).` },
+  ],
+  spk_new: [
+    { el: 'input[name=factoryId]', t: 'Pilih pabrik', d: 'Angka SPK aktif = beban pabrik saat ini. Pabrik yang sudah menolak SPK order ini tidak bisa dipilih lagi.' },
+    { el: 'input[name^=st_]', t: 'Tahap dipakai', d: `Kain, Cutting, Jahit, Finishing, QC, Packing ${B('wajib')}. Bordir, Sablon, Jahit APD opsional (awalnya mengikuti pilihan di order).` },
+    { el: '[name=deadline]', t: 'Deadline SPK', d: 'Otomatis deadline order − 5 hari. Kalau diubah, alasan wajib diisi dan tidak boleh melewati deadline order.' },
+    { el: '[name=proposed]', t: 'Harga produksi usulan', d: 'Harga per pcs yang ditawarkan ke pabrik. Bisa dinegosiasikan. Harga ini tidak terlihat admin, ketua tim, maupun customer.' },
+    { el: 'form[data-form=spkSave] button[type=submit]', t: 'Kirim SPK', d: 'SPK bernomor SPK-YYMM-XXXX dikirim ke kepala pabrik (notifikasi).' },
+  ],
+  spk_d: [
+    { el: '.c-main .card', t: 'Isi SPK', d: 'Order, ukuran, tahap, deadline, instruksi kerja, dan lampiran desain final. Bisa dicetak.' },
+    { el: '.c-side .card', t: 'Riwayat penawaran', d: 'Semua usulan, tawaran, persetujuan, dan penolakan dengan harga per pcs dan pesan.' },
+    { el: 'form[data-form=negoKepala]', r: 'kepala', t: 'Jawab SPK', d: `${B('Terima')} = setuju harga saat ini → produksi mulai di Kain &amp; invoice ke customer terbit otomatis. ${B('Tawar')} = isi harga baru. ${B('Tolak')} = wajib alasan.` },
+    { el: 'form[data-form=negoManajer]', r: 'manajer', t: 'Tanggapi tawaran', d: `${B('Tawar balik')} dengan harga baru, atau ${B('Setujui harga pabrik')} — setelah itu kepala pabrik menekan Terima.` },
+  ],
+  papan: [
+    { el: '.mn .chips', r: 'owner admin manajer', t: 'Filter pabrik', d: 'Lihat semua pabrik atau satu pabrik saja. Kepala pabrik otomatis hanya melihat pabriknya.' },
+    { el: '.tiles', t: 'Kotak per tahap', d: 'Angka = jumlah order yang sedang di tahap itu (status Menunggu, Dikerjakan, Rework, atau Tunggu rework). Angka merah = ada order terlambat. Tekan kotak untuk menyaring.' },
+    { el: '.lanes', t: 'Kartu order', d: `${B('Menunggu')} = tahap sebelumnya selesai, belum dimulai tim. ${B('Dikerjakan')} = tim sudah menekan Mulai. ${B('Rework')} = barang reject dari QC. ${B('Tunggu rework')} = QC menunggu barang rework kembali. Bingkai merah = lewat deadline SPK.` },
+  ],
+  tugas: [
+    { el: '.hero, .mn .pills', t: 'Tugas tim Anda', d: 'Hanya order yang sedang berada di tahap tim Anda di pabrik Anda.' },
+    { el: '.tgrid .card', t: 'Kartu tugas', d: `Status: ${B('Menunggu')} (tekan Mulai), ${B('Dikerjakan')} (tekan Selesai), ${B('Rework')} (barang reject dari QC, alasan tertulis merah).` },
+    { el: '[data-act=stFinish], [data-act=qcForm], [data-act=stStart]', t: 'Mulai & Selesai', d: `Saat ${B('Selesai')}: isi jumlah selesai &amp; reject, ambil foto progres (wajib, bisa langsung dari kamera), keterangan, catatan. Foto langsung tampil di tracking customer dan order otomatis pindah ke tahap berikutnya.` },
+    { el: '[data-act=qcForm]', t: 'Khusus tim QC', d: 'Isi lolos &amp; reject. Reject &gt; 0 wajib alasan dan pilih tahap tujuan rework; QC menunggu barang kembali. Reject 0 → lanjut Packing.' },
+    { el: 'a[href^="#/spk/"]', t: 'Instruksi', d: 'Membuka SPK: ukuran, instruksi kerja, dan desain final.' },
+  ],
+  riwayat: [{ el: '.mn', t: 'Riwayat', d: 'Tahap yang sudah diselesaikan tim Anda: jumlah pcs, reject, waktu selesai, dan foto.' }],
+  invoices: [
+    { el: '.mn .kpis', t: 'Ringkasan tagihan', d: `${B('Total piutang')} = jumlah sisa semua invoice. ${B('Jatuh tempo')} = lewat tanggal jatuh tempo (= deadline order) dan belum lunas.` },
+    { el: '.mn .chips', t: 'Filter status invoice', d: `${B('Belum Bayar')} = terbayar Rp 0. ${B('DP')} = terbayar sebagian. ${B('Lunas')} = terbayar ≥ total. ${B('Jatuh Tempo')} = lewat jatuh tempo &amp; belum lunas.` },
+    { el: '.mn .tbl-card, .mn .card.tight', t: 'Daftar invoice', d: 'Invoice terbit otomatis saat SPK diterima pabrik: total dari order, DP dari order, referensi nomor SPK. Satu order = satu invoice.' },
+  ],
+  invoice: [
+    { el: '.c-main .card', t: 'Rincian tagihan', d: 'Item × harga jual dari order. Terbayar = jumlah semua pembayaran tercatat. Sisa = total − terbayar.' },
+    { el: 'form[data-form=payment]', t: 'Catat pembayaran', d: `Pilih ${B('DP')}, ${B('Cicilan')}, atau ${B('Pelunasan')}, isi jumlah (tidak boleh melebihi sisa), tanggal, dan foto bukti transfer. Status invoice berubah otomatis dan owner diberi tahu.` },
+    { el: 'img[alt="QR code tracking"]', t: 'Link & QR tracking', d: 'Link unik (token acak) untuk customer melihat divisi yang sedang mengerjakan, foto progres, dan sisa tagihan tanpa login. Tidak menampilkan harga produksi maupun nama karyawan.' },
+    { el: '[data-act=sendWa]', t: 'Kirim ke WhatsApp', d: 'Membuka WhatsApp dengan pesan invoice + link tracking yang sudah terisi. Cetak PDF untuk invoice berlogo.' },
+  ],
+  laporan: [
+    { el: '.mn .chips', t: 'Jenis laporan', d: `${B('Margin')} = omzet − biaya produksi per order yang sudah masuk produksi. ${B('Order')} = jumlah &amp; nilai per status. ${B('Produksi')} = SPK berjalan, selesai, pcs, dan keterlambatan per pabrik. ${B('Piutang')} = invoice dengan sisa &gt; 0.` },
+    { el: '[name=rpM]', t: 'Filter periode & pabrik', d: 'Periode = bulan order dibuat. Pabrik = pabrik yang menerima SPK.' },
+    { el: '.banner', t: 'Angka ringkasan', d: 'Total untuk filter yang dipilih.' },
+    { el: '[data-act=exportCsv]', t: 'Export', d: 'Excel (CSV) berisi tabel laporan yang sedang dibuka; PDF lewat cetak browser.' },
+  ],
+  masalah: [
+    { el: '.mn .chips', t: 'Belum / sudah ditangani', d: 'Masalah baru muncul otomatis. Setelah dicek, tandai sudah ditangani supaya badge berkurang.' },
+    { el: '.mn .pills', t: 'Jenis masalah', d: `Mendekati/lewat deadline SPK · Harga produksi di atas usulan · Reject QC tinggi · Tahap selesai tanpa foto · Invoice jatuh tempo · Barang jadi belum dikirim · SPK ditolak belum dialihkan · Perubahan di luar jam kerja. Batasnya diatur di ${B('Pengaturan')}.` },
+    { el: '.prob', t: 'Isi kartu masalah', d: `Bukti (penjelasan kejadian), ${B('pegawai terkait')} (kepala pabrik, ketua tim, admin, atau manajer sesuai kejadian), dan ${B('nilai')} (misal reject × harga produksi, selisih harga × pcs, sisa invoice). ${B('Lihat bukti')} membuka halaman sumbernya.` },
+  ],
+  kinerja: [{ el: '.mn .kpis', t: 'Kinerja tim', d: 'Dihitung dari tahap yang selesai: jumlah tahap, pcs, rata-rata lama (Mulai → Selesai), pcs rework dari QC, dan tahap tanpa foto per tim &amp; pabrik.' }],
+  kas: [{ el: '.mn .kpis', t: 'Keuangan & kas', d: 'Uang masuk otomatis dari pembayaran invoice; uang keluar dicatat manual. Hutang ke pabrik = biaya produksi SPK − pembayaran ke pabrik yang dicatat.' }, { el: 'form[data-form=kasSave]', t: 'Catat uang keluar', d: 'Bayar pabrik, bahan, operasional, lainnya.' }],
+  absen: [{ el: '.banner', t: 'Absen', d: 'Absen masuk &amp; pulang. Masuk setelah jam mulai kerja ditandai Telat. Di versi asli jam dari server dan wajib dalam radius lokasi kantor.' }],
+  pegawai: [
+    { el: '.mn .chips', t: 'Filter jabatan', d: 'Lihat pegawai per jabatan.' },
+    { el: '[data-act=empNew]', t: 'Tambah pegawai', d: 'Isi nama, email, jabatan, password awal. Kepala pabrik pilih pabrik; ketua tim pilih pabrik &amp; tim (menggantikan ketua lama).' },
+    { el: '.c-main .tbl-card, .c-main .card.tight', t: 'Daftar pegawai', d: `Tekan ${B('Ubah')} untuk ganti nama/jabatan, nonaktifkan akun, reset password, atau kirim data login lewat WhatsApp.` },
+    { el: '.c-side .card', t: 'Hak akses jabatan', d: 'Ringkasan tugas dan menu setiap jabatan.' },
+  ],
+  master: [{ el: '.mn .chips', t: 'Data master', d: `${B('Pabrik')} (tambah pabrik otomatis membuat 9 tim + akun), ${B('Tim')} beserta ketua, ${B('Produk & bahan')} (dipakai di form order), ${B('Pengguna')}, dan ${B('Data')} (reset data contoh).` }],
+  pengumuman: [{ el: 'form[data-form=annSave]', t: 'Tulis pengumuman', d: 'Bisa tampil di halaman masuk dan/atau disematkan sebagai Penting di beranda semua pegawai.' }, { el: '.c-main', t: 'Daftar pengumuman', d: 'Nyalakan/matikan, sematkan, tampilkan di login, atau hapus.' }],
+  setelan: [
+    { el: '[name=bizName]', t: 'Nama usaha', d: 'Tampil di halaman masuk dan pesan.' },
+    { el: '.themeopt', t: 'Kombinasi warna', d: 'Maroon atau Hitam, berlaku untuk semua pegawai di HP &amp; laptop.' },
+    { el: '[name=warnDays]', t: 'Aturan deteksi masalah', d: 'Batas H- peringatan deadline, hari barang jadi belum dikirim, % reject QC, dan % harga di atas usulan yang memicu menu Masalah.' },
+    { el: '[name=photo]', t: 'Foto wajib', d: 'Kalau dinyalakan, ketua tim tidak bisa menandai selesai tanpa foto.' },
+    { el: '[name=workStart]', t: 'Jam kerja', d: 'Perubahan harga, SPK, order, dan pembayaran di luar jam ini masuk menu Masalah.' },
+  ],
+  modul: [{ el: '.tgrid', t: 'Menu tambahan', d: `Semua menu tambahan (Absensi, Kinerja tim, Keuangan &amp; kas, WhatsApp API, Laporan Telegram) sudah terbuka. Tekan ${B('Buka menu')} untuk langsung ke menunya.` }],
+  tagihan: [{ el: '.banner', t: 'Tagihan aplikasi', d: 'Tagihan bulanan dibuat otomatis tanggal 1. Bayar sekarang membuka halaman Mayar; status berubah Lunas otomatis.' }],
+  log: [{ el: 'form[data-form=logFilter]', t: 'Filter log', d: 'Rentang tanggal, cari nama / no. order / aktivitas, dan filter jabatan.' }, { el: '.mn .tbl-card, .mn .card.tight', t: 'Isi log', d: 'Siapa, kapan, aktivitas, jenis data, dan nilai lama → baru untuk setiap perubahan status, harga, dan pembayaran.' }],
+  cek: [{ el: 'form[data-form=cekSearch]', t: 'Cek kode', d: 'Ketik atau scan no. order, SPK, invoice, link tracking (QR di invoice), atau nomor WA customer. Scanner alat langsung bekerja di kotak isian; kamera HP lewat tombol Scan.' }],
+  notif: [{ el: '.c-side .card', t: 'Notifikasi HP', d: 'Izinkan notifikasi dan tes. Notifikasi melayang saat aplikasi tertutup diatur di setelan HP — panduan per merek ada di bawahnya.' }, { el: '.c-main .card', t: 'Semua notifikasi', d: 'Tekan untuk membuka halaman terkait; otomatis ditandai dibaca.' }],
+  panduan: [{ el: '.c-main', t: 'Panduan per menu', d: 'Setiap menu berisi langkah-langkah rinci. Tekan Putar untuk menjalankan panduan langsung di halamannya.' }],
+  akun: [{ el: 'form[data-form=akunSave]', t: 'Akun saya', d: 'Ganti nama dan password, pasang aplikasi di HP, dan lihat versi aplikasi.' }],
+};
+const TOUR_HREF = k => { const o = DB.orders.find(x => x.status === 'produksi') || DB.orders[0], s = DB.spks.find(x => x.status === 'diterima') || DB.spks[0], i = DB.invoices[0], c = DB.chats[0];
+  return { app: '#/', home: '#/', chat_d: c && '#/chat/' + c.id, order_new: '#/order/new', order: o && '#/order/' + o.id, design: o && '#/design/' + o.id, spk_new: (DB.orders.find(x => x.status === 'siap_spk' && !spkOf(x.id)) ? '#/spk/new/' + DB.orders.find(x => x.status === 'siap_spk' && !spkOf(x.id)).id : '#/spk'), spk_d: s && '#/spk/' + s.id, invoice: i && '#/invoice/' + i.id }[k] || '#/' + k; };
+function tourKey() {
+  const p = (ROUTE.slice(1).split('?')[0]).split('/').filter(Boolean), k = p[0] || 'home';
+  if (k === 'order') return p[1] === 'new' ? 'order_new' : 'order';
+  if (k === 'spk' && p[1]) return p[1] === 'new' ? 'spk_new' : 'spk_d';
+  if (k === 'chat' && p[1]) return 'chat_d';
+  return k;
+}
+const tourSteps = (k, u) => (TOURS[k] || []).filter(s => !s.r || s.r.split(' ').includes(u.role));
+function visEl(sel) { if (!sel) return null; for (const el of document.querySelectorAll(sel)) { const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 0) return el; } return null; }
+let TOUR = null;
+function startTour(k, then) {
+  const u = me(); const steps = tourSteps(k, u).filter(s => !s.el || visEl(s.el));
+  if (!steps.length) { then && then(); return; }
+  endTour(true); closeSheet(); TOUR = { k, steps, i: 0, then }; showStep();
+}
+function endTour(silent) {
+  $('#tourOv')?.remove(); if (!TOUR) return;
+  const t = TOUR; TOUR = null;
+  if (!silent) { const u = me(); u.toursSeen = u.toursSeen || {}; u.toursSeen[t.k] = 1; save(); t.then && t.then(); }
+}
+function placeTour() {
+  if (!TOUR) return; const ov = $('#tourOv'); if (!ov) return;
+  const s = TOUR.steps[TOUR.i], el = visEl(s.el), hole = ov.querySelector('.thole'), card = ov.querySelector('.tcard');
+  if (!el) { hole.style.cssText = 'left:50%;top:40%;width:0;height:0'; card.classList.add('center'); card.style.cssText = ''; return; }
+  const r = el.getBoundingClientRect(), pad = 6, top = Math.max(4, r.top - pad), h = Math.min(r.height + pad * 2, innerHeight - top - 4);
+  hole.style.cssText = `left:${r.left - pad}px;top:${top}px;width:${r.width + pad * 2}px;height:${h}px`;
+  card.classList.remove('center');
+  if (innerWidth < 700) { card.style.cssText = ''; card.classList.toggle('topc', r.top + h / 2 > innerHeight * 0.55); return; }
+  const cw = Math.min(400, innerWidth - 24); card.style.cssText = `left:12px;top:12px;width:${cw}px`; const ch = card.offsetHeight || 220;
+  let x = Math.min(Math.max(12, r.left), innerWidth - cw - 12), y = r.bottom + 14;
+  if (y + ch > innerHeight - 12) y = r.top - ch - 14;
+  if (y < 12) { y = Math.max(12, Math.min(innerHeight - ch - 12, r.top)); x = r.right + 14 + cw < innerWidth ? r.right + 14 : r.left - cw - 14 > 12 ? r.left - cw - 14 : innerWidth - cw - 12; }
+  x = Math.min(Math.max(12, x), innerWidth - cw - 12); y = Math.min(Math.max(12, y), Math.max(12, innerHeight - ch - 12));
+  card.style.cssText = `left:${x}px;top:${y}px;width:${cw}px`;
+}
+function showStep() {
+  $('#tourOv')?.remove();
+  const s = TOUR.steps[TOUR.i], n = TOUR.steps.length, el = visEl(s.el);
+  if (el) { const r = el.getBoundingClientRect(); if (r.top < 80 || r.bottom > innerHeight - 90) el.scrollIntoView({ block: r.height > innerHeight * 0.6 ? 'start' : 'center' }); }
+  const ov = document.createElement('div'); ov.id = 'tourOv'; ov.className = 'tour';
+  ov.innerHTML = `<div class="thole"></div><div class="tcard" role="dialog" aria-modal="true" aria-labelledby="tourT">
+    <div class="tprog"><span>${TOUR_TITLE[TOUR.k] || 'Panduan'}</span><span>${TOUR.i + 1}/${n}</span></div>
+    <div class="tbar"><i style="width:${(TOUR.i + 1) / n * 100}%"></i></div>
+    <b id="tourT">${s.t}</b><div class="tbody">${s.d}</div>
+    <div class="tbtns"><button type="button" class="btn ghost sm auto" data-act="tourSkip">Lewati</button><span class="grow"></span>${TOUR.i ? '<button type="button" class="btn light sm auto" data-act="tourPrev">Kembali</button>' : ''}<button type="button" class="btn sm auto" data-act="tourNext">${TOUR.i === n - 1 ? 'Selesai' : 'Lanjut'}</button></div>
+    ${TOUR.i === 0 ? '<label class="toff"><input type="checkbox" data-change="tourOff"> Jangan jalankan panduan otomatis lagi</label>' : ''}</div>`;
+  document.body.appendChild(ov);
+  requestAnimationFrame(placeTour);
+  ov.querySelector('[data-act=tourNext]').focus({ preventScroll: true });
+}
+addEventListener('resize', placeTour); addEventListener('scroll', placeTour, true);
+addEventListener('keydown', e => { if (!TOUR) return; if (e.key === 'Escape') ACT.tourSkip(); if (e.key === 'ArrowRight') ACT.tourNext(); if (e.key === 'ArrowLeft') ACT.tourPrev(); });
+function autoTour() {
+  const u = me(); if (!u || u.role === 'sa' || u.tourOff || localStorage.getItem('simpro_tour_off') || TOUR || $('#ov')) return;
+  const seen = u.toursSeen || {}, k = tourKey();
+  const page = () => { if (TOURS[k] && !(u.toursSeen || {})[k]) startTour(k); };
+  if (!seen.app) startTour('app', () => setTimeout(page, 200)); else page();
+}
+Object.assign(ACT, {
+  tourNext: () => { if (!TOUR) return; if (TOUR.i < TOUR.steps.length - 1) { TOUR.i++; showStep(); } else endTour(); },
+  tourPrev: () => { if (TOUR && TOUR.i) { TOUR.i--; showStep(); } },
+  tourSkip: () => endTour(),
+  tourPlay: el => { const k = el.dataset.k, h = TOUR_HREF(k); closeSheet(); const run = () => setTimeout(() => startTour(k), 450); if (location.hash.split('?')[0] === h.split('?')[0]) run(); else { go(h); run(); } },
+  tourReset: () => { const u = me(); u.toursSeen = {}; delete u.tourOff; localStorage.removeItem('simpro_tour_off'); save(); go('#/'); setTimeout(() => startTour('app', () => setTimeout(() => startTour(tourKey()), 200)), 450); },
+  help: () => { const u = me(), k = tourKey(), st = tourSteps(k, u); sheet(shHead(TOUR_TITLE[k] || 'Panduan') + (st.length ? `<ol class="helpl">${st.map(s => `<li><b>${s.t}</b> — ${s.d}</li>`).join('')}</ol>` : '<span class="mut">Belum ada panduan untuk halaman ini.</span>') + `<div class="btns">${st.length ? `<button type="button" class="btn" data-act="tourPlay" data-k="${k}">${ic('help', 18)}Putar panduan halaman ini</button>` : ''}<a class="btn light" href="#/panduan">Panduan lengkap</a></div><a class="btn ghost" href="alur-kerja.html">Lihat alur kerja</a>`); },
+});
+Object.assign(CHANGE, { tourOff: el => { const u = me(); u.tourOff = el.checked; save(); }, tourAuto: el => { const u = me(); u.tourOff = !el.checked; if (el.checked) localStorage.removeItem('simpro_tour_off'); save(); toast(el.checked ? 'Panduan otomatis dinyalakan' : 'Panduan otomatis dimatikan'); } });
+PAGES.panduan = (p, q, u) => {
+  const order = ['app', 'home', 'tugas', 'riwayat', 'chat', 'chat_d', 'customers', 'orders', 'order_new', 'order', 'design', 'spk', 'spk_new', 'spk_d', 'papan', 'invoices', 'invoice', 'laporan', 'masalah', 'kinerja', 'kas', 'absen', 'pegawai', 'master', 'pengumuman', 'setelan', 'modul', 'tagihan', 'log', 'cek', 'notif', 'akun'];
+  const allowed = new Set(navFor(u).map(n => n.h.split('?')[0].replace('#/', '') || 'home'));
+  const extra = { owner: ['chat_d', 'order_new', 'order', 'design', 'spk_d', 'invoice'], admin: ['chat_d', 'order_new', 'order', 'design', 'invoice'], designer: ['design', 'orders'], manajer: ['order', 'spk_new', 'spk_d'], kepala: ['spk_d'], ketua: [] }[u.role] || [];
+  const keys = order.filter(k => k === 'app' || allowed.has(k) || extra.includes(k)).filter(k => tourSteps(k, u).length);
+  const seen = u.toursSeen || {};
+  return shell('Panduan aplikasi', `${ROLES[u.role]} · ${keys.length} panduan · v${APP_VERSION}`, cols(
+    `<div class="card">${keys.map((k, i) => `<details class="acc-d" ${i === 0 ? 'open' : ''}><summary>${TOUR_TITLE[k]} ${seen[k] ? '<span class="pill ok" style="margin-left:auto;margin-right:8px">Sudah</span>' : ''}</summary><ol class="helpl">${tourSteps(k, u).map(s => `<li><b>${s.t}</b> — ${s.d}</li>`).join('')}</ol><button type="button" class="btn light sm auto" style="margin-top:10px" data-act="tourPlay" data-k="${k}">${ic('help', 16)}Putar panduan ini</button></details>`).join('')}</div>`,
+    `<div class="card"><b>Panduan jalan otomatis</b><span class="mut">Setiap menu memutar panduannya sekali saat pertama dibuka.</span><label class="chk"><input type="checkbox" data-change="tourAuto" ${u.tourOff ? '' : 'checked'}>Jalankan otomatis</label><button type="button" class="btn" data-act="tourReset">${ic('help', 18)}Putar ulang dari awal</button></div>
+     <div class="banner"><small>Alur kerja lengkap</small><div class="big" style="font-size:22px;line-height:28px">Chat sampai barang dikirim</div><small>Diagram per jabatan, siklus status, dan tips harian</small><a class="btn light auto" style="margin-top:12px;align-self:flex-start" href="alur-kerja.html">Buka alur kerja</a></div>
+     <div class="card"><b>Arti warna status</b>${STATUS_LEGEND}</div>
+     <div class="card"><b>Tips</b><ul class="mut" style="margin:0;padding-left:18px;line-height:22px"><li>Tombol <b>?</b> di setiap halaman membuka panduan halaman itu.</li><li>Di laptop, tekan <b>/</b> untuk mencari menu; panah kiri/kanan untuk pindah langkah panduan.</li><li>Atur menu bawah sendiri lewat <b>Lainnya › Atur</b>.</li></ul></div>`));
+};
 
 ROLES.sa = 'Super admin';
 document.addEventListener('click', e => {
