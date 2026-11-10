@@ -17,7 +17,7 @@ export default {
     if (params.t) return checkTask(el, +params.t);
     let tab = params.tab || 'tugas';
     el.innerHTML = `${pageHead('Siapkan barang')}
-      <div class="stack">${chips('tab', [['tugas', 'Tugas picker'], ['buat', 'Buat tugas'], ['meja', 'Meja']], tab)}<div id="body"></div></div>`;
+      <div class="stack">${chips('tab', [['tugas', 'Tugas picker'], ['buat', 'Buat tugas'], ['meja', 'Barang WIN belum di rak']], tab)}<div id="body"></div></div>`;
     const show = () => { const b = el.querySelector('#body'); (tab === 'buat' ? renderNew(b, () => go('tugas')) : tab === 'meja' ? renderMeja(b) : renderTasks(b)); };
     const go = (t) => { tab = t; el.querySelectorAll('[data-chips="tab"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === t)); show(); };
     on(el, 'click', '[data-chips="tab"] .chip', (e, b) => go(b.dataset.v));
@@ -69,13 +69,13 @@ async function renderMeja(box) {
   if (error) return toastErr(error);
   const tot = data.reduce((a, p) => a + p.meja_qty, 0);
   box.innerHTML = `<div class="stack">
-    <div class="hero"><div class="label">Barang siap di meja</div><div class="big">${num(tot)}</div><div class="small" style="color:#C9CCC8">${data.length} macam · dipakai admin saat scan resi</div></div>
+    <div class="hero"><div class="label">Barang WIN belum di rak</div><div class="big">${num(tot)}</div><div class="small" style="color:#C9CCC8">${data.length} macam · dipakai admin saat scan resi</div></div>
     <div class="card flush">${data.length ? `<div class="list no-page">${data.map((p) => `<div class="list-item"><div class="grow" style="min-width:0"><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)} · rak ${esc(p.rack_code || '–')} · stok rak ${p.stock}</div></div>
-        <b style="font-size:18px">${p.meja_qty}</b><button class="btn btn-sm" data-back="${p.id}">Kembalikan ke rak</button></div>`).join('')}</div>` : emptyState('Meja kosong.', 'box')}</div></div>`;
+        <b style="font-size:18px">${p.meja_qty}</b><button class="btn btn-sm" data-back="${p.id}">Taruh di rak</button></div>`).join('')}</div>` : emptyState('Semua barang WIN sudah di rak / terpakai.', 'box')}</div></div>`;
   on(box, 'click', '[data-back]', async (e, b) => {
     const p = data.find((x) => x.id === +b.dataset.back);
-    if (!(await confirmBox('Kembalikan ke rak?', `${p.meja_qty} pcs <b>${esc(p.name)}</b> dikembalikan ke rak ${esc(p.rack_code || '–')}. Stok rak bertambah.`, 'Kembalikan'))) return;
-    try { await rpc('meja_back', { p_product: p.id, p_qty: null }); toast('Dikembalikan ke rak', 'ok'); renderMeja(box); } catch (err) { toastErr(err); }
+    if (!(await confirmBox('Taruh di rak?', `${p.meja_qty} pcs <b>${esc(p.name)}</b> ditaruh di rak ${esc(p.rack_code || '–')}. Stok rak bertambah.`, 'Taruh di rak'))) return;
+    try { await rpc('meja_back', { p_product: p.id, p_qty: null }); toast('Sudah ditaruh di rak', 'ok'); renderMeja(box); } catch (err) { toastErr(err); }
   });
 }
 
