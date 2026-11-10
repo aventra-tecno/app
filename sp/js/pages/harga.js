@@ -1,6 +1,6 @@
 import { supa, rpc, fetchAll } from '../supa.js';
 import { store, nameOf } from '../store.js';
-import { esc, rp, num, fmtDate, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, parseNum, confirmBox, todayStr, normSku } from '../ui.js';
+import { esc, rp, num, fmtDate, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, parseNum, confirmBox, todayStr, normSku, codeHit } from '../ui.js';
 import { downloadHargaExcel } from '../excel-harga.js';
 
 // Harga per supplier (WIN, STRONG, …). Setiap supplier punya rumus sendiri:
@@ -127,7 +127,7 @@ export default {
       el.querySelector('#filters').innerHTML = chips('f', [['all', `Semua (${c.all})`], ...dChips, ...sChips, ['locked', `Dikunci (${c.locked})`], ['pending', `Beda dengan file baru (${c.pending})`], ['zero', `Modal kosong (${c.zero})`], ['thin', `Margin < 10% (${c.thin})`]], filter);
     };
     const visible = () => products().filter((p) => {
-      if (search && !(p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search) || (normSku(search) && normSku(p.sku).includes(normSku(search))))) return false;
+      if (search && !codeHit(search, p)) return false;
       if (filter === 'locked') return p.price_locked;
       if (filter === 'pending') return !!p.pending_price;
       if (filter === 'zero') return !Number(p.harga_beli);
