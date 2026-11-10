@@ -30,14 +30,16 @@ async function tabBarang(box) {
   // tampilan awal: barang yang ada di rak (stok > 0), bukan semua barang pricelist
   let filter = 'rak', search = '';
   box.innerHTML = `<div class="stack"><div class="grid gauto" id="kpi"></div>
-    <div class="row wrap"><input class="input grow" id="q" placeholder="Cari nama / kode / rak, atau scan barcode" aria-label="Cari barang" style="min-width:220px">${chips('f', [['rak', 'Ada di rak'], ['all', 'Semua barang'], ['low', 'Stok menipis'], ['zero', 'Habis'], ['norack', 'Tanpa rak']], filter)}</div>
+    <div class="row wrap"><input class="input grow" id="q" placeholder="Cari nama / kode / rak, atau scan barcode" aria-label="Cari barang" style="min-width:220px">${chips('f', [['rak', 'Ada di rak'], ['win', 'Barang WIN (belum di rak)'], ['all', 'Semua barang'], ['low', 'Stok menipis'], ['zero', 'Habis'], ['norack', 'Tanpa rak']], filter)}</div>
     <div class="card flush" id="list">${skeleton()}</div></div>`;
   const kpi = async () => {
-    const data = await fetchAll(() => supa.from('products').select('stock, harga_beli, min_stock').eq('active', true).order('id')).catch(() => []);
+    const data = await fetchAll(() => supa.from('products').select('stock, meja_qty, harga_beli, min_stock').eq('active', true).order('id')).catch(() => []);
     const low = (data || []).filter((p) => p.min_stock > 0 && p.stock <= p.min_stock).length;
-    const val = (data || []).reduce((a, p) => a + Math.max(0, p.stock) * p.harga_beli, 0);
+    const val = (data || []).reduce((a, p) => a + (Math.max(0, p.stock) + (p.meja_qty || 0)) * p.harga_beli, 0);
+    const win = (data || []).reduce((a, p) => a + (p.meja_qty || 0), 0);
     const inRack = (data || []).filter((p) => p.stock > 0);
     box.querySelector('#kpi').innerHTML = `<div class="card kpi"><div class="label">Barang ada di rak</div><div class="value">${num(inRack.length)}</div><div class="sub">${num(inRack.reduce((a, p) => a + p.stock, 0))} pcs · dari ${num(data?.length || 0)} jenis</div></div>
+      <div class="card kpi" data-fwin style="cursor:pointer"><div class="label">Barang WIN belum di rak</div><div class="value">${num(win)}</div><div class="sub">pcs · siap dipakai admin</div></div>
       ${seeValue ? `<div class="card kpi"><div class="label">Nilai stok (modal)</div><div class="value">${rp(val)}</div></div>` : ''}
       <div class="card kpi" style="${low ? 'border:1.5px solid var(--accent)' : ''}"><div class="label">Stok menipis</div><div class="value">${low}</div></div>`;
   };
@@ -45,9 +47,10 @@ async function tabBarang(box) {
     let data;
     try {
       data = await fetchAll(() => {
-        let qy = supa.from('products').select('id, sku, name, rack_code, stock, stock_karantina, min_stock, harga_beli').eq('active', true).order('rack_code', { nullsFirst: false }).order('name').order('id');
+        let qy = supa.from('products').select('id, sku, name, rack_code, stock, meja_qty, stock_karantina, min_stock, harga_beli').eq('active', true).order('rack_code', { nullsFirst: false }).order('name').order('id');
         { const f = codeOr(search, ['rack_code']); if (f) qy = qy.or(f); } // kode dengan / tanpa strip sama
         if (filter === 'rak') qy = qy.gt('stock', 0);
+        if (filter === 'win') qy = qy.gt('meja_qty', 0);
         if (filter === 'zero') qy = qy.lte('stock', 0);
         if (filter === 'norack') qy = qy.is('rack_code', null);
         return qy;
@@ -57,7 +60,7 @@ async function tabBarang(box) {
     box.querySelector('#list').innerHTML = list.length ? `<div class="list">${list.map((p) => `<button class="list-item" data-p="${p.id}">
       <span class="mono" style="width:64px;flex:none;font-weight:600">${esc(p.rack_code || '—')}</span>
       <div class="grow"><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}</div></div>
-      <div class="right"><b style="font-size:18px" class="${p.stock <= 0 ? 'neg' : ''}">${p.stock}</b>${p.min_stock > 0 && p.stock <= p.min_stock ? '<div><span class="tag yellow">menipis</span></div>' : ''}</div></button>`).join('')}</div>`
+      <div class="right"><b style="font-size:18px" class="${p.stock <= 0 ? 'neg' : ''}">${p.stock}</b>${p.meja_qty > 0 ? `<div><span class="tag blue">+${p.meja_qty} WIN belum di rak</span></div>` : ''}${p.min_stock > 0 && p.stock <= p.min_stock ? '<div><span class="tag yellow">menipis</span></div>' : ''}</div></button>`).join('')}</div>`
       : filter === 'rak' ? `${emptyState(search ? 'Barang ini tidak ada di rak (stok 0).' : 'Belum ada barang di rak.', 'box')}<div class="row" style="justify-content:center;padding:0 16px 16px"><button class="btn btn-sm" data-allp>Cari di semua barang</button></div>`
       : emptyState('Tidak ada barang.', 'box');
   };
@@ -68,6 +71,7 @@ async function tabBarang(box) {
     if (id) { e.target.value = ''; openProduct(id, load); }
   });
   on(box, 'click', '[data-chips="f"] .chip', (e, b) => { filter = b.dataset.v; b.parentElement.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c === b)); load(); });
+  on(box, 'click', '[data-fwin]', () => { filter = 'win'; box.querySelectorAll('[data-chips="f"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === 'win')); load(); });
   on(box, 'click', '[data-allp]', () => { filter = 'all'; box.querySelectorAll('[data-chips="f"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === 'all')); load(); });
   on(box, 'click', '[data-p]', (e, b) => openProduct(+b.dataset.p, () => { load(); kpi(); }));
   kpi(); load();
