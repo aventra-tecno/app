@@ -281,6 +281,86 @@ textarea{width:100%;min-height:90px;border-radius:12px;border:1.5px solid var(--
 .toggle input{width:44px;height:24px;accent-color:var(--pri)}
 .tile .dot svg{width:12px;height:12px}
 .formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 12px}
+
+/* ===== v2.2 — dashboard desktop, menu samping berbingkai, tur ===== */
+.side .sgroups{display:flex;flex-direction:column;gap:6px}
+.side .sg{border-radius:14px;border:1px solid transparent}
+.side .sg.open{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);padding:4px}
+.side .sgh{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;color:#fff;font:inherit;font-family:'Poppins',sans-serif;font-weight:600;font-size:13.5px;padding:8px 10px;border-radius:10px;cursor:pointer}
+.side .sgh:hover{background:rgba(255,255,255,.08)}
+.side .sgh .gi{width:30px;height:30px;flex:0 0 30px;border-radius:9px;background:rgba(255,255,255,.16);display:grid;place-items:center}
+.side .sg.open .sgh .gi{background:var(--acc);color:#10302F}
+.side .sgh .gi svg{width:17px;height:17px}
+.side .sgh .gl{flex:1;text-align:left}
+.side .sgh .chv svg{width:16px;height:16px;transition:transform .2s;opacity:.8}
+.side .sg:not(.open) .sgh .chv svg{transform:rotate(-90deg)}
+.side .sgh .dot{position:static}
+.side .sgb{display:flex;flex-direction:column;gap:2px;margin:2px 4px 6px 24px;padding-left:10px;border-left:1.5px solid rgba(255,255,255,.2)}
+.side .sgb a{padding:8px 10px;font-size:13.5px}
+.side .sgb a svg{width:18px;height:18px;flex:0 0 18px}
+.side .sgb a .lb{flex:1}
+.side a.solo{margin-bottom:2px}
+.side .sout{margin-top:auto;display:flex;align-items:center;gap:10px;background:rgba(214,58,58,.92);color:#fff;border:0;border-radius:12px;padding:11px 12px;font:inherit;font-weight:700;cursor:pointer}
+.side .sout svg{width:18px;height:18px}
+.side .ver{margin-top:8px}
+main.dwrap{display:block!important}
+.hero.dh{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.pchips{margin:10px 0 0}
+.pchips button{background:rgba(255,255,255,.14)!important;color:#fff!important;border-color:transparent!important}
+.pchips button.on{background:#fff!important;color:var(--pri)!important}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
+.kc{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;gap:12px;align-items:flex-start;text-decoration:none;color:inherit;transition:border-color .15s, box-shadow .15s}
+a.kc:hover{border-color:var(--top2);box-shadow:0 6px 18px rgba(14,124,122,.12)}
+.kc .l{font-size:13px;color:var(--mut);font-weight:600}
+.kc .v{font-family:'Poppins',sans-serif;font-size:24px;font-weight:800;line-height:1.2;margin-top:2px}
+.kc .s{font-size:12px;color:var(--mut);margin-top:2px}
+.kc.pri .ico{background:var(--pri);color:#fff}
+.kc.bad .v{color:var(--bad)} .kc.warn .v{color:var(--warn)}
+.dgrid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:16px;align-items:start}
+.dgrid .col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.panel h3{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px;font-size:15.5px;font-family:'Poppins',sans-serif}
+.panel h3 a{font-size:12.5px;font-weight:700;text-decoration:none;color:var(--pri)}
+.arow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.arow:first-of-type{border-top:0}
+.arow .grow{flex:1;min-width:0}
+.tw2{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .no{white-space:nowrap}
+.tbl tbody tr:hover td{background:#F7FBFB}
+.mp{display:inline-block;width:64px;height:6px;background:#E3EFEE;border-radius:4px;vertical-align:middle;margin-right:6px;overflow:hidden}
+.mp i{display:block;height:100%;background:var(--pri)}
+.funnel .f{display:grid;grid-template-columns:130px 1fr 34px;gap:10px;align-items:center;font-size:13.5px;padding:8px 0;text-decoration:none;color:inherit;border-top:1px solid var(--line)}
+.funnel .f:first-child{border-top:0}
+.funnel .track{display:block;height:12px;border-radius:6px;background:#E3EFEE;overflow:hidden}
+.funnel .track i{display:block;height:100%;background:linear-gradient(90deg,var(--top1),var(--top3));border-radius:6px}
+.funnel b{text-align:right}
+.panel .ann{margin-bottom:8px}
+@media (min-width:960px) and (max-width:1180px){ .dgrid{grid-template-columns:minmax(0,1fr)} }
+#tour .tour-block{position:fixed;inset:0;z-index:89}
+.tour-hole{position:fixed;z-index:90;border-radius:14px;box-shadow:0 0 0 9999px rgba(8,28,28,.6);transition:all .28s ease;pointer-events:none;outline:3px solid var(--acc);outline-offset:0}
+.tour-tip{position:fixed;z-index:91;background:#fff;border-radius:18px;padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.tt-top{display:flex;justify-content:space-between;align-items:center}
+.tt-x{border:0;background:var(--tint);width:34px;height:34px;border-radius:10px;color:var(--ink);font-size:14px;cursor:pointer}
+.tt-dots{display:flex;gap:4px;margin-top:12px;flex-wrap:wrap}
+.tt-dots i{width:6px;height:6px;border-radius:4px;background:#CFE0DE}
+.tt-dots i.on{background:var(--pri);width:16px}
+.gitem{background:#fff;border:1px solid var(--line);border-radius:16px;margin-bottom:10px;overflow:hidden}
+.gitem summary{list-style:none;cursor:pointer;display:flex;gap:12px;align-items:center;padding:14px 16px}
+.gitem summary::-webkit-details-marker{display:none}
+.gitem summary .grow{display:flex;flex-direction:column;flex:1;min-width:0;gap:2px}
+.gitem .chv svg{width:18px;height:18px;transition:transform .2s;color:var(--mut)}
+.gitem[open] .chv svg{transform:rotate(180deg)}
+.gitem[open] summary{border-bottom:1px solid var(--line);background:#F7FBFB}
+.gbody{padding:4px 16px 16px}
+.gsec{margin-top:12px}
+.gst{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin-bottom:6px;font-family:'Poppins',sans-serif}
+.gtab{display:grid;grid-template-columns:minmax(110px,max-content) 1fr;gap:8px 14px;font-size:14px;align-items:start}
+.gbody ul{margin:0;padding-left:20px;font-size:14px;line-height:1.6}
+@media (max-width:520px){ .gtab{grid-template-columns:1fr;gap:2px 0} .gtab > div:nth-child(2n){margin-bottom:8px} }
 </style>
 </head>
 <body>
@@ -289,7 +369,7 @@ textarea{width:100%;min-height:90px;border-radius:12px;border:1.5px solid var(--
 <div id="popwrap"></div>
 
 <script>
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.2.0';
 /* ===================== ikon ===================== */
 const I = {
   home:'<path class="fill" fill-opacity="0" d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
@@ -514,7 +594,7 @@ const ini = n => (String(n).replace(/^(Ustadzah|Ustadz|Bu|Pak|Adik|Mas|Staf)\s+/
 const CFG = () => DB.settings;
 const PNAME = {REG:'Reguler Online', FLX:'Fleksibel Online', OFF:'Offline Home Visit'};
 const IZIN = {REG:1, FLX:3, OFF:3};
-const S = { leadF:'semua', invF:'semua', per:'bulan', logQ:'', santriQ:'', calc:{nama:'',p:'FLX',d:30,s:8,anak:false,baru:true,buku:false}, absen:{kid:null,st:'hadir'}, showPw:false, err:'', shut:store.get('qec_shut')||[] };
+const S = { leadF:'semua', invF:'semua', per:'bulan', logQ:'', santriQ:'', calc:{nama:'',p:'FLX',d:30,s:8,anak:false,baru:true,buku:false}, absen:{kid:null,st:'hadir'}, showPw:false, err:'', shut:[], openG:store.get('qec_openg')||[] };
 
 /* ===================== aturan bisnis ===================== */
 function hitung({p,d,s,baru,anak,buku}){
@@ -604,18 +684,6 @@ function menuGroups(filter=''){
   return groups;
 }
 const lockI = p => p.mod && !modOn(p.mod) ? `<span class="lock" title="Terkunci">${svg('lock')}</span>` : '';
-function sideBar(cur){
-  const groups = menuGroups(S.sideQ||'');
-  let h = `<div class="brand"><div class="logo">QEC</div>${esc(CFG().usaha)}</div>
-    <div class="search"><input id="sideQ" type="search" placeholder="Cari menu…" value="${esc(S.sideQ||'')}" aria-label="Cari menu"><kbd>/</kbd></div>`;
-  for(const g in groups){ const shut = S.shut.includes(g) && !S.sideQ;
-    h += `<button class="g ${shut?'shut':''}" data-act="fold" data-g="${g}" aria-expanded="${!shut}">${g}${svg('chev')}</button>`;
-    if(!shut) h += groups[g].map(([id,p])=>{ const b = p.badge ? p.badge() : 0;
-      return `<a href="#${id}" class="${id===cur?'on':''}">${svg(p.icon)}${p.label}${b?`<span class="dot ping">${b}</span>`:lockI(p)}</a>`; }).join(''); }
-  if(!Object.keys(groups).length) h += `<div style="padding:10px;opacity:.75;font-size:13px">Menu tidak ditemukan</div>`;
-  h += `<a href="#lainnya" class="${cur==='lainnya'?'on':''}" style="margin-top:8px">${svg('grid')}Lainnya</a><div class="ver">Versi ${APP_VERSION}</div>`;
-  return h;
-}
 const card = (ic, t, m, right='') => `<div class="card row"><div class="ico">${svg(ic)}</div><div class="grow"><div class="t">${t}</div><div class="m">${m}</div></div>${right}</div>`;
 const CHIP = {lunas:'<span class="chip ok">Lunas</span>', tunggu:'<span class="chip warn">Menunggu</span>', baru:'<span class="chip bad">Baru</span>', harga:'<span class="chip">Dapat harga</span>', invoice:'<span class="chip warn">Invoice</span>', pilih:'<span class="chip ok">4 kandidat</span>', cari:'<span class="chip warn">Mencari</span>', auto:'<span class="chip">Auto-assign</span>', belum:'<span class="chip warn">Belum dibayar</span>', dibayar:'<span class="chip ok">Dibayar</span>'};
 const empty = t => `<div class="empty">${t}</div>`;
@@ -637,7 +705,7 @@ function lockBox(k){
 
 /* ===================== halaman login ===================== */
 function loginView(){
-  const demo = DB.users.filter(u=>u.aktif).slice(0,8), ann = DB.ann.filter(a=>a.on && a.login);
+  const demo = DB.users.filter(u=>u.aktif && u.role!=='superadmin').slice(0,8), ann = DB.ann.filter(a=>a.on && a.login);
   return `<div class="login"><header class="top">
     <div class="brandbig"><div class="logo">QEC</div><div><b>${esc(CFG().usaha)}</b><span>Sistem operasional</span></div></div>
     <h1>Masuk ke akun</h1><div class="hl">Les ngaji privat, dikelola otomatis</div>
@@ -878,8 +946,7 @@ P.akun = () => { const u = me();
   <div style="margin-top:12px">${act('Simpan','saveAkun','ok')}</div></div>
   <div class="card form">${card('phone','Pasang aplikasi','Android: menu browser › Pasang aplikasi. iPhone: Safari › Bagikan › Tambah ke Layar Utama.')}</div>
   <div class="demo">${esc(u.email)} · ${ROLES[u.role].label} · versi ${APP_VERSION}</div></main>`; };
-P.panduan = () => { const role = me().role, ids = Object.keys(PAGES).filter(i=>can(i,role) && HELP[i]);
-  return head('Panduan aplikasi') + `<main>${ids.map(i=>card(PAGES[i].icon, PAGES[i].label, HELP[i], `<a class="btn lihat mini" href="#${i}">Buka</a>`)).join('')}</main>`; };
+
 P.lainnya = () => { const u = me(), tabs = myTabs(), q = S.menuQ||'', groups = menuGroups(q);
   let list = ''; for(const g in groups){ const ids = groups[g].map(x=>x[0]).filter(i=>!tabs.includes(i)); if(ids.length) list += `<div class="sec">${g}</div>${shortcuts(ids)}`; }
   return head('Lainnya') + `<main><div class="card form" style="padding:10px"><input id="menuQ" type="search" placeholder="Cari menu…" value="${esc(q)}" aria-label="Cari menu"></div>${list || empty('Menu tidak ditemukan')}
@@ -915,6 +982,288 @@ function toast(msg){
 }
 const roleSelect = (sel) => `<select id="uR">${Object.keys(ROLES).filter(r=>r!=='superadmin').map(r=>`<option value="${r}" ${r===sel?'selected':''}>${ROLES[r].label}</option>`).join('')}</select>`;
 
+/* ===================== v2.2: layar desktop ===================== */
+const isDesk = () => window.matchMedia('(min-width:960px)').matches;
+const GROUP_ICON = {Utama:'home', Operasional:'brief', Mentor:'users', Keuangan:'wallet', Produk:'box', Pengaturan:'gear', Belajar:'book', Saya:'user', 'Super admin':'shield'};
+function sideBar(cur){
+  const groups = menuGroups(S.sideQ||'');
+  let h = `<div class="brand"><div class="logo">QEC</div>${esc(CFG().usaha)}</div>
+    <div class="search"><input id="sideQ" type="search" placeholder="Cari menu…" value="${esc(S.sideQ||'')}" aria-label="Cari menu"><kbd>/</kbd></div><div class="sgroups">`;
+  for(const g in groups){
+    const items = groups[g], hasCur = items.some(([id])=>id===cur), shut = !(S.openG.includes(g) || (hasCur && S.closedCur!==g) || S.sideQ), bsum = items.reduce((a,[,p])=>a+(p.badge?p.badge():0),0);
+    if(items.length===1 && g==='Utama'){ const [id,p] = items[0]; h += `<a href="#${id}" class="solo ${id===cur?'on':''}">${svg(p.icon)}${p.label}</a>`; continue; }
+    h += `<div class="sg ${shut?'':'open'}"><button class="sgh" data-act="fold" data-g="${esc(g)}" aria-expanded="${!shut}"><span class="gi">${svg(GROUP_ICON[g]||'grid')}</span><span class="gl">${g}</span>${shut&&bsum?`<span class="dot ping">${bsum}</span>`:''}<span class="chv">${svg('chev')}</span></button>`;
+    if(!shut) h += `<div class="sgb">${items.map(([id,p])=>{ const b = p.badge ? p.badge() : 0;
+      return `<a href="#${id}" class="${id===cur?'on':''}">${svg(p.icon)}<span class="lb">${p.label}</span>${b?`<span class="dot ping">${b}</span>`:lockI(p)}</a>`; }).join('')}</div>`;
+    h += `</div>`;
+  }
+  if(!Object.keys(groups).length) h += `<div style="padding:10px;opacity:.75;font-size:13px">Menu tidak ditemukan</div>`;
+  h += `</div><button class="sout" data-act="logout">${svg('out')}Keluar</button><div class="ver">Versi ${APP_VERSION}</div>`;
+  return h;
+}
+
+/* ----- beranda desktop ----- */
+const kc = (ic, l, v, s, tone='', href='') => `<${href?`a href="${href}"`:'div'} class="kc ${tone}"><div class="ico">${svg(ic)}</div><div><div class="l">${l}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:''}</div></${href?'a':'div'}>`;
+const panel = (t, body, link='', id='') => `<section class="panel" ${id?`data-tour="${id}"`:''}><h3>${t}${link?`<a href="#${link}">Lihat semua ›</a>`:''}</h3>${body}</section>`;
+const arow = (ic, t, m, right='') => `<div class="arow"><div class="ico">${svg(ic)}</div><div class="grow"><div class="t">${t}</div><div class="m">${m}</div></div>${right}</div>`;
+const tbl = (cols, rows) => rows.length ? `<div class="tw2"><table class="tbl"><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : empty('Belum ada data');
+const miniProg = k => `<div class="mp"><i style="width:${k.used/k.tot*100}%"></i></div><span class="m">${k.used}/${k.tot}</span>`;
+const kelasChip = k => { const c = CFG(); return k.hari>c.sanksiHari?`<span class="chip bad">&gt; ${c.sanksiHari} hari</span>`:k.tot-k.used<=1?'<span class="chip warn">Perpanjang</span>':k.hari>c.bonusHari?`<span class="chip warn">&gt; ${c.bonusHari} hari</span>`:'<span class="chip ok">Normal</span>'; };
+const funnel = rows => { const max = Math.max(1, ...rows.map(r=>r[1])); return `<div class="funnel">${rows.map(([l,v,h])=>`<a class="f" href="#${h}"><span>${l}</span><span class="track"><i style="width:${v/max*100}%"></i></span><b>${v}</b></a>`).join('')}</div>`; };
+const recentLog = () => DB.log.filter(l=>!l.sa && !/^(Masuk ke|Keluar dari) aplikasi/.test(l.t)).slice(-6).reverse().map(l=>arow('list', esc(l.t), `${esc(l.who)} · ${lalu(l.ts)}`)).join('') || empty('Belum ada aktivitas');
+const hariIni = () => new Date().toLocaleDateString('id-ID',{weekday:'long', day:'numeric', month:'long', year:'numeric'});
+function deskHero(sub=''){ const u = me(); return `<div class="hero dh"><div><div class="hi">${hariIni()}</div><div class="big" style="font-size:26px">Assalamu'alaikum, ${esc(u.nama)}</div>${sub}</div></div>`; }
+function berandaDesk(){
+  const u = me(), r = u.role, c = CFG();
+  if(r==='owner'){
+    const span = {hari:DAY, '7':7*DAY, bulan:30*DAY}[S.per], from = now()-span;
+    const L = DB.inv.filter(i=>i.st==='lunas' && (i.paid||i.ts) >= from), omzet = L.reduce((a,i)=>a+i.v,0), T = DB.inv.filter(i=>i.st==='tunggu');
+    const F = [['hari','Hari ini'],['7','7 hari'],['bulan','30 hari']];
+    const chips = `<div class="chips pchips" data-tour="periode">${F.map(([k,l])=>`<button class="${S.per===k?'on':''}" data-act="per" data-v="${k}">${l}</button>`).join('')}</div>`;
+    const todo = [
+      ['refresh', `${PAGES.perpanjang.badge()} perpanjangan`, 'Paket sisa ≤ 1 sesi, invoice belum dikirim', 'perpanjang', 'ok', 'Proses'],
+      ['alert', `${masalahList().length} masalah`, 'Dari aturan deteksi, belum ditangani', 'masalah', 'lihat', 'Lihat'],
+      ['star', `${DB.match.length} menunggu mentor`, 'Fleksibel/Offline lunas, belum pilih mentor', 'matching', 'lihat', 'Lihat'],
+      ['receipt', `${T.length} invoice menunggu`, `${rp(T.reduce((a,i)=>a+i.v,0))} belum dibayar`, 'invoice', 'lihat', 'Lihat']
+    ];
+    return head('Beranda', deskHero(chips)) + `<main class="dwrap">
+      <div class="kgrid" data-tour="kpi">${kc('wallet','Omzet lunas',rp(omzet),`${L.length} invoice lunas · ${F.find(f=>f[0]===S.per)[1].toLowerCase()}`,'pri')}${kc('book','Kelas aktif',aktif().length,'Kontrak berjalan','', '#kelas')}${kc('users','Mentor aktif',DB.mentors.filter(m=>m.st==='aktif').length,`${DB.mentors.filter(m=>m.st!=='aktif').length} istirahat/blokir`,'', '#mentor')}${kc('star','Menunggu mentor',DB.match.length,'Sudah lunas','', '#matching')}${kc('alert','Masalah',masalahList().length,'Belum ditangani',masalahList().length?'bad':'', '#masalah')}</div>
+      <div class="dgrid"><div class="col">
+        ${panel('Perlu tindakan', todo.map(([ic,t,m,h,cl,bl])=>arow(ic,t,m,`<a class="btn ${cl} mini" href="#${h}">${bl}</a>`)).join(''), '', 'todo')}
+        ${panel('Kelas berjalan', tbl(['Santri','Mentor','Paket','Sesi','Hari','Status'], aktif().map(k=>[`<b>${esc(k.n)}</b>`, esc(k.m), `${PNAME[k.p]} ${k.d}`, miniProg(k), `${k.hari}`, kelasChip(k)])), 'kelas', 'kelasTbl')}
+      </div><div class="col">
+        ${panel('Alur santri', funnel([['Lead aktif', DB.leads.filter(l=>l.st!=='lunas').length,'lead'],['Invoice menunggu', T.length,'invoice'],['Menunggu mentor', DB.match.length,'matching'],['Kelas aktif', aktif().length,'kelas']]), '', 'funnel')}
+        ${panel('Aktivitas terbaru', recentLog(), 'log')}
+        ${DB.ann.some(a=>a.on)?panel('Pengumuman', annBlock(), 'pengumuman'):''}
+      </div></div></main>`;
+  }
+  if(r==='keuangan'){
+    const L = DB.inv.filter(i=>i.st==='lunas'), T = DB.inv.filter(i=>i.st==='tunggu'), masuk = L.reduce((a,i)=>a+i.v,0), bel = DB.pay.filter(p=>p.st==='belum'), utang = bel.reduce((a,p)=>a+p.pk+p.b,0), gaji = DB.pay.filter(p=>p.st==='dibayar').reduce((a,p)=>a+p.pk+p.b,0);
+    const by = {REG:0,FLX:0,OFF:0}; L.forEach(i=>{ if(i.p) by[i.p]+=i.v; }); const max = Math.max(1,...Object.values(by));
+    return head('Beranda', deskHero()) + `<main class="dwrap">
+      <div class="kgrid" data-tour="kpi">${kc('wallet','Pemasukan lunas',rp(masuk),`${L.length} invoice`,'pri')}${kc('receipt','Belum lunas',rp(T.reduce((a,i)=>a+i.v,0)),`${T.length} invoice menunggu`,T.length?'warn':'','#invoice')}${kc('users','Payroll belum dibayar',rp(utang),`${bel.length} kontrak ditutup`,bel.length?'warn':'','#payroll')}${kc('chart','Saldo',rp(masuk-gaji),'Kas masuk − gaji dibayar','','#jurnal')}</div>
+      <div class="dgrid"><div class="col">
+        ${panel('Invoice terbaru', tbl(['No','Santri','Rincian','Jumlah','Status',''], DB.inv.slice(-8).reverse().map(x=>[`<span class="no">${esc(x.no||'')}</span>`, `<b>${esc(x.n)}</b>`, esc(x.d), `<b>${rp(x.v)}</b>`, CHIP[x.st], x.st==='tunggu'?act('Lunas','lunas','ok mini',`data-id="${x.id}"`):''])), 'invoice', 'invTbl')}
+      </div><div class="col">
+        ${panel('Omzet per paket', `<div class="bars">${Object.keys(by).map(k=>`<div class="b"><span>${PNAME[k]}</span><div class="track"><i style="width:${by[k]/max*100}%"></i></div><span class="v">${rp(by[k])}</span></div>`).join('')}</div>`, 'laporan')}
+        ${panel('Payroll menunggu', bel.map(p=>arow('user', esc(p.n), esc(p.k), `<b>${rp(p.pk+p.b)}</b>`)).join('') || empty('Semua gaji sudah dibayar'), 'payroll')}
+        ${DB.ann.some(a=>a.on)?panel('Pengumuman', annBlock()):''}
+      </div></div></main>`;
+  }
+  if(r==='cs'){
+    const cnt = st => DB.leads.filter(l=>l.st===st).length;
+    return head('Beranda', deskHero()) + `<main class="dwrap">
+      <div class="kgrid" data-tour="kpi">${kc('chat','Lead baru',cnt('baru'),'Perlu dibalas manusia',cnt('baru')?'bad':'','#lead')}${kc('tag','Dapat harga',cnt('harga'),'Siap dibuatkan invoice','','#lead')}${kc('receipt','Invoice terkirim',cnt('invoice'),'Menunggu bayar','','#invoice')}${kc('star','Menunggu mentor',DB.match.length,'Sudah lunas','','#matching')}</div>
+      <div class="dgrid"><div class="col">
+        ${panel('Lead terbaru', tbl(['Nama','Sumber','Pesan','Masuk','Status',''], DB.leads.slice().reverse().slice(0,8).map(l=>[`<b>${esc(l.n)}</b>`, esc(l.s), esc(l.q), lalu(l.ts), CHIP[l.st], (l.st==='baru'||l.st==='harga')?act('Invoice','leadInv','mini',`data-id="${l.id}"`):''])), 'lead', 'leadTbl')}
+      </div><div class="col">
+        ${panel('Menunggu mentor', DB.match.map(m=>arow('star', esc(m.n), `${PNAME[m.p]} ${m.d} · ${m.bids.length}/4 pelamar`, CHIP[m.st])).join('') || empty('Tidak ada'), 'matching')}
+        ${panel('Perlu perpanjangan', perluPerp().map(k=>arow('refresh', esc(k.n), `sisa ${k.tot-k.used} sesi · ${esc(k.m)}`, pendingPerp(k)?'<span class="chip warn">Invoice terkirim</span>':'')).join('') || empty('Tidak ada'), 'perpanjang')}
+        ${DB.ann.some(a=>a.on)?panel('Pengumuman', annBlock()):''}
+      </div></div></main>`;
+  }
+  if(r==='mentor'){
+    const ks = myKelasMentor(), mt = DB.mentors.find(x=>x.n===u.nama), off = mt && mt.st!=='aktif', lows = off ? [] : DB.match.filter(m=>m.st!=='auto' && !m.bids.includes(u.nama) && m.bids.length<4), gaji = DB.pay.filter(p=>p.n===u.nama);
+    return head('Beranda', deskHero(off?`<div class="sub">Status ${mt.st}: tidak menerima lowongan baru</div>`:'')) + `<main class="dwrap">
+      <div class="kgrid" data-tour="kpi">${kc('book','Kelas aktif',ks.length,'Santri yang Anda ajar','pri','#kelasku')}${kc('brief','Lowongan baru',lows.length,off?'Ditutup sementara':'Bisa dilamar',off?'bad':'','#lowongan')}${kc('wallet','Gaji tercatat',rp(gaji.reduce((a,p)=>a+p.pk+p.b,0)),`${gaji.filter(p=>p.st==='belum').length} belum ditransfer`,'','#gaji')}${kc('alert','Batas bonus',`${c.bonusHari} hari`,'Tutup kontrak sebelum lewat','warn')}</div>
+      <div class="dgrid"><div class="col">
+        ${panel('Kelas saya', tbl(['Santri','Paket','Sesi','Izin','Hari',''], ks.map(k=>[`<b>${esc(k.n)}</b>`, `${PNAME[k.p]} ${k.d}`, miniProg(k), `${k.iz}/${kuota(k)}`, `${k.hari}`, act('Isi absen','toAbsen','ok mini',`data-id="${k.id}"`)])), 'kelasku', 'kelasTbl')}
+      </div><div class="col">
+        ${panel('Lowongan baru', lows.map(m=>arow('brief', `${PNAME[m.p]} ${m.d}`, `${esc(m.area)} · ${esc(m.jadwal)} · ${m.bids.length}/4`, act('Minat','minat','mini',`data-id="${m.id}"`))).join('') || empty(off?'Status istirahat':'Tidak ada lowongan'), 'lowongan')}
+        ${DB.ann.some(a=>a.on)?panel('Pengumuman', annBlock()):''}
+      </div></div></main>`;
+  }
+  const k = myKelasSantri(), tag = DB.inv.find(i=>i.n===u.nama && i.st==='tunggu'), wm = DB.match.find(m=>m.n===u.nama), pr = k ? DB.progres.filter(p=>p.kid===k.id).slice(-4).reverse() : [];
+  return head('Beranda', deskHero(k?`<div class="sub">${PNAME[k.p]} · ${k.d} menit · mentor ${esc(k.m)}</div>`:wm?'<div class="sub">Pembayaran diterima, tinggal pilih mentor</div>':'')) + `<main class="dwrap">
+    <div class="kgrid" data-tour="kpi">${kc('cal','Sisa sesi',k?`${k.tot-k.used} dari ${k.tot}`:'–','Paket berjalan','pri','#jadwal')}${kc('check','Sisa izin',k?kuota(k)-k.iz:'–','Izin menggeser sesi','')}${kc('card','Tagihan',tag?rp(tag.v):'Lunas',tag?'Menunggu pembayaran':'Tidak ada tagihan',tag?'warn':'','#bayar')}</div>
+    <div class="dgrid"><div class="col">
+      ${wm?panel('Pilih mentor Anda', `${arow('star', wm.bids.length?`${wm.bids.length} kandidat siap dipilih`:'Sedang mencarikan mentor', `${PNAME[wm.p]} ${wm.d} mnt · ${wm.bids.length?'pilih dalam 24 jam':'kami kabari lewat WA'}`)}${wm.bids.length?`<div style="margin-top:10px;max-width:320px">${act('Lihat & pilih mentor','kandidat','shake',`data-id="${wm.id}"`)}</div>`:''}`):''}
+      ${k?panel('Sesi berikutnya', `${arow('cal', `Sesi ${Math.min(k.used+1,k.tot)} · Kamis, 19.30 WIB`, `${esc(k.m)} · Zoom`)}<div class="btns" style="max-width:420px">${act('Ajukan izin','izin','ghost')}${act('Reschedule','reschedule','ghost')}</div>`):''}
+      ${k?panel('Progres terakhir', pr.map(p=>arow('book', esc(p.txt.split(' — ')[0]), esc(p.txt.split(' — ')[1]||''))).join('') || empty('Belum ada laporan'), 'progres'):''}
+    </div><div class="col">
+      ${tag?panel('Tagihan', `${arow('receipt', esc(tag.d), rp(tag.v))}<div style="margin-top:10px"><a class="btn shake" href="#bayar">Bayar sekarang</a></div>`):''}
+      ${panel('E-modul gratis', ['Makhorijul Huruf','Tajwid','Shifatul Huruf'].map(x=>arow('book', x, 'PDF')).join(''), 'progres')}
+      ${DB.ann.some(a=>a.on)?panel('Pengumuman', annBlock()):''}
+    </div></div></main>`;
+}
+
+/* ===================== PANDUAN LENGKAP (isi) ===================== */
+const GUIDE = {
+  beranda: role => ({
+    r: {owner:'Ringkasan seluruh usaha: omzet, kelas, mentor, dan pekerjaan yang menunggu keputusan Anda.', keuangan:'Ringkasan uang masuk, invoice yang belum lunas, dan gaji mentor yang harus dibayar.', cs:'Ringkasan lead dari WhatsApp, invoice yang menunggu bayar, dan santri yang menunggu mentor.', mentor:'Kelas yang Anda ajar, lowongan baru, dan gaji yang tercatat.', santri:'Sisa sesi, sisa izin, jadwal berikutnya, tagihan, dan progres belajar Anda.'}[role],
+    f: {owner:['Pilihan periode (Hari ini / 7 hari / 30 hari) untuk angka omzet.','Kartu angka bisa ditekan untuk membuka menunya.','Panel Perlu tindakan: perpanjangan, masalah, santri menunggu mentor, invoice menunggu.','Tabel Kelas berjalan dan diagram Alur santri.','Aktivitas terbaru dari Log aktivitas, dan pengumuman yang sedang tampil.'],
+        keuangan:['Kartu pemasukan, belum lunas, payroll, dan saldo.','Tabel invoice terbaru dengan tombol Lunas langsung.','Grafik omzet per paket dan daftar gaji yang menunggu dibayar.'],
+        cs:['Kartu jumlah lead per status.','Tabel lead terbaru dengan tombol buat invoice.','Daftar santri menunggu mentor dan paket yang perlu diperpanjang.'],
+        mentor:['Tabel kelas dengan tombol Isi absen.','Daftar lowongan dengan tombol Minat.','Peringatan status istirahat kalau ada kontrak lewat batas.'],
+        santri:['Tombol Ajukan izin dan Reschedule.','Pilih mentor (kalau baru bayar).','Tagihan, progres terakhir, dan e-modul gratis.']}[role],
+    fl: role==='owner' ? [['Hari ini','Invoice yang lunas dalam 24 jam terakhir.'],['7 hari','Invoice yang lunas 7 hari terakhir.'],['30 hari','Invoice yang lunas 30 hari terakhir.']] : [],
+    st: [['Normal','Kontrak berjalan di bawah batas bonus.'],['Perpanjang','Sisa sesi ≤ 1, saatnya kirim invoice perpanjangan.'],[`> ${CFG().bonusHari} hari`,'Kalau ditutup sekarang, mentor tidak dapat bonus retensi.'],[`> ${CFG().sanksiHari} hari`,'Mentor otomatis istirahat sampai kontrak ditutup.']],
+    d: {owner:[['Omzet lunas','Jumlah nominal invoice berstatus Lunas, dihitung dari tanggal lunas dalam periode yang dipilih.'],['Kelas aktif','Jumlah kontrak berstatus aktif di menu Kelas Aktif.'],['Mentor aktif','Mentor berstatus aktif; istirahat dan blokir tidak dihitung.'],['Menunggu mentor','Santri Fleksibel/Offline yang sudah lunas tapi belum memilih mentor (menu Matching).'],['Masalah','Hasil aturan deteksi otomatis yang belum ditandai sudah ditangani.'],['Alur santri','Lead yang belum lunas → invoice menunggu → menunggu mentor → kelas aktif.']],
+        keuangan:[['Pemasukan lunas','Total invoice Lunas.'],['Belum lunas','Total invoice berstatus Menunggu.'],['Payroll','Gaji dari kontrak yang sudah ditutup dan belum ditransfer.'],['Saldo','Pemasukan lunas dikurangi gaji yang sudah dibayar.']],
+        cs:[['Lead','Chat WhatsApp yang masuk lewat bot, dikelompokkan per status.'],['Menunggu mentor','Dari menu Matching.']],
+        mentor:[['Kelas','Kontrak aktif yang mentornya Anda.'],['Lowongan','Santri Fleksibel/Offline yang lunas dan pelamarnya belum 4.'],['Gaji','Dibuat otomatis saat kontrak Anda ditutup.']],
+        santri:[['Sisa sesi','Total sesi paket dikurangi sesi yang sudah diabsen mentor.'],['Sisa izin','Kuota izin paket dikurangi izin yang sudah dipakai.'],['Tagihan','Invoice atas nama Anda yang masih Menunggu.']]}[role],
+    tour: [{sel:['[data-tour=kpi]','.kpis'], t:'Angka utama', d:'Kartu ini merangkum pekerjaan Anda. Tekan kartu untuk membuka menunya. Detail asal setiap angka ada di Panduan aplikasi.'},
+           {sel:['[data-tour=periode]'], t:'Pilih periode', d:'Ganti periode omzet: hari ini, 7 hari, atau 30 hari terakhir. Dihitung dari tanggal invoice lunas.'},
+           {sel:['[data-tour=todo]'], t:'Perlu tindakan', d:'Daftar pekerjaan yang menunggu keputusan Anda. Angka berkurang otomatis setelah ditangani.'}]
+  }),
+  lead:{r:'Semua chat calon santri dari WhatsApp. Bot membalas otomatis dalam hitungan detik; CS menindaklanjuti sampai invoice.',
+    f:['Filter status di atas daftar.','Tandai dibalas: lead pindah ke status Dapat harga.','Buat invoice: membuka Pendaftaran dengan nama sudah terisi.'],
+    fl:[['Semua','Semua lead.'],['Baru','Chat baru yang belum dibalas manusia.'],['Dapat harga','Sudah dijawab dan diberi harga.'],['Invoice','Invoice sudah dikirim, menunggu bayar.'],['Lunas','Sudah bayar dan lanjut ke matching.']],
+    st:[['Baru','Bot sudah membalas sapaan & katalog; perlu dicek manusia.'],['Dapat harga','Calon santri sudah tahu harga.'],['Invoice','Invoice terkirim lewat WA.'],['Lunas','Invoice dibayar.']],
+    d:[['Daftar lead','Setiap chat pertama ke nomor WA bisnis tercatat otomatis oleh bot.'],['Sumber','Dari tautan iklan (Google Ads / Instagram) atau chat langsung / referral.'],['Waktu','Kapan chat pertama masuk.']],
+    tour:[{sel:['main .chips'], t:'Filter status lead', d:'Saring lead: Baru, Dapat harga, Invoice, Lunas. Status berubah otomatis mengikuti tindakan.'},{sel:['[data-act=leadInv]'], t:'Buat invoice', d:'Langsung ke Pendaftaran dengan nama calon santri terisi.'}]},
+  daftar:{r:'Membuat invoice untuk santri baru: harga, diskon, biaya daftar, dan buku dihitung otomatis.',
+    f:['Isi nama santri.','Pilih paket, durasi, dan jumlah sesi.','Centang santri baru (biaya daftar), anak < 13 tahun dan buku cetak (khusus offline).','Kirim invoice ke WA: invoice tercatat berstatus Menunggu.'],
+    fl:[], st:[],
+    d:[['Harga paket','Dari menu Paket & Harga (diatur owner).'],['Diskon','5% kalau ≥ 8 sesi; tambah 5% untuk anak < 13 tahun paket offline (maks. 10%).'],['Biaya daftar & buku','Dari Paket & Harga; diskon tidak berlaku untuk keduanya.'],['Kuota izin','Reguler 1, Fleksibel 3, Offline 3 per 4 sesi.']],
+    tour:[{sel:['.seg'], t:'Pilih paket', d:'Paket, durasi, dan jumlah sesi menentukan harga. Total di bawah langsung berubah.'},{sel:['.sum'], t:'Rincian harga', d:'Harga × sesi, diskon, biaya daftar, dan buku. Diskon hanya berlaku pada harga paket.'},{sel:['[data-act=kirimInv]'], t:'Kirim invoice', d:'Invoice + link bayar dikirim ke WA santri dan tercatat di menu Invoice.'}]},
+  matching:{r:'Mencarikan mentor untuk santri Fleksibel & Offline yang sudah lunas. Reguler tidak lewat sini karena langsung dapat mentor otomatis.',
+    f:['Broadcast ulang: menawarkan lowongan lagi ke mentor lain.','Lihat kandidat: profil + voice note tilawah.','Pilihkan untuk santri kalau santri minta dibantu.'],
+    fl:[],
+    st:[['Mencari','Pelamar kurang dari 4.'],['4 kandidat','4 pelamar pertama terkunci; santri punya 24 jam untuk memilih.'],['Auto-assign','Reguler tanpa mentor kosong; tekan Tetapkan setelah ada mentor aktif.']],
+    d:[['Daftar','Dibuat otomatis saat invoice santri baru (Fleksibel/Offline) ditandai Lunas.'],['Pelamar','Mentor aktif yang menekan Saya minat. Offline difilter area; mentor istirahat/blokir tidak bisa melamar.'],['Pilihan mentor','Dilakukan santri di berandanya atau lewat WA.']],
+    tour:[{sel:['main .card'], t:'Cara matching', d:'Reguler otomatis. Fleksibel & Offline: 4 pelamar pertama dikunci, lalu santri memilih sendiri dalam 24 jam.'},{sel:['[data-act=kandidat]'], t:'Lihat kandidat', d:'Profil, skor, dan voice note tilawah setiap kandidat.'}]},
+  kelas:{r:'Semua kontrak belajar yang sedang berjalan.',
+    f:['Progres sesi, pemakaian izin, dan umur kontrak per santri.'], fl:[],
+    st:[['Normal','Umur kontrak di bawah batas bonus.'],[`> ${CFG().bonusHari} hari`,'Bonus retensi hangus kalau ditutup sekarang.'],[`> ${CFG().sanksiHari} hari`,'Mentor otomatis istirahat.']],
+    d:[['Sesi','Bertambah setiap mentor menyimpan absen Hadir atau Hangus.'],['Izin','Bertambah setiap izin disetujui (dari santri atau mentor).'],['Hari ke-','Dihitung dari tanggal kontrak dimulai; di-reset saat diperpanjang.']],
+    tour:[{sel:['main .card .prog','[data-tour=kelasTbl]'], t:'Progres kontrak', d:'Batang = sesi terpakai. Di bawahnya: sesi, izin, dan hari ke- sejak kontrak dimulai.'}]},
+  perpanjang:{r:'Paket yang tinggal ≤ 1 sesi. Kirim invoice perpanjangan atau tandai tidak lanjut.',
+    f:['Kirim invoice: tanpa biaya daftar; diskon 5% kalau ≥ 8 sesi.','Tidak lanjut: kontrak ditutup, gaji pokok mentor tercatat, link testimoni terkirim.'], fl:[],
+    st:[['Invoice terkirim','Menunggu santri membayar.']],
+    d:[['Daftar','Kelas aktif dengan sisa sesi ≤ 1.'],['Saat dibayar','Kontrak lama ditutup (gaji + bonus kalau ≤ batas hari), kontrak baru dimulai dengan mentor yang sama.']],
+    tour:[{sel:['[data-act=kirimPerp]','main .card'], t:'Proses perpanjangan', d:'Kirim invoice perpanjangan, atau Tidak lanjut kalau santri berhenti.'}]},
+  santri:{r:'Semua santri dalam satu daftar beserta posisinya di alur.',
+    f:['Cari nama, paket, atau mentor.'], fl:[],
+    st:[['Menunggu bayar','Invoice pendaftaran belum lunas.'],['Menunggu mentor','Sudah lunas, belum punya mentor.'],['Aktif','Kontrak berjalan.'],['Berhenti','Tidak memperpanjang.']],
+    d:[['Daftar','Gabungan invoice pendaftaran yang menunggu, lowongan matching, dan semua kontrak.']],
+    tour:[{sel:['#santriQ'], t:'Cari santri', d:'Ketik nama, paket, atau nama mentor.'}]},
+  komplain:{r:'Catatan komplain santri dan testimoni dari santri yang berhenti.',
+    f:['Simpan komplain atau testimoni baru.','Tandai komplain selesai.'], fl:[],
+    st:[['Baru','Komplain belum ditangani.'],['Selesai','Komplain sudah ditangani.'],['Testimoni','Masukan dari santri; otomatis dibuat saat santri tidak lanjut.']],
+    d:[['Komplain','Diisi CS/owner dari chat santri.'],['Testimoni','Link testimoni dikirim otomatis saat Tidak lanjut di Perpanjangan.']],
+    tour:[{sel:['#kpn'], t:'Catat komplain', d:'Isi nama dan isi komplain; owner mendapat notifikasi.'}]},
+  masalah:{r:'Kejadian yang tidak sesuai aturan dan perlu dicek owner.',
+    f:['Lihat: membuka menu terkait.','Blokir mentor (untuk calon blokir).','Tandai sudah ditangani: hilang dari daftar dan badge berkurang.'], fl:[],
+    st:[['Penting','Kontrak lewat batas sanksi.'],['Cek','Bonus terancam hangus, calon blokir, lowongan sepi.']],
+    d:[[`Kontrak lewat ${CFG().sanksiHari} hari`,'Umur kontrak melewati batas sanksi; mentornya otomatis istirahat.'],['Bonus terancam hangus',`Kontrak sudah > ${CFG().bonusHari} hari dan sisa sesi ≤ 1.`],['Calon blokir','2 santri berturut-turut tidak lanjut dengan mentor yang sama.'],['Lowongan sepi','Lowongan dengan pelamar kurang dari 2.']],
+    tour:[{sel:['[data-act=resolve]','main .card'], t:'Tangani masalah', d:'Setelah dicek, tekan Tandai sudah ditangani. Calon blokir bisa langsung diblokir.'}]},
+  mentor:{r:'Data semua mentor.', f:['Jumlah kelas aktif dan skor per mentor.'], fl:[],
+    st:[['★ skor','Mentor aktif.'],['Istirahat','Ada kontrak lewat batas sanksi; tidak menerima lowongan.'],['Calon blokir','2 santri berturut-turut berhenti; menunggu keputusan owner.'],['Diblokir','Tidak menerima lowongan.']],
+    d:[['Daftar mentor','Dari akun mentor di Pegawai & jabatan.'],['Jumlah kelas','Kontrak aktif atas nama mentor.']],
+    tour:[{sel:['main .card'], t:'Status mentor', d:'Chip di kanan menunjukkan status: aktif (skor), istirahat, calon blokir, atau diblokir.'}]},
+  invoice:{r:'Semua invoice pendaftaran dan perpanjangan.',
+    f:['Filter status.','Salin nomor invoice.','Ingatkan: kirim pengingat bayar ke WA.','Tandai lunas setelah dana masuk.'],
+    fl:[['Semua','Semua invoice.'],['Menunggu','Belum dibayar.'],['Lunas','Sudah dibayar.']],
+    st:[['Menunggu','Invoice terkirim, belum dibayar.'],['Lunas','Dana masuk; jurnal kas tercatat otomatis.']],
+    d:[['Invoice baru','Dari Pendaftaran.'],['Invoice perpanjangan','Dari menu Perpanjangan.'],['Saat Lunas','Santri baru: e-modul terkirim, Reguler langsung dapat mentor, Fleksibel/Offline masuk Matching. Perpanjangan: kontrak baru + gaji mentor tercatat.']],
+    tour:[{sel:['main .chips'], t:'Filter invoice', d:'Menunggu = belum dibayar. Lunas = dana sudah masuk.'},{sel:['[data-act=lunas]'], t:'Tandai lunas', d:'Memicu alur otomatis: jurnal, e-modul, dan pencarian mentor.'}]},
+  payroll:{r:'Gaji mentor dari setiap kontrak yang ditutup.',
+    f:['Rincian pokok + bonus per kontrak.','Bayar & kirim slip: semua yang belum dibayar ditandai dibayar dan mentor dapat notifikasi.'], fl:[],
+    st:[['Belum dibayar','Menunggu transfer.'],['Dibayar','Sudah ditransfer.'],['Bonus','Santri lanjut dan kontrak ditutup ≤ batas hari.'],['Tanpa bonus','Santri berhenti atau kontrak lewat batas.']],
+    d:[['Gaji pokok','Dari Paket & Harga per 4 sesi.'],['Bonus retensi','Dari Paket & Harga; hanya kalau santri memperpanjang.'],['Dibuat kapan','Saat invoice perpanjangan lunas, atau saat Tidak lanjut.']],
+    tour:[{sel:['main .card'], t:'Rincian gaji', d:'Setiap baris = satu kontrak yang ditutup: pokok, bonus, dan status bayar.'}]},
+  jurnal:{r:'Kas masuk, gaji dibayar, utang gaji, dan saldo.', f:['Unduh rekap invoice sebagai CSV.'], fl:[], st:[],
+    d:[['Kas masuk','Semua invoice Lunas.'],['Gaji dibayar','Payroll berstatus Dibayar.'],['Utang gaji','Payroll Belum dibayar.'],['Saldo','Kas masuk − gaji dibayar.']],
+    tour:[{sel:['[data-act=csv]'], t:'Unduh rekap', d:'Semua invoice dalam file CSV untuk pembukuan.'}]},
+  laporan:{r:'Laporan omzet dan retensi.', f:['Omzet lunas per paket.','Perbandingan kontrak lanjut vs berhenti.'], fl:[], st:[],
+    d:[['Retensi','Kontrak lanjut ÷ (lanjut + berhenti) dari kontrak yang sudah ditutup.'],['Rata-rata invoice','Total invoice lunas ÷ jumlahnya.']],
+    tour:[{sel:['.bars'], t:'Omzet per paket', d:'Bandingkan paket mana yang paling banyak menghasilkan.'}]},
+  stok:{r:'Stok buku cetak Iqro & Tajwid.', f:[], fl:[], st:[['Hijau','Stok aman.'],['Kuning','Stok di bawah 10, segera tambah.']],
+    d:[['Berkurang','Saat invoice offline dengan add-on buku ditandai lunas.']], tour:[{sel:['main .card'], t:'Stok buku', d:'Kuning = stok menipis.'}]},
+  afiliasi:{r:'Modul premium yang dijual lewat link afiliasi, bagi hasil 70:30.', f:['Salin link afiliasi.'], fl:[], st:[], d:[['Komisi','30% dari harga modul untuk pemilik link.']], tour:[{sel:['main .card'], t:'Link afiliasi', d:'Salin dan bagikan ke calon pembeli.'}]},
+  paket:{r:'Harga paket, gaji pokok mentor, bonus, biaya daftar, dan buku. Hanya owner.', f:['Ubah angka lalu Simpan harga.','Berlaku untuk invoice dan gaji berikutnya.'], fl:[], st:[],
+    d:[['Dipakai di','Pendaftaran, Perpanjangan, dan Payroll.']], tour:[{sel:['[data-cfg]'], t:'Ubah harga', d:'Ketik angka baru lalu Simpan. Invoice lama tidak berubah.'}]},
+  pegawai:{r:'Akun semua pengguna: pegawai, mentor, dan santri.', f:['Tambah akun: nama, email, password awal, jabatan.','Tekan nama untuk ubah jabatan, reset password, atau nonaktifkan.'], fl:[],
+    st:[['Nama jabatan','Akun aktif.'],['Nonaktif','Tidak bisa login.']], d:[['Akun mentor baru','Otomatis masuk Data Mentor dan bisa menerima lowongan.']], tour:[{sel:['[data-act=addUser]'], t:'Tambah akun', d:'Buat akun lalu kirim email & password awal ke orangnya.'}]},
+  pengumuman:{r:'Pengumuman untuk semua pengguna.', f:['Sematkan sebagai Penting (merah, paling atas).','Tampilkan di halaman masuk.','Matikan / hapus.'], fl:[], st:[['Tampil','Terlihat di beranda.'],['Mati','Disembunyikan.']], d:[['Penerima','Semua jabatan mendapat notifikasi saat terbit.']], tour:[{sel:['#annT'], t:'Tulis pengumuman', d:'Centang Penting atau Halaman masuk kalau perlu.'}]},
+  log:{r:'Catatan siapa melakukan apa dan kapan.', f:['Cari nama, santri, atau kegiatan.'], fl:[], st:[], d:[['Isi','Setiap tindakan penting (invoice, lunas, absen, gaji, pengaturan) tercatat otomatis.']], tour:[{sel:['#logQ'], t:'Cari aktivitas', d:'Ketik nama pegawai atau santri.'}]},
+  pengaturan:{r:'Nama usaha, tema, dan aturan batas hari.', f:['Tema Teal/Hitam untuk semua pengguna.','Batas hari bonus dan sanksi.','Laporan WA otomatis.'], fl:[], st:[], d:[['Batas bonus','Kontrak ditutup ≤ angka ini → mentor dapat bonus.'],['Batas sanksi','Kontrak lewat angka ini → mentor istirahat otomatis.']], tour:[{sel:['#cfgB'], t:'Batas hari', d:'Angka ini dipakai di Kelas, Masalah, dan Payroll.'}]},
+  modul:{r:'Menu tambahan. Saat ini semua modul terbuka.', f:['Tidak lanjut: modul tetap aktif sampai masa berlaku habis.'], fl:[], st:[['Aktif','Bisa dipakai.'],['Tidak lanjut','Berhenti di akhir masa berlaku.'],['Terkunci','Perlu dibuka.']], d:[], tour:[{sel:['main .card'], t:'Modul', d:'Status setiap menu tambahan.'}]},
+  tagihan:{r:'Tagihan aplikasi.', f:['Bayar sekarang (QRIS / VA).','Salin nomor tagihan.'], fl:[], st:[['Belum dibayar','Tampil juga di bar kuning bawah header.']], d:[['Tagihan bulanan','Dibuat otomatis untuk langganan aplikasi.']], tour:[{sel:['[data-act=payBill]','main .card'], t:'Bayar tagihan', d:'Pilih metode bayar; status lunas otomatis.'}]},
+  lowongan:{r:'Lowongan kelas untuk mentor.', f:['Saya minat: masuk daftar pelamar.'], fl:[], st:[['x/4','Jumlah pelamar; 4 pelamar pertama dikirim ke santri.'],['Minat terkirim','Anda sudah melamar.'],['Istirahat / diblokir','Lowongan ditutup untuk Anda.']], d:[['Lowongan','Santri Fleksibel/Offline yang baru lunas. Offline sesuai area.']], tour:[{sel:['[data-act=minat]','main .card'], t:'Melamar', d:'Tekan Saya minat. Santri memilih dari 4 pelamar pertama.'}]},
+  absen:{r:'Isi kehadiran dan progres setiap selesai mengajar.', f:['Pilih kelas, status hadir, dan catatan materi.'], fl:[], st:[['Hadir','Sesi terpakai, progres terkirim ke santri.'],['Izin','Memakai kuota izin; sesi digeser.'],['Hangus','Santri tidak hadir tanpa izin; sesi terpakai.']], d:[['Sisa izin','Dari kuota paket santri.']], tour:[{sel:['.seg'], t:'Status kehadiran', d:'Hadir, Izin (pakai kuota), atau Hangus.'},{sel:['[data-act=simpanAbsen]'], t:'Simpan', d:'Santri langsung menerima laporan progres. Sisa 1 sesi → admin dapat alert perpanjangan.'}]},
+  kelasku:{r:'Kelas yang Anda ajar.', f:['Riwayat progres per santri.','Isi absen.'], fl:[], st:[], d:[['Kelas','Kontrak aktif atas nama Anda.']], tour:[{sel:['main .card'], t:'Kelas Anda', d:'Sesi, izin, dan tombol absen per santri.'}]},
+  gaji:{r:'Gaji dari kontrak yang sudah ditutup.', f:[], fl:[], st:[['Belum dibayar','Menunggu transfer.'],['Dibayar','Sudah ditransfer.']], d:[['Pokok','Per 4 sesi sesuai paket.'],['Bonus',`Santri lanjut dan kontrak ditutup ≤ ${CFG().bonusHari} hari.`]], tour:[{sel:['main .card','main'], t:'Gaji', d:'Muncul setiap kontrak ditutup.'}]},
+  jadwal:{r:'Jadwal sesi Anda.', f:[], fl:[], st:[['Selesai','Sudah diabsen mentor.'],['Terjadwal','Belum berlangsung.']], d:[['Jadwal','Dibuat saat mentor ditetapkan.']], tour:[{sel:['main .card'], t:'Jadwal', d:'Sesi selesai dan yang akan datang.'}]},
+  bayar:{r:'Tagihan Anda.', f:['Bayar sekarang.','Salin nomor invoice.'], fl:[], st:[['Menunggu','Belum dibayar.'],['Lunas','Sudah dibayar.']], d:[['Tagihan','Dari pendaftaran dan perpanjangan atas nama Anda.']], tour:[{sel:['[data-act=bayarSantri]','main .card'], t:'Bayar', d:'Setelah bayar, e-modul terkirim dan mentor dicarikan.'}]},
+  progres:{r:'Laporan progres dari mentor dan e-modul gratis.', f:[], fl:[], st:[], d:[['Progres','Diisi mentor setiap selesai sesi.']], tour:[{sel:['main .card'], t:'Progres', d:'Materi dan catatan dari mentor.'}]},
+  notifikasi:{r:'Pengaturan notifikasi HP.', f:['Izinkan notifikasi.','Tes notifikasi.'], fl:[], st:[['Aktif','Notifikasi HP diizinkan.'],['Mati','Belum diizinkan / diblokir.']], d:[['Isi','Notifikasi yang ditujukan ke jabatan atau nama Anda.']], tour:[{sel:['[data-act=izinNotif]'], t:'Izinkan', d:'Supaya notifikasi muncul walau aplikasi tertutup.'}]},
+  akun:{r:'Ganti nama dan password.', f:['Password lama wajib untuk ganti password.'], fl:[], st:[], d:[], tour:[{sel:['#akN'], t:'Akun', d:'Ubah nama atau password.'}]},
+  panduan:{r:'Panduan lengkap semua menu.', f:['Mulai tur lengkap.','Tur per halaman.'], fl:[], st:[], d:[], tour:[]},
+  lainnya:{r:'Menu lain, atur menu bawah, dan keluar (HP).', f:['Atur menu bawah: pilih 4 menu.'], fl:[], st:[], d:[], tour:[{sel:['[data-act=aturMenu]'], t:'Atur menu bawah', d:'Pilih menu yang paling sering dipakai.'}]}
+};
+const guideOf = id => { const g = GUIDE[id]; return typeof g==='function' ? g(me().role) : g; };
+const CORE = {owner:['beranda','lead','daftar','matching','kelas','perpanjang','masalah','invoice','payroll','pegawai','paket','pengaturan'], keuangan:['beranda','invoice','payroll','jurnal','laporan','stok'], cs:['beranda','lead','daftar','matching','perpanjang','santri','komplain'], mentor:['beranda','lowongan','absen','kelasku','gaji'], santri:['beranda','jadwal','bayar','progres']};
+
+/* ===================== TUR (panduan berjalan) ===================== */
+let TOUR = null;
+function fullTour(){
+  const u = me(), desk = isDesk(), steps = [
+    {page:'beranda', t:`Selamat datang, ${u.nama}`, d:`Tur singkat ini menunjukkan menu dan fitur untuk jabatan ${ROLES[u.role].label}. Bisa diulang kapan saja dari menu Panduan aplikasi atau tombol ?.`},
+    {page:'beranda', sel:[desk?'#side':'.tabs'], t:desk?'Menu samping':'Menu bawah', d:desk?'Menu dikelompokkan per kategori. Tekan kategori untuk membuka/menutup. Angka merah = pekerjaan yang menunggu.':'5 tombol menu utama; tombol tengah di lengkungan. Menu lain ada di Lainnya, dan bisa diatur sendiri.'},
+    ...(desk?[{page:'beranda', sel:['#sideQ'], t:'Cari menu', d:'Ketik nama menu atau tekan tombol / di keyboard.'}]:[]),
+    {page:'beranda', sel:['[data-act=lonceng]'], t:'Lonceng notifikasi', d:'Kabar penting untuk Anda: invoice lunas, lowongan baru, santri memilih mentor, dan lain-lain.'},
+    {page:'beranda', sel:['[data-act=help]'], t:'Tombol ?', d:'Penjelasan halaman yang sedang dibuka, tur per halaman, dan panduan lengkapnya.'}
+  ];
+  (CORE[u.role]||[]).forEach(id => { if(!can(id,u.role)) return; const g = guideOf(id); (g.tour||[]).slice(0, id==='beranda'?3:1).forEach((s,i) => steps.push({page:id, sel:s.sel, t: id==='beranda' ? s.t : `${PAGES[id].label}`, d: id==='beranda' ? s.d : `${g.r} ${s.d}`})); });
+  steps.push({page:'panduan', sel:['[data-tour=guideList]'], t:'Panduan lengkap', d:'Semua menu dijelaskan rinci di sini: fitur, filter, arti setiap status, dan dari mana datanya. Selamat bekerja!'});
+  return steps;
+}
+const pageTour = id => { const g = guideOf(id); return [{page:id, t:PAGES[id].label, d:g.r}].concat((g.tour||[]).map(s=>({page:id, sel:s.sel, t:s.t, d:s.d}))); };
+function startTour(steps, full){ TOUR = {steps, i:0, full}; closePop(); drawTour(); }
+function endTour(){ if(!TOUR) return; if(TOUR.full){ const usr = DB.users.find(x=>x.email===me().email); if(usr){ usr.toured = true; save(); } } TOUR = null; const L = document.getElementById('tour'); if(L) L.remove(); document.documentElement.classList.remove('no-scroll'); }
+function drawTour(){
+  if(!TOUR) return; const st = TOUR.steps[TOUR.i];
+  if(st.page && curPage!==st.page){ location.hash = '#'+st.page; setTimeout(placeTour, 180); } else placeTour();
+}
+function placeTour(){
+  if(!TOUR) return; const st = TOUR.steps[TOUR.i], n = TOUR.steps.length;
+  let L = document.getElementById('tour');
+  if(!L){ L = document.createElement('div'); L.id = 'tour'; L.innerHTML = '<div class="tour-block"></div><div class="tour-hole"></div><div class="tour-tip" role="dialog" aria-live="polite"></div>'; document.body.appendChild(L); }
+  const el = (st.sel||[]).map(s=>document.querySelector(s)).find(e=>e && e.getClientRects().length && e.getBoundingClientRect().width>0);
+  const tip = L.querySelector('.tour-tip'), hole = L.querySelector('.tour-hole');
+  tip.innerHTML = `<div class="tt-top"><span class="chip">${TOUR.i+1} / ${n}</span><button class="tt-x" data-act="tourSkip" aria-label="Tutup tur">✕</button></div><div class="t" style="font-size:16px;margin:8px 0 4px">${esc(st.t)}</div><div class="m" style="color:var(--ink);line-height:1.55">${esc(st.d)}</div>
+    <div class="tt-dots">${TOUR.steps.map((_,i)=>`<i class="${i===TOUR.i?'on':''}"></i>`).join('')}</div>
+    <div class="btns" style="margin-top:10px">${TOUR.i?act('Kembali','tourPrev','ghost sm'):act('Lewati','tourSkip','ghost sm')}${act(TOUR.i===n-1?'Selesai':'Lanjut','tourNext','ok sm')}</div>`;
+  const put = () => {
+    const vw = innerWidth, vh = innerHeight, tw = Math.min(360, vw*0.92);
+    if(el){
+      const r = el.getBoundingClientRect(), pad = 6, top = Math.max(4, r.top-pad), h = Math.min(r.height+pad*2, vh-8);
+      Object.assign(hole.style, {left:(r.left-pad)+'px', top:top+'px', width:(r.width+pad*2)+'px', height:h+'px', opacity:1});
+      const th = tip.offsetHeight || 220; let ty = top + h + 12; if(ty + th > vh - 8) ty = Math.max(8, top - th - 12); if(ty < 8) ty = Math.max(8, vh - th - 8);
+      let tx = Math.min(Math.max(8, r.left + r.width/2 - tw/2), vw - tw - 8);
+      Object.assign(tip.style, {left:tx+'px', top:ty+'px', width:tw+'px', transform:'none'});
+    } else {
+      Object.assign(hole.style, {left:(vw/2)+'px', top:(vh/2)+'px', width:'0px', height:'0px', opacity:1});
+      Object.assign(tip.style, {left:'50%', top:'50%', width:tw+'px', transform:'translate(-50%,-50%)'});
+    }
+  };
+  if(el){ const r = el.getBoundingClientRect(); if(r.top < 60 || r.bottom > innerHeight - 90) { el.scrollIntoView({block:'center'}); setTimeout(put, 260); } else put(); } else put();
+}
+window.addEventListener('resize', () => { if(TOUR) placeTour(); });
+
+/* ===================== halaman Panduan aplikasi (lengkap) ===================== */
+P.panduan = () => { const role = me().role, q = (S.guideQ||'').toLowerCase();
+  const ids = Object.keys(PAGES).filter(i=>can(i,role) && GUIDE[i] && !(isDesk() && i==='lainnya'));
+  const sec = (t, html) => html ? `<div class="gsec"><div class="gst">${t}</div>${html}</div>` : '';
+  const body = ids.map(i => { const g = guideOf(i), text = (PAGES[i].label+' '+g.r+' '+(g.f||[]).join(' ')+' '+(g.fl||[]).flat().join(' ')+' '+(g.st||[]).flat().join(' ')+' '+(g.d||[]).flat().join(' ')).toLowerCase();
+    if(q && !text.includes(q)) return '';
+    const open = S.guideOpen===i || !!q;
+    return `<details class="gitem" ${open?'open':''} id="g-${i}"><summary><span class="ico">${svg(PAGES[i].icon)}</span><span class="grow"><b>${PAGES[i].label}</b><span class="m">${esc(g.r)}</span></span><span class="chv">${svg('chev')}</span></summary><div class="gbody">
+      ${sec('Fitur', (g.f||[]).length?`<ul>${g.f.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'')}
+      ${sec('Filter', (g.fl||[]).length?`<div class="gtab">${g.fl.map(([a,b])=>`<div><span class="chip">${esc(a)}</span></div><div>${esc(b)}</div>`).join('')}</div>`:'')}
+      ${sec('Arti status', (g.st||[]).length?`<div class="gtab">${g.st.map(([a,b])=>`<div><span class="chip">${esc(a)}</span></div><div>${esc(b)}</div>`).join('')}</div>`:'')}
+      ${sec('Data berasal dari', (g.d||[]).length?`<div class="gtab">${g.d.map(([a,b])=>`<div><b>${esc(a)}</b></div><div>${esc(b)}</div>`).join('')}</div>`:'')}
+      <div class="btns" style="max-width:420px">${(g.tour||[]).length?act('Tur halaman ini','tourPage','lihat sm',`data-p="${i}"`):''}<a class="btn ghost sm" href="#${i}">Buka menu</a></div></div></details>`; }).join('');
+  S.guideOpen = null;
+  return head('Panduan aplikasi') + `<main class="dwrap"><div class="card form row" style="background:var(--tint)"><div class="ico" style="background:#fff">${svg('help')}</div><div class="grow"><div class="t">Tur lengkap ${ROLES[role].label}</div><div class="m">Panduan berjalan langkah demi langkah di menu Anda.</div></div>${act('Mulai tur','tourFull','mini')}</div>
+    <div class="card form" style="padding:10px"><input id="guideQ" type="search" placeholder="Cari di panduan… (mis. lunas, izin, bonus)" value="${esc(S.guideQ||'')}" aria-label="Cari di panduan"></div>
+    <div data-tour="guideList">${body || empty('Tidak ada yang cocok')}</div></main>`; };
+
+const _berandaM = P.beranda; P.beranda = () => isDesk() ? berandaDesk() : _berandaM();
+
 /* ===================== router ===================== */
 let curPage = 'beranda';
 function render(){
@@ -928,11 +1277,14 @@ function render(){
   let id = location.hash.replace('#','') || 'beranda';
   if(u.role==='superadmin' && id==='beranda') id = 'sa';
   if(!P[id] || !can(id, u.role)) id = u.role==='superadmin' ? 'sa' : 'beranda';
+  if(id==='lainnya' && isDesk()) id = 'beranda';
+  if(curPage!==id) S.closedCur = null;
   curPage = id;
   app.innerHTML = P[id]() + tabsBar(id);
   side.innerHTML = sideBar(id);
 }
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0,0); });
+let lastDesk = isDesk(); window.addEventListener('resize', () => { if(isDesk()!==lastDesk){ lastDesk = isDesk(); if(me()) render(); } });
 const go = id => { if(location.hash === '#'+id) render(); else location.hash = '#'+id; };
 const done = msg => { if(msg) log(msg); save(); closePop(); render(); if(msg) toast(msg); };
 function refocus(id){ const el = document.getElementById(id); if(el){ el.focus(); const v = el.value; el.setSelectionRange && el.setSelectionRange(v.length, v.length); } }
@@ -946,9 +1298,12 @@ document.addEventListener('submit', e => {
   if(!em || !pw){ S.err = 'Isi email dan password.'; return render(); }
   const a = DB.users.find(x => x.email === em && x.pass === pw);
   if(!a){ S.err = 'Email atau password salah.'; return render(); }
+  if(a.role==='superadmin'){ S.err = 'Akses super admin belum dibuka.'; return render(); }
   if(!a.aktif){ S.err = 'Akun ini sudah dinonaktifkan owner.'; return render(); }
   S.err = ''; S.pass = ''; session = {email:a.email}; store.set('qec_session2', session);
   location.hash = a.role==='superadmin' ? '#sa' : '#beranda'; log('Masuk ke aplikasi'); save(); render(); toast(`Assalamu'alaikum, ${a.nama}`);
+  let nt = false; try{ nt = localStorage.getItem('qec_notour')==='1'; }catch(_){}
+  if(!a.toured && !nt) setTimeout(()=>startTour(fullTour(), true), 600);
 });
 document.addEventListener('input', e => {
   const t = e.target, b = t.dataset.bind; if(b) S.calc[b] = t.value;
@@ -957,6 +1312,7 @@ document.addEventListener('input', e => {
   if(t.id==='menuQ'){ S.menuQ = t.value; render(); refocus('menuQ'); }
   if(t.id==='logQ'){ S.logQ = t.value; render(); refocus('logQ'); }
   if(t.id==='santriQ'){ S.santriQ = t.value; render(); refocus('santriQ'); }
+  if(t.id==='guideQ'){ S.guideQ = t.value; render(); refocus('guideQ'); }
 });
 document.addEventListener('change', e => {
   const el = e.target;
@@ -965,7 +1321,7 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('keydown', e => {
   if(e.key==='/' && !e.target.closest('input,textarea,select') && document.getElementById('sideQ') && innerWidth>=960){ e.preventDefault(); document.getElementById('sideQ').focus(); }
-  if(e.key==='Escape') closePop();
+  if(e.key==='Escape'){ if(TOUR) endTour(); else closePop(); }
 });
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if(!el || el.disabled) return;
@@ -980,14 +1336,20 @@ document.addEventListener('click', e => {
     case 'logout': { log('Keluar dari aplikasi'); save(); session = null; store.del('qec_session2'); S.email=''; S.pass=''; S.err=''; closePop(); const t=document.getElementById('toast'); if(t) t.style.display='none'; history.replaceState(null,'',location.pathname); render(); window.scrollTo(0,0); return; }
     case 'akunPop': openPop(`<h2>${esc(u.nama)}</h2><div class="m" style="margin-bottom:14px">${esc(u.email)} · ${ROLES[u.role].label}</div><a class="btn ghost" href="#akun" data-act="close2">${svg('user')}Akun saya</a><div style="height:8px"></div>${act(`${svg('out')}Keluar`,'logout','bad')}`); return;
     case 'close2': closePop(); return;
-    case 'help': { const p = PAGES[curPage]; openPop(`<h2>${svg('help').replace('<svg','<svg style="width:22px;height:22px;vertical-align:-4px;margin-right:6px;color:var(--pri)"')}${p.label}</h2><p style="margin:0 0 14px;line-height:1.6">${HELP[curPage]||'—'}</p><a class="btn lihat" href="#panduan" data-act="close2">Lihat panduan semua halaman</a>`); return; }
+    case 'help': { const p = PAGES[curPage], g = guideOf(curPage) || {r:HELP[curPage]||''}; openPop(`<h2>${svg('help').replace('<svg','<svg style="width:22px;height:22px;vertical-align:-4px;margin-right:6px;color:var(--pri)"')}${p.label}</h2><p style="margin:0 0 14px;line-height:1.6">${esc(g.r)}</p><div class="btns">${(g.tour||[]).length?act('Tur halaman ini','tourPage','ok',`data-p="${curPage}"`):''}${act('Panduan lengkap','guideGo','lihat',`data-p="${curPage}"`)}</div>`); return; }
+    case 'tourPage': startTour(pageTour(el.dataset.p), false); return;
+    case 'tourFull': startTour(fullTour(), true); return;
+    case 'guideGo': S.guideOpen = el.dataset.p; closePop(); go('panduan'); setTimeout(()=>{ const d = document.getElementById('g-'+el.dataset.p); if(d) d.scrollIntoView({block:'start'}); }, 120); return;
+    case 'tourNext': if(!TOUR) return; if(TOUR.i >= TOUR.steps.length-1){ endTour(); toast('Tur selesai. Panduan lengkap ada di menu Panduan aplikasi.'); } else { TOUR.i++; drawTour(); } return;
+    case 'tourPrev': if(TOUR && TOUR.i>0){ TOUR.i--; drawTour(); } return;
+    case 'tourSkip': endTour(); return;
     case 'lonceng': { const L = myNotif().slice(0,20);
       openPop(`<div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">Notifikasi</h2>${L.length?`<button class="btn lihat mini" data-act="readAll">Tandai dibaca</button>`:''}</div>
       ${L.map(n=>`<div class="notif-item ${n.read.includes(u.email)?'':'unread'}"><div class="ico">${svg('bell')}</div><div class="grow"><div class="t" style="font-size:14px">${esc(n.t)}</div><div class="m">${lalu(n.ts)}</div></div></div>`).join('') || empty('Belum ada notifikasi')}
       <div style="margin-top:12px"><a class="btn ghost" href="#notifikasi" data-act="close2">Pengaturan notifikasi</a></div>`); return; }
     case 'readAll': myNotif().forEach(n=>{ if(!n.read.includes(u.email)) n.read.push(u.email); }); save(); closePop(); render(); return;
     case 'copy': { const v = el.dataset.v; try{ navigator.clipboard.writeText(v).then(()=>toast(`${v} tersalin`), ()=>toast(v)); }catch(_){ toast(v); } return; }
-    case 'fold': { const g = el.dataset.g; S.shut = S.shut.includes(g) ? S.shut.filter(x=>x!==g) : S.shut.concat(g); store.set('qec_shut', S.shut); document.getElementById('side').innerHTML = sideBar(curPage); return; }
+    case 'fold': { const g = el.dataset.g, isOpen = el.getAttribute('aria-expanded')==='true'; S.openG = isOpen ? S.openG.filter(x=>x!==g) : S.openG.concat(g); if(isOpen && el.closest('.sg').querySelector('a.on')) { S.closedCur = g; } store.set('qec_openg', S.openG); document.getElementById('side').innerHTML = sideBar(curPage); return; }
     case 'aturMenu': { const role = u.role, cur = myTabs().filter(x=>x!=='lainnya'), all = Object.keys(PAGES).filter(i=>!PAGES[i].hidden && can(i,role));
       S.pickT = cur.slice();
       const draw = () => openPop(`<h2>Atur menu bawah</h2><div class="m" style="margin-bottom:8px">Pilih maksimal 4 menu. Menu ke-3 tampil di lengkungan. "Lainnya" selalu di akhir.</div>
