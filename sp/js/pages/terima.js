@@ -6,19 +6,34 @@ import { poTag } from './beli.js';
 
 export default {
   tour: [
+    { sel: '#direct', title: 'Barang WIN datang', body: 'Barang yang dibeli langsung di WIN: tekan Mulai scan, scan semua barangnya, lalu Selesai. Barang masuk stok gudang (belum di rak) dan siap dipakai admin.' },
     { sel: '#scan', title: 'Scan barang datang', body: 'Scan barcode setiap barang (scanner gun atau kamera). Sistem langsung bilang: ke meja packing atau ke rak mana.' },
     { sel: '#items', title: 'Cek jumlah', body: 'Baris merah = belum lengkap. Kalau memang kurang, tekan Selesai — sistem mencatat kekurangannya.' }
   ],
   async render(el, { params }) {
     if (params.po) return scanPO(el, +params.po);
     el.innerHTML = skeleton(3);
-    const { data, error } = await supa.from('purchase_orders').select('*, po_items(qty)').in('status', ['ditugaskan', 'berangkat', 'diambil', 'sampai']).order('created_at');
+    const { data: all, error } = await supa.from('purchase_orders').select('*, po_items(qty, received_qty)').in('status', ['ditugaskan', 'berangkat', 'diambil', 'sampai']).order('created_at');
     if (error) return toastErr(error);
-    el.innerHTML = `<div class="stack"><h2 class="sec-title">Barang WIN yang akan / sudah datang</h2>
+    const canDirect = ['owner', 'kepala_gudang', 'supervisor'].includes(store.role);
+    const open = all.find((p) => p.direct);
+    const data = all.filter((p) => !p.direct);
+    const { data: done } = await supa.from('purchase_orders').select('id, code, finished_at, po_items(received_qty)').eq('direct', true).eq('status', 'selesai').order('finished_at', { ascending: false }).limit(5);
+    el.innerHTML = `<div class="stack">
+      ${canDirect ? `<section class="card stack direct-card" id="direct"><div><h2 class="sec-title" style="margin:0">Barang WIN datang</h2>
+          <div class="small muted">Scan semua barang yang dibeli di WIN. Langsung masuk stok gudang (belum di rak), siap dipakai admin.</div></div>
+        ${open ? `<a class="btn btn-primary btn-lg" href="#/terima?po=${open.id}">${icon('scan', 20)} Lanjutkan scan · ${open.po_items.reduce((a, i) => a + i.received_qty, 0)} barang</a>`
+          : `<button class="btn btn-primary btn-lg" id="start">${icon('scan', 20)} Mulai scan barang WIN</button>`}
+        ${(done || []).length ? `<div class="list no-page">${done.map((p) => `<a class="list-item" href="#/terima?po=${p.id}" style="padding:8px 0"><span class="grow"><b class="mono">${esc(p.code)}</b> <span class="xs muted">${fmtDateTime(p.finished_at)}</span></span><span class="small">${p.po_items.reduce((a, i) => a + i.received_qty, 0)} barang</span>${icon('chev', 16)}</a>`).join('')}</div>` : ''}</section>` : ''}
+      ${data.length || !canDirect ? `<h2 class="sec-title">Barang WIN dari daftar beli</h2>` : ''}
       ${data.length ? `<div class="card flush"><div class="list">${data.map((p) => `<a class="list-item" href="#/terima?po=${p.id}"><div class="grow"><div class="row wrap"><b class="mono">${esc(p.code)}</b>${poTag(p.status)}</div>
         <div class="small muted">${p.po_items.reduce((a, i) => a + i.qty, 0)} item · sopir ${esc(store.profilesById[p.driver_id]?.full_name || '–')}${p.arrived_at ? ' · sampai ' + fmtDateTime(p.arrived_at) : ''}</div></div>
-        <span class="btn btn-sm ${p.status === 'sampai' ? 'btn-primary' : ''}">${icon('scan', 16)} Scan</span></a>`).join('')}</div></div>` : `<div class="card">${emptyState('Tidak ada barang WIN yang ditunggu.', 'truck')}</div>`}
+        <span class="btn btn-sm ${p.status === 'sampai' ? 'btn-primary' : ''}">${icon('scan', 16)} Scan</span></a>`).join('')}</div></div>` : canDirect ? '' : `<div class="card">${emptyState('Tidak ada barang WIN yang ditunggu.', 'truck')}</div>`}
       <div class="alert blue small">Barang retur & cancel di-scan di menu <a href="#/retur">Retur</a>.</div></div>`;
+    el.querySelector('#start')?.addEventListener('click', async (e) => {
+      e.target.disabled = true;
+      try { const id = await rpc('win_direct_start'); location.hash = '#/terima?po=' + id; } catch (err) { toastErr(err); e.target.disabled = false; }
+    });
   }
 };
 
@@ -26,6 +41,7 @@ async function scanPO(el, id) {
   const load = async () => (await supa.from('purchase_orders').select('*, po_items(*, products(name, sku, rack_code))').eq('id', id).single());
   let { data: p, error } = await load();
   if (error) return toastErr(error);
+  if (p.direct) return scanDirect(el, id, p, load);
   el.innerHTML = `<div class="stack">
     <div class="row between wrap"><a href="#/terima" class="btn btn-ghost btn-sm">${icon('back', 16)} Kembali</a><div class="row"><b class="mono">${esc(p.code)}</b>${poTag(p.status)}</div></div>
     <div class="card stack" id="scan">${scanBox('sb', 'Scan barcode barang')}<div id="last" aria-live="polite"></div></div>
@@ -68,4 +84,47 @@ async function scanPO(el, id) {
   };
   el.querySelector('#done').onclick = () => finish(false);
   el.querySelector('#short').onclick = () => finish(true);
+}
+
+// 2.34: barang dibeli langsung di WIN (tanpa daftar) -> scan semua -> masuk stok gudang (belum di rak)
+async function scanDirect(el, id, p, load) {
+  const open = p.status === 'sampai';
+  el.innerHTML = `<div class="stack">
+    <div class="row between wrap"><a href="#/terima" class="btn btn-ghost btn-sm">${icon('back', 16)} Kembali</a><div class="row"><b class="mono">${esc(p.code)}</b>${open ? '<span class="tag yellow">Sedang di-scan</span>' : poTag(p.status)}</div></div>
+    ${open ? `<div class="card stack" id="scan">${scanBox('sb', 'Scan barang WIN yang datang')}<div id="last" aria-live="polite"></div></div>` : ''}
+    <div class="card stack" id="items"></div>
+    ${open ? `<div class="row"><button class="btn btn-danger grow" id="cancel">Batalkan</button><button class="btn btn-primary btn-lg grow" id="done">${icon('check', 18)} Selesai terima</button></div>` : ''}
+  </div>`;
+  const paint = () => {
+    const items = [...p.po_items].sort((a, b) => b.id - a.id);
+    const t = items.reduce((a, i) => a + i.received_qty, 0);
+    el.querySelector('#items').innerHTML = `<div class="row between"><b>${open ? 'Sudah di-scan' : 'Diterima'}</b><span style="font-size:22px;font-weight:700">${t} <span class="small muted">barang · ${items.length} macam</span></span></div>
+      ${items.length ? items.map((i) => `<div class="row" style="padding:10px 0;border-top:1px solid var(--line)"><div class="grow" style="min-width:0"><b>${esc(i.products.name)}</b><div class="xs muted mono">${esc(i.products.sku)}${i.products.rack_code ? ' · rak ' + esc(i.products.rack_code) : ''}</div></div>
+        <b style="font-size:18px">${i.received_qty}</b>${open ? `<button class="btn btn-ghost btn-sm" data-undo="${i.id}" aria-label="Kurangi 1" style="color:var(--red)">−1</button>` : ''}</div>`).join('')
+        : '<div class="small muted">Belum ada barang. Scan barang pertama.</div>'}`;
+  };
+  paint();
+  if (!open) return;
+  const reload = async () => { ({ data: p } = await load()); paint(); };
+  bindScan(el, 'sb', async (code) => {
+    try {
+      const r = await rpc('win_direct_scan', { p_po: id, p_code: code });
+      const last = el.querySelector('#last');
+      if (!r.ok) { beep(false); last.innerHTML = `<div class="alert red">${esc(r.msg)}</div>`; return { ok: false, title: r.msg }; }
+      beep(true); last.innerHTML = `<div class="alert green"><b>${esc(r.name)}</b> × ${r.qty} · total ${r.total} barang</div>`;
+      await reload();
+      return { ok: true, title: r.name, info: `× ${r.qty} · total ${r.total} barang` };
+    } catch (e) { toastErr(e); return false; }
+  });
+  on(el, 'click', '[data-undo]', async (e, b) => { try { await rpc('win_direct_undo', { p_item: +b.dataset.undo }); await reload(); } catch (err) { toastErr(err); } });
+  el.querySelector('#done').onclick = async () => {
+    const t = p.po_items.reduce((a, i) => a + i.received_qty, 0);
+    if (!t) return toast('Belum ada barang yang di-scan', 'err');
+    if (!(await confirmBox('Selesai terima?', `${t} barang masuk stok gudang (belum di rak). Admin bisa langsung scan resinya di Catat pesanan.`, 'Selesai'))) return;
+    try { const r = await rpc('finish_receive', { p_po: id }); toast(`${r.ke_meja} barang masuk stok gudang`, 'ok'); location.hash = '#/terima'; } catch (e) { toastErr(e); }
+  };
+  el.querySelector('#cancel').onclick = async () => {
+    if (!(await confirmBox('Batalkan penerimaan ini?', 'Semua scan di daftar ini dihapus. Stok tidak berubah.', 'Batalkan', true))) return;
+    try { await rpc('win_direct_cancel', { p_po: id }); toast('Dibatalkan', 'ok'); location.hash = '#/terima'; } catch (e) { toastErr(e); }
+  };
 }
