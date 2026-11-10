@@ -1,6 +1,6 @@
 import { fetchAll, supa } from '../supa.js';
 import { store } from '../store.js';
-import { esc, rp, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, parseNum, normSku } from '../ui.js';
+import { esc, rp, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, parseNum, codeOr } from '../ui.js';
 import { openProduct, printLabels } from './stok.js';
 
 export default {
@@ -30,7 +30,7 @@ export default {
     const load = async () => {
       let data;
       try {
-        data = await fetchAll(() => { let qy = supa.from('products').select('*').order('name').order('id'); if (search) qy = qy.or(`name.ilike.%${search}%,sku.ilike.%${search}%${normSku(search) ? `,sku_norm.ilike.%${normSku(search)}%` : ''}`); return qy; });
+        data = await fetchAll(() => { let qy = supa.from('products').select('*').order('name').order('id'); const f = codeOr(search); if (f) qy = qy.or(f); return qy; });
       } catch (error) { return toastErr(error); }
       el.querySelector('#list').innerHTML = data.length ? `<div class="table-wrap"><table class="tbl" style="min-width:${seePrice ? 860 : 600}px"><thead><tr><th></th><th>Kode · Barang</th><th>Kategori</th><th>Rak</th><th class="right">Stok</th><th class="right">Min.</th>${seePrice ? '<th class="right">Macallan</th><th class="right">Harga beli</th><th class="right">Harga Shopee</th>' : ''}<th></th></tr></thead><tbody>
         ${data.map((p) => `<tr class="${p.active ? '' : 'bad'}"><td><input type="checkbox" class="check" data-sel="${p.id}" ${sel.has(p.id) ? 'checked' : ''} aria-label="Pilih"></td>
