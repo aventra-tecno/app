@@ -70,6 +70,23 @@ export function skuMatch(scan, sku) {
   if (!a || !b) return false;
   return a === b || (a.length > 6 && /[0-9]$/.test(a) && a.slice(0, -1) === b);
 }
+// pencarian teks yang sama dengan aturan scan: nama / kode berisi kata, kode tanpa strip,
+// dan barcode dengan 1 angka tambahan di belakang ('01B3830547AA1' -> '01B3830547AA')
+export function codeHit(q, p) {
+  const s = String(q || '').trim().toLowerCase(); if (!s) return true;
+  const n = normSku(s);
+  return String(p.name || '').toLowerCase().includes(s) || String(p.sku || '').toLowerCase().includes(s)
+    || (n && normSku(p.sku).includes(n)) || skuMatch(s, p.sku);
+}
+// filter PostgREST .or(...) untuk tabel products dengan aturan di atas
+export function codeOr(q, extra = []) {
+  const s = String(q || '').replace(/[,()*%\\]/g, ' ').trim(); if (!s) return null;
+  const n = normSku(s);
+  const parts = [`name.ilike.%${s}%`, `sku.ilike.%${s}%`, ...extra.map((c) => `${c}.ilike.%${s}%`)];
+  if (n) parts.push(`sku_norm.ilike.%${n}%`);
+  if (n.length > 6 && /[0-9]$/.test(n)) parts.push(`sku_norm.eq.${n.slice(0, -1)}`);
+  return parts.join(',');
+}
 
 // ---------- dom ----------
 export const $ = (sel, root = document) => root.querySelector(sel);
