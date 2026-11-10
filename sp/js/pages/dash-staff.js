@@ -14,6 +14,31 @@ async function cnt(table, f) {
 const me = () => store.profile.id;
 
 // isi dashboard per jabatan: main = kartu utama (angka + tombol), stats = kotak angka kecil
+const KG = () => store.settings?.alur_kg !== false;
+// 2.33 alur kepala gudang
+const KG_ROLES = {
+  admin: async () => {
+    const [scan, pack, ret, today, meja] = await Promise.all([
+      cnt('orders', (q) => q.eq('status', 'baru').eq('entry', 'scan')), cnt('orders', (q) => q.eq('status', 'siap_packing')),
+      cnt('returns', (q) => q.eq('status', 'menunggu')), cnt('orders', (q) => q.gte('created_at', T0())), cnt('products', (q) => q.gt('meja_qty', 0))]);
+    return { main: { label: 'Barang siap di meja kepala gudang', value: num(meja), sub: scan ? `${num(scan)} resi belum selesai di-scan` : 'Scan resi & barangnya di Catat pesanan', cta: ['Catat pesanan', 'catat', 'barcode'] },
+      stats: [['Resi dicatat hari ini', today, 'catat', ''], ['Siap packing', pack, 'pesanan', 'green'], ['Retur menunggu', ret, 'retur', ret ? 'yellow' : '']] };
+  },
+  kepala_gudang: async () => {
+    const [cek, jalan, sampai, meja, ofl] = await Promise.all([
+      cnt('pick_tasks', (q) => q.eq('status', 'diserahkan')), cnt('pick_tasks', (q) => q.eq('status', 'baru')),
+      cnt('purchase_orders', (q) => q.eq('status', 'sampai')), cnt('products', (q) => q.gt('meja_qty', 0)),
+      cnt('orders', (q) => q.eq('entry', 'offline').eq('status', 'menunggu_win'))]);
+    return { main: { label: 'Barang dari picker perlu dicek', value: num(cek), sub: jalan ? `${num(jalan)} tugas picker masih berjalan` : 'Buat tugas ambil untuk picker', cta: ['Siapkan barang', 'siapkan', 'box'] },
+      stats: [['WIN sampai, perlu di-scan', sampai, 'terima', sampai ? 'red' : ''], ['Macam barang di meja', meja, 'siapkan', 'green'], ['Toko offline tunggu WIN', ofl, 'offline', ofl ? 'yellow' : '']] };
+  },
+  picker: async () => {
+    const [tugas, mine] = await Promise.all([
+      cnt('pick_tasks', (q) => q.eq('status', 'baru').or(`picker_id.is.null,picker_id.eq.${me()}`)), cnt('stock_movements', (q) => q.eq('user_id', me()).eq('type', 'pick').gte('created_at', T0()))]);
+    return { main: { label: 'Tugas ambil dari kepala gudang', value: num(tugas), sub: 'Scan barang yang diambil, lalu serahkan ke kepala gudang', cta: ['Mulai ambil', 'ambil', 'cart'] },
+      stats: [['Barang saya ambil hari ini', mine, 'ambil', 'green']] };
+  }
+};
 const ROLES = {
   admin: async () => {
     const [win, pack, po, ret, today] = await Promise.all([
@@ -102,7 +127,7 @@ export default {
         ? `<a class="card dh-absen ok" href="#/absen">${icon('check', 18, 2.6)}<span class="grow">Sudah absen masuk <b>${fmtTime(data.check_in)}</b>${data.check_out ? ` · pulang <b>${fmtTime(data.check_out)}</b>` : ''}</span>${icon('chev', 16)}</a>`
         : `<a class="card dh-absen" href="#/absen">${icon('clock', 18, 2.4)}<span class="grow"><b>Belum absen hari ini</b><span class="xs muted" style="display:block">Tekan untuk absen masuk</span></span><span class="btn btn-sm btn-primary">Absen</span></a>`;
     })().catch(() => {});
-    const f = ROLES[role];
+    const f = (KG() && KG_ROLES[role === 'supervisor' ? 'kepala_gudang' : role]) || ROLES[role];
     if (!f) { el.querySelector('#main').innerHTML = '<div class="muted">Selamat bekerja!</div>'; return; }
     const d = await f();
     const m = d.main;
