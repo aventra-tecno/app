@@ -38,9 +38,9 @@ async function scanPO(el, id) {
       <div class="progress"><div style="width:${q ? (r / q) * 100 : 0}%"></div></div>
       ${p.po_items.map((i) => {
         const full = i.received_qty >= i.qty;
-        const toPack = Math.min(i.received_qty, i.for_orders), toRack = Math.max(0, i.received_qty - i.for_orders);
+        const toPack = p.to_meja ? 0 : Math.min(i.received_qty, i.for_orders), toRack = p.to_meja ? 0 : Math.max(0, i.received_qty - i.for_orders), toMeja = p.to_meja ? i.received_qty : 0;
         return `<div class="row" style="padding:10px 0;border-top:1px solid var(--line)"><div class="grow"><b>${esc(i.products.name)}</b> <span class="small">${i.received_qty}/${i.qty}</span><div class="xs muted mono">${esc(i.products.sku)}</div></div>
-          <div class="stack s8" style="align-items:flex-end">${toPack ? `<span class="tag blue">${toPack} → Packing</span>` : ''}${toRack ? `<span class="tag">${toRack} → Rak ${esc(i.products.rack_code || '?')}</span>` : ''}${!full ? `<span class="tag red">Kurang ${i.qty - i.received_qty}</span>` : ''}</div></div>`;
+          <div class="stack s8" style="align-items:flex-end">${toMeja ? `<span class="tag green">${toMeja} → Meja</span>` : ''}${toPack ? `<span class="tag blue">${toPack} → Packing</span>` : ''}${toRack ? `<span class="tag">${toRack} → Rak ${esc(i.products.rack_code || '?')}</span>` : ''}${!full ? `<span class="tag red">Kurang ${i.qty - i.received_qty}</span>` : ''}</div></div>`;
       }).join('')}`;
   };
   paint();
@@ -50,18 +50,19 @@ async function scanPO(el, id) {
       const last = el.querySelector('#last');
       if (!r.ok) { beep(false); last.innerHTML = `<div class="alert red">${esc(r.msg)}</div>`; return { ok: false, title: r.msg }; }
       beep(true);
-      last.innerHTML = `<div class="alert ${r.dest === 'packing' ? 'blue' : 'green'}"><b>${esc(r.name)}</b> ${r.received}/${r.qty} → <b>${r.dest === 'packing' ? 'Meja packing' : esc(r.dest)}</b></div>`;
+      const dest = r.dest === 'packing' ? 'Meja packing' : r.dest === 'meja' ? 'Meja kepala gudang' : r.dest;
+      last.innerHTML = `<div class="alert ${r.dest === 'packing' ? 'blue' : 'green'}"><b>${esc(r.name)}</b> ${r.received}/${r.qty} → <b>${esc(dest)}</b></div>`;
       ({ data: p } = await load()); paint();
-      return { ok: true, title: r.name, info: `${r.received}/${r.qty} → ${r.dest === 'packing' ? 'Meja packing' : r.dest}` };
+      return { ok: true, title: r.name, info: `${r.received}/${r.qty} → ${dest}` };
     } catch (e) { toastErr(e); return false; }
   });
   const finish = async (short) => {
     const q = p.po_items.reduce((a, i) => a + i.qty, 0), r = p.po_items.reduce((a, i) => a + i.received_qty, 0);
-    if (r < q && !(await confirmBox('Barang kurang ' + (q - r), 'Kekurangan akan dicatat dan dilaporkan ke owner & admin. Pesanan hasil scan resi yang barangnya tidak ada di WIN otomatis CANCEL (barang rak dikembalikan). Pesanan dari upload file kembali ke daftar beli.', 'Selesai dengan kekurangan'))) return;
+    if (r < q && !(await confirmBox('Barang kurang ' + (q - r), 'Kekurangan dicatat dan dilaporkan ke owner. Beli lagi di WIN untuk barang yang kurang.', 'Selesai dengan kekurangan'))) return;
     if (r === 0 && !short) return toast('Belum ada barang yang di-scan', 'err');
     try {
       const res = await rpc('finish_receive', { p_po: id });
-      toast(`Selesai: ${res.siap ? res.siap + ' pesanan siap packing, ' : ''}${res.ke_packing} barang ke packing, ${res.ke_rak} ke rak${res.kurang ? ', kurang ' + res.kurang : ''}${res.cancel ? ' · ' + res.cancel + ' pesanan CANCEL (WIN kosong)' : ''}`, res.cancel ? 'err' : 'ok');
+      toast(`Selesai: ${res.ke_meja ? res.ke_meja + ' barang ke meja, ' : ''}${res.siap ? res.siap + ' pesanan siap packing, ' : ''}${res.ke_packing} barang ke packing, ${res.ke_rak} ke rak${res.kurang ? ', kurang ' + res.kurang : ''}${res.cancel ? ' · ' + res.cancel + ' pesanan CANCEL (WIN kosong)' : ''}`, res.cancel ? 'err' : 'ok');
       location.hash = '#/terima';
     } catch (e) { toastErr(e); }
   };
