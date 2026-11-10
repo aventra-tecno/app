@@ -31,7 +31,7 @@ h2{font-size:18px;margin:26px 0 10px}
 <body>
 <header>
   <h1>Alur kerja ERP QEC</h1>
-  <p>Dari chat WhatsApp pertama sampai gaji mentor dibayar, dalam 6 fase dan 7 aktor.</p>
+  <p>Dari chat WhatsApp pertama sampai gaji mentor dibayar, dalam 6 fase dan 7 aktor · versi 2.1</p>
   <div class="legend">
     <span><svg width="44" height="10" aria-hidden="true"><line x1="0" y1="5" x2="36" y2="5" stroke="#fff" stroke-width="2"/><path d="M36 1l7 4-7 4z" fill="#fff"/></svg>Alur utama (otomatis)</span>
     <span><svg width="44" height="10" aria-hidden="true"><line x1="0" y1="5" x2="36" y2="5" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/><path d="M36 1l7 4-7 4z" fill="#fff"/></svg>Opsional / eskalasi</span>
@@ -88,9 +88,9 @@ const S = [
   [11,4,6,'Broadcast lowongan\nfilter area & blokir'],
   [12,4,4,'Mentor klik\n"Saya minat"'],
   [13,4,3,'Pantau lowongan\nsepi'],
-  [14,5,6,'Kunci 4 kandidat\ncegah bentrok'],
+  [14,5,6,'Kunci 4 kandidat\nReguler: otomatis'],
   [15,5,1,'Kirim profil +\nvoice note'],
-  [16,5,0,'Pilih 1 mentor'],
+  [16,5,0,'Pilih 1 mentor\ndalam 24 jam'],
   [17,6,6,'Buat jadwal +\ngrup kelas 1:1'],
   [18,6,1,'Reminder H-1\n& 1 jam sebelum'],
   [19,7,4,'Mengajar, lalu isi\nabsen + progres'],
@@ -102,11 +102,11 @@ const S = [
   [25,8,0,'Lanjut?'],
   [26,9,1,'Maaf + link\ntestimoni'],
   [27,9,6,'Kontrak baru\nmentor sama'],
-  [28,10,6,'Tutup kontrak\ncek 40 / 60 hari'],
+  [28,10,6,'Tutup kontrak\nbonus 40 · sanksi 60'],
   [29,10,5,'Hitung pokok\n+ bonus retensi'],
   [30,11,5,'Bayar gaji\n+ kirim slip'],
   [31,11,4,'Terima slip\ngaji'],
-  [32,11,3,'Rekap bulanan\n& dashboard KPI']
+  [32,11,3,'Rekap KPI &\nputuskan blokir']
 ];
 const DEC = 25;
 const POS = {}; S.forEach(([n,k,l]) => POS[n] = {k,l,x:cx(k),y:cy(l)});
@@ -214,30 +214,34 @@ const DET = [
     ['Bot','mengirim e-modul gratis ke santri baru.'],
     ['Keuangan','memantau pembayaran masuk (tanpa input manual).']]],
   ['3 · Matching mentor', [
-    ['Sistem','broadcast lowongan ke mentor aktif; offline difilter area; mentor blokir/istirahat tidak menerima.'],
+    ['Reguler','langsung dapat mentor otomatis saat lunas (beban kelas paling ringan, skor tertinggi). Tidak lewat lowongan.'],
+    ['Sistem','Fleksibel & Offline: broadcast lowongan ke mentor aktif; offline difilter area; mentor istirahat/blokir tidak menerima.'],
     ['Mentor','klik "Saya minat".'],
-    ['Sistem','mengunci 4 pelamar pertama dan menahan slot jadwalnya 24 jam. Paket Reguler: langsung auto-assign.'],
+    ['Sistem','mengunci 4 pelamar pertama dan menahan slot jadwalnya 24 jam.'],
     ['Bot','mengirim profil + voice note tilawah ke santri.'],
-    ['Santri','memilih 1 mentor; kandidat lain dilepas.'],
+    ['Santri','memilih sendiri 1 mentor dalam 24 jam (lewat WA atau aplikasi); kandidat lain dilepas. Staf bisa memilihkan kalau santri minta.'],
     ['Owner','hanya turun tangan jika lowongan sepi.']]],
   ['4 · Belajar', [
     ['Sistem','membuat jadwal sesi dan grup/kanal kelas 1:1.'],
     ['Bot','mengirim reminder H-1 dan 1 jam sebelum sesi.'],
     ['Mentor','mengajar, lalu mengisi absen + progres lewat link.'],
     ['Santri','menerima laporan progres; bisa ajukan izin / reschedule lewat bot.'],
-    ['Sistem','memotong kuota izin; izin melebihi kuota ditolak otomatis.']]],
+    ['Sistem','memotong kuota izin; izin melebihi kuota ditolak otomatis, dan kalau santri tetap tidak hadir sesinya hangus.'],
+    ['Sistem','menghitung umur kontrak dari tanggal sesi pertama (bukan dari jumlah absen).']]],
   ['5 · Perpanjangan', [
     ['Sistem','sisa 1 sesi → alert ke Owner.'],
     ['Owner','menyetujui invoice perpanjangan (tanpa biaya daftar).'],
     ['Bot','mengirim invoice ke santri.'],
     ['Santri','memutuskan lanjut atau berhenti.'],
-    ['Lanjut','kontrak baru dengan mentor yang sama, kembali ke fase Belajar.'],
-    ['Berhenti','bot mengirim pesan maaf + link testimoni.']]],
+    ['Lanjut','kontrak baru dengan mentor yang sama, tanggal mulai di-reset, kembali ke fase Belajar.'],
+    ['Berhenti','bot mengirim pesan maaf + link testimoni; testimoni masuk ke menu Komplain & testimoni.']]],
   ['6 · Gaji & laporan', [
-    ['Sistem','menutup kontrak, mengecek tenggat: ≤ 40 hari dapat bonus, > 60 hari mentor istirahat.'],
+    ['Sistem','menutup kontrak, mengecek tenggat: ditutup ≤ 40 hari dapat bonus retensi.'],
+    ['Sistem','ada kontrak lewat 60 hari → mentor otomatis berstatus istirahat (tidak menerima lowongan) sampai kontraknya ditutup.'],
+    ['Sistem','2 santri berturut-turut tidak lanjut → mentor ditandai calon blokir.'],
     ['Keuangan','melihat hitungan pokok + bonus retensi Rp20.000 (jika santri lanjut).'],
     ['Keuangan','membayar gaji dan mengirim slip ke WA mentor.'],
-    ['Owner','melihat rekap bulanan dan dashboard KPI.']]]
+    ['Owner','memutuskan blokir atau tetap aktif untuk calon blokir, lalu melihat rekap bulanan dan dashboard KPI.']]]
 ];
 document.getElementById('steps').innerHTML = DET.map(([h,li])=>`<div class="ph"><h3>${h}</h3><ol>${li.map(([who,t])=>`<li><b>${who}</b> ${t}</li>`).join('')}</ol></div>`).join('');
 </script>
