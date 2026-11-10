@@ -11,7 +11,8 @@ const DATE_FMT = '[$-421]d mmmm yyyy';   // tanggal bahasa Indonesia, mis. 31 Ag
 const DATE_DAYS = 120;                   // pilihan tanggal: 60 hari sebelum s/d 59 hari sesudah
 // kode tanpa strip / spasi / titik, huruf besar (sama seperti pencarian di aplikasi)
 const normKey = (v) => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-export const EXTRA_ROWS = 50;   // baris kosong per toko untuk diisi manual
+export const EXTRA_ROWS = 50;   // minimal baris kosong per toko untuk diisi manual
+export const FORMULA_ROWS = 1000; // baris tabel toko yang berumus (data + baris kosong) sampai 1000 baris
 const PL_HEAD = 9;              // baris judul tabel di tab PRICELIST
 const ST_HEAD = 8;              // baris judul tabel di tab toko
 
@@ -154,7 +155,8 @@ export function buildHargaBook({ products, stores = [], rows = [], settings = {}
     }
     const first = ST_HEAD + 1;
     // baris kosong dengan rumus: isi NO RESI, KODE, QTT, HARGA SELESAI -> sisanya otomatis dari tab PRICELIST
-    for (let k = 0; k < EXTRA_ROWS; k++, r++) {
+    const extra = Math.max(EXTRA_ROWS, FORMULA_ROWS - (r - first));
+    for (let k = 0; k < extra; k++, r++) {
       // kode diketik dengan / tanpa strip, spasi, titik -> dicocokkan ke kolom "KODE TANPA STRIP" di PRICELIST
       // (barcode dengan 1 angka tambahan di belakang juga dicocokkan, sama seperti di aplikasi)
       const key = `SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(UPPER(TRIM($C${r}&"")),"-","")," ",""),".",""),"/","")`;
