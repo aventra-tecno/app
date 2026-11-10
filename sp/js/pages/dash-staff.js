@@ -21,7 +21,7 @@ const KG_ROLES = {
     const [scan, pack, ret, today, meja] = await Promise.all([
       cnt('orders', (q) => q.eq('status', 'baru').eq('entry', 'scan')), cnt('orders', (q) => q.eq('status', 'siap_packing')),
       cnt('returns', (q) => q.eq('status', 'menunggu')), cnt('orders', (q) => q.gte('created_at', T0())), cnt('products', (q) => q.gt('meja_qty', 0))]);
-    return { main: { label: 'Barang siap di meja kepala gudang', value: num(meja), sub: scan ? `${num(scan)} resi belum selesai di-scan` : 'Scan resi & barangnya di Catat pesanan', cta: ['Catat pesanan', 'catat', 'barcode'] },
+    return { main: { label: 'Macam barang WIN di stok gudang', value: num(meja), sub: scan ? `${num(scan)} resi belum selesai di-scan` : 'Scan resi & barangnya di Catat pesanan', cta: ['Catat pesanan', 'catat', 'barcode'] },
       stats: [['Resi dicatat hari ini', today, 'catat', ''], ['Siap packing', pack, 'pesanan', 'green'], ['Retur menunggu', ret, 'retur', ret ? 'yellow' : '']] };
   },
   kepala_gudang: async () => {
@@ -29,8 +29,8 @@ const KG_ROLES = {
       cnt('pick_tasks', (q) => q.eq('status', 'diserahkan')), cnt('pick_tasks', (q) => q.eq('status', 'baru')),
       cnt('purchase_orders', (q) => q.eq('status', 'sampai')), cnt('products', (q) => q.gt('meja_qty', 0)),
       cnt('orders', (q) => q.eq('entry', 'offline').eq('status', 'menunggu_win'))]);
-    return { main: { label: 'Barang dari picker perlu dicek', value: num(cek), sub: jalan ? `${num(jalan)} tugas picker masih berjalan` : 'Buat tugas ambil untuk picker', cta: ['Siapkan barang', 'siapkan', 'box'] },
-      stats: [['WIN sampai, perlu di-scan', sampai, 'terima', sampai ? 'red' : ''], ['Macam barang di meja', meja, 'siapkan', 'green'], ['Toko offline tunggu WIN', ofl, 'offline', ofl ? 'yellow' : '']] };
+    return { main: { label: 'Macam barang WIN belum di rak', value: num(meja), sub: 'Barang WIN datang? Scan di Terima barang WIN', cta: ['Terima barang WIN', 'terima', 'scan'] },
+      stats: [['Toko offline tunggu WIN', ofl, 'offline', ofl ? 'yellow' : ''], ['Barang picker perlu dicek', cek, 'siapkan', cek ? 'red' : ''], ['Tugas picker berjalan', jalan, 'siapkan', '']] };
   },
   picker: async () => {
     const [tugas, mine] = await Promise.all([
