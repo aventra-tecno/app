@@ -176,9 +176,111 @@ input:focus,select:focus{outline:2px solid var(--top2);outline-offset:1px}
 .btn svg{width:20px;height:20px;flex:0 0 20px}
 .acc .btn{flex:0 0 auto}
 .acc .grow{flex:1;min-width:0}
-@media (min-width:960px){ .login .top > *{max-width:460px;margin-left:auto;margin-right:auto} }
 .mini{display:inline-flex;width:auto;padding:0 14px;min-height:40px;font-size:13.5px}
-@media (min-width:960px){ .login{width:100%} .login .top{padding:40px 40px 80px} }
+
+
+/* ===== v1.1 — layar penuh desktop, tablet 2 kolom, HP kecil ===== */
+.feat{display:none}
+@media (max-width:380px){
+  html,body{font-size:14px}
+  .top{padding:16px 14px 18px}
+  .bar{gap:8px} .bar h1{font-size:16px}
+  .avatar{padding:0 10px 0 4px;font-size:12px}
+  .hero .big{font-size:26px}
+  .kpi b{font-size:17px}
+  main{padding:14px 12px 120px}
+  .grid{gap:8px} .tile{font-size:11.5px;padding:12px 4px}
+  .btns{gap:6px} .btn{font-size:13.5px}
+  .tabs a{font-size:10px}
+  .login h1{font-size:26px}
+}
+@media (min-width:640px){
+  main{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-content:start}
+  main > :not(.card){grid-column:1/-1}
+  main > .card{margin-bottom:0}
+  main > .card.form{grid-column:1/-1;max-width:760px;width:100%}
+  main > .btn{max-width:360px}
+  main::before{grid-column:1/-1}
+  .sec{margin:10px 2px -4px}
+  .cols{display:contents}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+  .kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (min-width:960px){
+  body{display:flex;min-height:100vh}
+  #app{flex:1;min-width:0;min-height:100vh;display:flex;flex-direction:column}
+  #app > main{flex:1;max-width:none;width:100%;margin:0;padding:24px 32px 40px}
+  .top{padding:24px 32px 28px}
+  .kpis{max-width:none}
+  .kpi{padding:14px 16px} .kpi b{font-size:24px}
+  .hero .big{font-size:34px}
+  .side{width:260px;flex:0 0 260px}
+  .sheet{max-width:620px}
+  /* login: layar terbagi dua */
+  .login{flex-direction:row;width:100%;min-height:100vh}
+  .login .top{flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px 64px}
+  .login .top::before{width:520px;height:520px;right:-160px;top:-200px}
+  .login .top::after{width:320px;height:320px;left:-120px;bottom:-160px}
+  .login h1{font-size:46px;margin-top:40px}
+  .login .hl{font-size:17px}
+  .feat{display:grid;gap:12px;margin-top:36px;position:relative;z-index:1;max-width:460px}
+  .feat div{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:12px 14px;font-weight:600;font-size:14.5px}
+  .feat svg{width:22px;height:22px;flex:0 0 22px}
+  .login .wrapin{flex:0 0 520px;max-width:520px;margin:0;padding:40px 44px;display:flex;flex-direction:column;justify-content:center;overflow:auto;max-height:100vh}
+  .login .box{margin:0}
+}
+@media (min-width:1500px){
+  main{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
+}
+
+/* ===== v2.0 — fitur standar Aventra ===== */
+.bar .icon-btn{width:40px;height:40px;flex:0 0 40px;border:0;border-radius:12px;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;position:relative}
+.bar .icon-btn svg{width:21px;height:21px}
+.bar .icon-btn .n{position:absolute;top:-4px;right:-4px;min-width:19px;height:19px;border-radius:999px;background:var(--bad);color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center;padding:0 5px;border:2px solid var(--top2)}
+@media (max-width:440px){ .avatar .lbl{display:none} .avatar{padding:0 4px} .bar .icon-btn{width:36px;height:36px;flex-basis:36px} }
+.billbar{display:flex;align-items:center;gap:10px;background:#FFF7DB;border-bottom:1px solid #F3DE9A;padding:10px 16px;font-size:13.5px;color:#5A4300}
+.billbar .grow{flex:1;min-width:0}
+.billbar > svg,.sabar > svg{width:20px;height:20px;flex:0 0 20px}
+.billbar .btn{width:auto;min-height:38px;padding:0 16px;font-size:13.5px}
+.sabar{display:flex;align-items:center;gap:10px;background:#10302F;color:#fff;padding:8px 16px;font-size:13px;font-weight:600}
+.sabar .grow{flex:1}
+.sabar button{border:0;background:var(--acc);color:#10302F;border-radius:9px;min-height:34px;padding:0 12px;font-weight:800;font-size:12.5px}
+.ann{display:flex;gap:10px;align-items:flex-start;background:#FFFBEA;border:1px solid #F1E3A6;border-radius:var(--rad);padding:12px 14px;margin-bottom:10px}
+.ann .ico{background:#fff;color:#8A6A00}
+.ann.pen{background:#FFF0F0;border-color:#F5C9C9}.ann.pen .ico{color:var(--bad)}
+.copy{border:0;background:var(--tint);color:var(--pri);width:30px;height:30px;border-radius:8px;display:inline-grid;place-items:center;vertical-align:middle;margin-left:4px}
+.copy svg{width:15px;height:15px}
+.no{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--mut)}
+.lock{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:auto;opacity:.85}
+.lock svg{width:15px;height:15px}
+.lockbox{text-align:center;padding:30px 18px}
+.lockbox .big{width:64px;height:64px;border-radius:20px;background:var(--tint);color:var(--pri);display:grid;place-items:center;margin:0 auto 12px}
+.lockbox .big svg{width:32px;height:32px}
+.side .search{position:relative;margin:0 4px 6px}
+.side .search input{width:100%;min-height:40px;border-radius:10px;border:0;background:rgba(255,255,255,.16);color:#fff;padding:0 34px 0 12px;font:inherit;font-size:13.5px}
+.side .search input::placeholder{color:rgba(255,255,255,.7)}
+.side .search kbd{position:absolute;right:8px;top:10px;font-size:11px;background:rgba(255,255,255,.2);border-radius:5px;padding:1px 6px;font-family:inherit}
+.side button.g{display:flex;width:100%;align-items:center;justify-content:space-between;background:none;border:0;color:#fff;cursor:pointer;font:inherit;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin:12px 0 4px;padding:0 10px}
+.side button.g svg{width:14px;height:14px;transition:transform .2s}
+.side button.g.shut svg{transform:rotate(-90deg)}
+.side .ver{margin-top:auto;font-size:11.5px;opacity:.6;padding:14px 10px 0}
+.notif-item{display:flex;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.notif-item:first-child{border-top:0}
+.notif-item.unread .t::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bad);margin-left:6px;vertical-align:middle}
+.headsup{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:70;width:min(440px,92vw);background:#fff;border:1px solid var(--line);border-left:0;border-radius:16px;box-shadow:0 14px 40px rgba(15,40,40,.25);padding:12px 14px;display:flex;gap:10px;align-items:center;animation:hu .35s ease-out}
+@keyframes hu{from{transform:translate(-50%,-20px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+.pick{display:flex;align-items:center;gap:10px;min-height:50px;border-top:1px solid var(--line);font-weight:600}
+.pick:first-child{border-top:0}
+.pick .ord{width:26px;height:26px;border-radius:50%;background:var(--pri);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:800}
+textarea{width:100%;min-height:90px;border-radius:12px;border:1.5px solid var(--line);padding:10px 12px;font:inherit;color:var(--ink);resize:vertical}
+.bars .b{display:grid;grid-template-columns:130px 1fr 90px;gap:10px;align-items:center;font-size:13.5px;padding:6px 0}
+.bars .track{height:12px;border-radius:6px;background:#E3EFEE;overflow:hidden}
+.bars .track i{display:block;height:100%;background:var(--pri);border-radius:6px}
+.bars .v{text-align:right;font-weight:700}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px}
+.toggle input{width:44px;height:24px;accent-color:var(--pri)}
+.tile .dot svg{width:12px;height:12px}
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 12px}
 </style>
 </head>
 <body>
@@ -187,6 +289,7 @@ input:focus,select:focus{outline:2px solid var(--top2);outline-offset:1px}
 <div id="popwrap"></div>
 
 <script>
+const APP_VERSION = '2.0.0';
 /* ===================== ikon ===================== */
 const I = {
   home:'<path class="fill" fill-opacity="0" d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
@@ -212,45 +315,61 @@ const I = {
   out:'<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 8l-4 4 4 4M6 12h10"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   lock:'<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
-  wa:'<path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1c-1-.5-2-1.5-2.5-2.5l1-1-1-2z"/>'
+  wa:'<path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1c-1-.5-2-1.5-2.5-2.5l1-1-1-2z"/>',
+  bell:'<path class="fill" fill-opacity="0" d="M6 9a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9z"/><path d="M10 19a2 2 0 0 0 4 0"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17v.5"/>',
+  copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  mega:'<path class="fill" fill-opacity="0" d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12"/>',
+  puzzle:'<path class="fill" fill-opacity="0" d="M4 7h4a2 2 0 1 1 4 0h4v4a2 2 0 1 1 0 4v4h-4a2 2 0 1 0-4 0H4v-4a2 2 0 1 0 0-4z"/>',
+  shield:'<path class="fill" fill-opacity="0" d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  chev:'<path d="M6 9l6 6 6-6"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+  phone:'<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>'
 };
 const svg = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k]||''}</svg>`;
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rp = v => 'Rp' + Math.round(v).toLocaleString('id-ID');
+const DAY = 864e5, now = () => Date.now();
+const tgl = ts => new Date(ts).toLocaleDateString('id-ID',{day:'numeric',month:'short'});
+const jam = ts => new Date(ts).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+const lalu = ts => { const m = Math.round((now()-ts)/6e4); return m<1?'baru saja':m<60?`${m} mnt lalu`:m<1440?`${Math.round(m/60)} jam lalu`:`${Math.round(m/1440)} hari lalu`; };
 
-/* ===================== akun demo =====================
-   Login ini hanya untuk demo di GitHub Pages: password tersimpan di kode.
-   Versi produksi wajib pakai Supabase Auth. */
-const ACCOUNTS = [
-  {email:'owner@qec.id',    pass:'owner123',    role:'owner',    nama:'Ricky',                     ini:'R'},
-  {email:'keuangan@qec.id', pass:'keuangan123', role:'keuangan', nama:'Staf Keuangan',             ini:'K'},
-  {email:'cs@qec.id',       pass:'cs123',       role:'cs',       nama:'Staf CS',                   ini:'C'},
-  {email:'mentor@qec.id',   pass:'mentor123',   role:'mentor',   nama:'Ustadzah Aisyah',           ini:'A'},
-  {email:'santri@qec.id',   pass:'santri123',   role:'santri',   nama:'Bu Rina (contoh)',          ini:'R'}
-];
+/* ===================== jabatan & menu (sumber tunggal) ===================== */
 const ROLES = {
-  owner:{label:'Owner', tabs:['beranda','lead','matching','kelas','lainnya']},
-  keuangan:{label:'Keuangan', tabs:['beranda','invoice','payroll','jurnal','lainnya']},
-  cs:{label:'CS / Media', tabs:['beranda','lead','matching','daftar','lainnya']},
-  mentor:{label:'Mentor', tabs:['beranda','lowongan','absen','kelasku','lainnya']},
-  santri:{label:'Santri / Wali', tabs:['beranda','jadwal','bayar','progres','lainnya']}
+  owner:{label:'Owner', tabs:['beranda','lead','matching','kelas']},
+  keuangan:{label:'Keuangan', tabs:['beranda','invoice','payroll','jurnal']},
+  cs:{label:'CS / Media', tabs:['beranda','lead','matching','daftar']},
+  mentor:{label:'Mentor', tabs:['beranda','lowongan','absen','kelasku']},
+  santri:{label:'Santri / Wali', tabs:['beranda','jadwal','bayar','progres']},
+  superadmin:{label:'Super admin', tabs:['sa','sa_jabatan','sa_modul','sa_alat']}
 };
-
-/* ===================== menu (sumber tunggal) ===================== */
+const STAFF = ['owner','keuangan','cs'];
 const PAGES = {
-  beranda:{label:'Beranda',icon:'home',roles:'*',group:'Utama'},
+  beranda:{label:'Beranda',icon:'home',roles:['owner','keuangan','cs','mentor','santri'],group:'Utama'},
   lead:{label:'Lead & Chat WA',short:'Lead',icon:'chat',roles:['owner','cs'],group:'Operasional'},
   daftar:{label:'Pendaftaran',short:'Daftar',icon:'plus',roles:['owner','cs'],group:'Operasional'},
   matching:{label:'Matching Mentor',short:'Matching',icon:'star',roles:['owner','cs'],group:'Operasional'},
   kelas:{label:'Kelas Aktif',short:'Kelas',icon:'book',roles:['owner','cs'],group:'Operasional'},
-  perpanjang:{label:'Perpanjangan',short:'Perpanjang',icon:'refresh',roles:['owner','cs'],group:'Operasional'},
+  perpanjang:{label:'Perpanjangan',short:'Perpanjang',icon:'refresh',roles:['owner','cs'],group:'Operasional',badge:()=>perluPerp().filter(k=>!pendingPerp(k)).length},
+  santri:{label:'Data Santri',short:'Santri',icon:'users',roles:['owner','cs'],group:'Operasional'},
+  komplain:{label:'Komplain & testimoni',short:'Komplain',icon:'chat',roles:['owner','cs'],group:'Operasional',mod:'komplain'},
   masalah:{label:'Masalah',icon:'alert',roles:['owner'],group:'Operasional',badge:()=>masalahList().length},
   mentor:{label:'Data Mentor',short:'Mentor',icon:'users',roles:['owner'],group:'Mentor'},
   invoice:{label:'Invoice',icon:'receipt',roles:['owner','keuangan'],group:'Keuangan',badge:()=>DB.inv.filter(x=>x.st==='tunggu').length},
   payroll:{label:'Payroll Mentor',short:'Payroll',icon:'wallet',roles:['owner','keuangan'],group:'Keuangan'},
   jurnal:{label:'Jurnal & Rekap',short:'Jurnal',icon:'chart',roles:['owner','keuangan'],group:'Keuangan'},
+  laporan:{label:'Laporan premium',short:'Laporan',icon:'chart',roles:['owner','keuangan'],group:'Keuangan',mod:'laporan'},
   stok:{label:'Stok Buku',short:'Stok',icon:'box',roles:['owner','keuangan'],group:'Produk'},
+  afiliasi:{label:'Modul premium & afiliasi',short:'Afiliasi',icon:'tag',roles:['owner'],group:'Produk',mod:'afiliasi'},
   paket:{label:'Paket & Harga',short:'Harga',icon:'tag',roles:['owner'],group:'Pengaturan'},
+  pegawai:{label:'Pegawai & jabatan',short:'Pegawai',icon:'users',roles:['owner'],group:'Pengaturan'},
+  pengumuman:{label:'Pengumuman',icon:'mega',roles:['owner'],group:'Pengaturan'},
+  log:{label:'Log aktivitas',short:'Log',icon:'list',roles:['owner'],group:'Pengaturan'},
+  pengaturan:{label:'Pengaturan',icon:'gear',roles:['owner'],group:'Pengaturan'},
+  modul:{label:'Menu tambahan',short:'Modul',icon:'puzzle',roles:['owner'],group:'Pengaturan'},
+  tagihan:{label:'Tagihan aplikasi',short:'Tagihan',icon:'card',roles:['owner'],group:'Pengaturan',badge:()=>DB.bills.filter(b=>b.st==='belum').length},
   lowongan:{label:'Lowongan Kelas',short:'Lowongan',icon:'brief',roles:['mentor'],group:'Mentor'},
   absen:{label:'Absensi & Progres',short:'Absen',icon:'check',roles:['mentor'],group:'Mentor'},
   kelasku:{label:'Kelas Saya',short:'Kelas',icon:'book',roles:['mentor'],group:'Mentor'},
@@ -258,41 +377,91 @@ const PAGES = {
   jadwal:{label:'Jadwal',icon:'cal',roles:['santri'],group:'Belajar'},
   bayar:{label:'Tagihan',short:'Bayar',icon:'card',roles:['santri'],group:'Belajar'},
   progres:{label:'Progres Belajar',short:'Progres',icon:'chart',roles:['santri'],group:'Belajar'},
+  sa:{label:'Ringkasan',icon:'shield',roles:['superadmin'],group:'Super admin'},
+  sa_jabatan:{label:'Masuk sebagai jabatan',short:'Jabatan',icon:'users',roles:['superadmin'],group:'Super admin'},
+  sa_modul:{label:'Menu & harga modul',short:'Modul',icon:'puzzle',roles:['superadmin'],group:'Super admin'},
+  sa_alat:{label:'Alat & data',short:'Alat',icon:'gear',roles:['superadmin'],group:'Super admin'},
+  notifikasi:{label:'Notifikasi',icon:'bell',roles:'*',group:'Saya'},
+  akun:{label:'Akun saya',short:'Akun',icon:'user',roles:'*',group:'Saya'},
+  panduan:{label:'Panduan aplikasi',short:'Panduan',icon:'help',roles:'*',group:'Saya'},
   lainnya:{label:'Lainnya',icon:'grid',roles:'*',hidden:true}
 };
 const can = (id, r) => { const p = PAGES[id]; return p && (p.roles === '*' || p.roles.includes(r)); };
+const modOn = k => !!(DB.modules.find(m=>m.k===k)||{}).on;
+const HELP = {
+  beranda:'Ringkasan pekerjaan Anda hari ini. Tekan kartu atau tombol untuk langsung ke pekerjaannya.',
+  lead:'Semua chat calon santri dari WhatsApp. Bot sudah membalas otomatis; tandai yang sudah Anda balas, lalu buat invoice.',
+  daftar:'Isi nama santri, pilih paket, durasi, dan jumlah sesi. Total dihitung otomatis termasuk diskon, biaya daftar, dan buku.',
+  matching:'Santri yang sudah lunas menunggu mentor. Fleksibel & Offline: pilih dari 4 kandidat. Reguler: tetapkan otomatis.',
+  kelas:'Semua kontrak aktif. Merah = lewat batas sanksi, kuning = lewat batas bonus.',
+  perpanjang:'Paket yang tinggal ≤ 1 sesi. Kirim invoice perpanjangan (tanpa biaya daftar) atau tandai tidak lanjut.',
+  santri:'Daftar semua santri beserta status: menunggu bayar, menunggu mentor, aktif, atau berhenti.',
+  komplain:'Catat komplain santri dan tandai selesai. Testimoni dari santri yang berhenti juga masuk di sini.',
+  masalah:'Kejadian yang perlu dicek owner. Tekan Tandai sudah ditangani setelah dicek; badge ikut berkurang.',
+  mentor:'Data semua mentor, jumlah kelas, skor, dan status blokir.',
+  invoice:'Semua invoice. Tandai lunas setelah dana masuk; lowongan mentor otomatis dibuat untuk santri baru.',
+  payroll:'Gaji mentor dihitung saat kontrak ditutup: pokok selalu, bonus kalau santri lanjut dan kontrak ditutup sebelum batas hari.',
+  jurnal:'Kas masuk, gaji dibayar, dan saldo. Unduh rekap sebagai CSV.',
+  laporan:'Omzet per paket, retensi, dan nilai rata-rata invoice.',
+  stok:'Stok buku cetak Iqro & Tajwid. Berkurang saat invoice dengan buku lunas.',
+  afiliasi:'Modul premium yang dijual lewat link afiliasi dengan bagi hasil 70:30.',
+  paket:'Harga paket, gaji pokok mentor, bonus, biaya daftar, dan buku. Hanya owner yang bisa mengubah.',
+  pegawai:'Buat akun pegawai, mentor, atau santri. Tekan nama untuk mengubah jabatan atau menonaktifkan akun.',
+  pengumuman:'Tulis pengumuman untuk semua pengguna. Bisa disematkan sebagai Penting dan ditampilkan di halaman masuk.',
+  log:'Siapa melakukan apa dan kapan. Cari nama atau kata kunci.',
+  pengaturan:'Nama usaha, tema warna untuk semua pengguna, dan aturan batas hari.',
+  modul:'Menu tambahan berbayar. Menu yang terkunci tetap terlihat dengan gembok.',
+  tagihan:'Tagihan aplikasi dan modul. Bayar sekarang membuka halaman pembayaran.',
+  lowongan:'Lowongan kelas baru. Tekan Saya minat; 4 pelamar pertama dikirim ke santri.',
+  absen:'Isi kehadiran dan progres setiap selesai mengajar. Izin memakai kuota santri.',
+  kelasku:'Kelas yang Anda ajar dan riwayat progresnya.',
+  gaji:'Gaji yang sudah tercatat dari kontrak yang ditutup.',
+  jadwal:'Jadwal sesi Anda.',
+  bayar:'Tagihan Anda. Tekan Bayar sekarang untuk membayar.',
+  progres:'Laporan progres dari mentor dan e-modul gratis.',
+  notifikasi:'Izinkan notifikasi HP dan tes notifikasi.',
+  akun:'Ganti nama dan password, dan cara memasang aplikasi.',
+  panduan:'Panduan singkat semua halaman yang bisa Anda buka.',
+  lainnya:'Semua menu lain, atur menu bawah, tema, dan keluar.',
+  sa:'Kondisi aplikasi secara umum.', sa_jabatan:'Lihat aplikasi persis seperti pengguna tertentu.', sa_modul:'Atur harga dan status modul.', sa_alat:'Data contoh, tagihan, dan perawatan.'
+};
 
-/* ===================== aturan bisnis ===================== */
-const PRICE = {REG:{30:135000,60:260000}, FLX:{30:190000,60:315000}, OFF:{60:460000}};
-const PNAME = {REG:'Reguler Online', FLX:'Fleksibel Online', OFF:'Offline Home Visit'};
-const IZIN = {REG:1, FLX:3, OFF:3};
-const POKOK = {REG:{30:80000,60:140000}, FLX:{30:80000,60:140000}, OFF:{60:220000}}; // per 4 sesi; offline: asumsi Rp55.000/sesi
-const BONUS = {REG:20000, FLX:20000, OFF:0};                                        // offline: belum ditentukan
-const DAFTAR = 30000, BUKU = 20000;
-function hitung({p,d,s,baru,anak,buku}){
-  const base = PRICE[p][d] * s/4;
-  const disc = (s>=8 ? .05 : 0) + (p==='OFF' && anak ? .05 : 0);
-  const reg = baru ? DAFTAR : 0, bk = (p==='OFF' && buku) ? BUKU : 0;
-  return {base, disc, potong: base*disc, reg, bk, tot: base*(1-disc) + reg + bk};
-}
-const kuota = k => IZIN[k.p] * k.tot/4;
-
-/* ===================== penyimpanan ===================== */
+/* ===================== penyimpanan & data ===================== */
 const store = {
   get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
   set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
   del(k){ try{ localStorage.removeItem(k); }catch(e){} }
 };
-const DBKEY = 'qec_db_v1';
-let uid = Date.now();
+const DBKEY = 'qec_db_v2';
+let uid = now();
 const nid = () => ++uid;
 function seed(){
+  const t = now();
   return {
+    users:[
+      {email:'owner@qec.id',pass:'owner123',role:'owner',nama:'Ricky',aktif:true},
+      {email:'keuangan@qec.id',pass:'keuangan123',role:'keuangan',nama:'Staf Keuangan',aktif:true},
+      {email:'cs@qec.id',pass:'cs123',role:'cs',nama:'Staf CS',aktif:true},
+      {email:'mentor@qec.id',pass:'mentor123',role:'mentor',nama:'Ustadzah Aisyah',aktif:true},
+      {email:'santri@qec.id',pass:'santri123',role:'santri',nama:'Bu Rina (contoh)',aktif:true},
+      {email:'superadmin@qec.id',pass:'super123',role:'superadmin',nama:'Super admin',aktif:true}
+    ],
+    settings:{usaha:'Quran Edu Center', theme:'teal', bonusHari:40, sanksiHari:60, daftar:30000, buku:20000,
+      price:{REG:{30:135000,60:260000}, FLX:{30:190000,60:315000}, OFF:{60:460000}},
+      pokok:{REG:{30:80000,60:140000}, FLX:{30:80000,60:140000}, OFF:{60:220000}},
+      bonus:{REG:20000, FLX:20000, OFF:0}},
+    modules:[
+      {k:'laporan',n:'Laporan premium',d:'Omzet per paket, retensi, nilai rata-rata invoice',price:49000,on:false},
+      {k:'komplain',n:'Komplain & testimoni',d:'Catat komplain santri dan kumpulkan testimoni',price:29000,on:false},
+      {k:'afiliasi',n:'Modul premium & afiliasi',d:'Jual modul premium lewat link afiliasi (70:30)',price:39000,on:false},
+      {k:'waauto',n:'Laporan WA otomatis',d:'Rekap harian, mingguan, bulanan ke WhatsApp owner',price:25000,on:false}
+    ],
+    bills:[{id:1,no:'TAG-2611-01',d:'Langganan aplikasi · November 2026',v:99000,st:'belum',due:t+5*DAY,ts:t-2*DAY}],
     leads:[
-      {id:1,n:'Calon santri 1 (contoh)',s:'Google Ads',q:'Ngaji untuk ibu-ibu, bisa malam?',st:'baru',t:'2 mnt'},
-      {id:2,n:'Calon santri 2 (contoh)',s:'Instagram',q:'Ada guru datang ke rumah?',st:'baru',t:'8 mnt'},
-      {id:3,n:'Calon santri 3 (contoh)',s:'WA langsung',q:'Fleksibel 30 menit, 8 sesi',st:'harga',t:'1 jam'},
-      {id:4,n:'Calon santri 4 (contoh)',s:'Referral',q:'Offline anak 9 tahun',st:'harga',t:'3 jam'}
+      {id:1,n:'Calon santri 1 (contoh)',s:'Google Ads',q:'Ngaji untuk ibu-ibu, bisa malam?',st:'baru',ts:t-2*6e4},
+      {id:2,n:'Calon santri 2 (contoh)',s:'Instagram',q:'Ada guru datang ke rumah?',st:'baru',ts:t-8*6e4},
+      {id:3,n:'Calon santri 3 (contoh)',s:'WA langsung',q:'Fleksibel 30 menit, 8 sesi',st:'harga',ts:t-60*6e4},
+      {id:4,n:'Calon santri 4 (contoh)',s:'Referral',q:'Offline anak 9 tahun',st:'invoice',ts:t-180*6e4}
     ],
     mentors:[
       {n:'Ustadzah Aisyah',a:'Online · 3 th mengajar',s:4.9,st:'aktif'},
@@ -315,100 +484,161 @@ function seed(){
       {id:24,n:'Mas Arif (contoh)',m:'Ustadz Yusuf',p:'FLX',d:60,used:4,tot:4,iz:3,hari:61,st:'aktif'}
     ],
     inv:[
-      {id:31,n:'Bu Rina (contoh)',d:'Fleksibel 30 mnt · 4 sesi + daftar',v:220000,st:'lunas',jenis:'baru'},
-      {id:32,n:'Pak Doni (contoh)',d:'Reguler 60 mnt · 4 sesi + daftar',v:290000,st:'lunas',jenis:'baru'},
-      {id:33,n:'Calon santri 4 (contoh)',d:'Offline 60 mnt · 8 sesi − 10% + daftar + buku',v:878000,st:'tunggu',jenis:'baru',meta:{p:'OFF',d:60,s:8,buku:true}}
+      {id:31,no:'INV-2611-0031',n:'Bu Rina (contoh)',d:'Fleksibel 30 mnt · 4 sesi + daftar',v:220000,st:'lunas',jenis:'baru',p:'FLX',ts:t-12*DAY,paid:t-12*DAY},
+      {id:32,no:'INV-2611-0032',n:'Pak Doni (contoh)',d:'Reguler 60 mnt · 4 sesi + daftar',v:290000,st:'lunas',jenis:'baru',p:'REG',ts:t-24*DAY,paid:t-6*DAY},
+      {id:33,no:'INV-2611-0033',n:'Calon santri 4 (contoh)',d:'Offline 60 mnt · 8 sesi − 10% + daftar + buku',v:878000,st:'tunggu',jenis:'baru',p:'OFF',ts:t-3*36e5,meta:{p:'OFF',d:60,s:8,buku:true}}
     ],
-    pay:[
-      {id:41,n:'Ustadz Hasan',k:'Reguler 60 · santri lain berhenti',pk:140000,b:0,st:'belum'}
+    pay:[{id:41,n:'Ustadz Hasan',k:'Reguler 60 · santri lain berhenti',pk:140000,b:0,st:'belum',lanjut:false,ts:t-4*DAY}],
+    progres:[{kid:21,txt:'Sesi 1 · Makhorijul Huruf — huruf halq, perlu diulang'},{kid:21,txt:'Sesi 2 · Tajwid — hukum nun mati, lancar'}],
+    stok:{iqro:24,tajwid:5},
+    ann:[{id:51,t:'Mulai Desember, pendaftaran offline dibuka untuk area Sidoarjo.',penting:false,on:true,login:true,ts:t-DAY},
+         {id:52,t:'Mentor wajib mengisi absen paling lambat 1 jam setelah sesi selesai.',penting:true,on:true,login:false,ts:t-2*DAY}],
+    notif:[
+      {id:61,to:['owner','keuangan'],t:'Invoice baru Rp878.000 untuk Calon santri 4 (contoh)',ts:t-3*36e5,read:[]},
+      {id:62,to:['owner','cs'],t:'Lowongan Offline Surabaya Timur baru dapat 1 pelamar',ts:t-5*36e5,read:[]},
+      {id:63,to:['mentor'],t:'Lowongan baru: Offline 60 · Surabaya Timur',ts:t-5*36e5,read:[]}
     ],
-    progres:[
-      {kid:21,txt:'Sesi 1 · Makhorijul Huruf — huruf halq, perlu diulang'},
-      {kid:21,txt:'Sesi 2 · Tajwid — hukum nun mati, lancar'}
-    ],
-    applied:[],
-    stok:{iqro:24,tajwid:5}
+    log:[{ts:t-3*36e5,who:'Staf CS',role:'cs',t:'Invoice Rp878.000 dikirim ke WA Calon santri 4 (contoh)'}],
+    resolved:[], komplain:[], applied:[]
   };
 }
 let DB = store.get(DBKEY) || seed();
 const save = () => store.set(DBKEY, DB);
-let session = store.get('qec_session');
-let theme = (()=>{ try{ return localStorage.getItem('qec_theme') || 'teal'; }catch(e){ return 'teal'; } })();
-if(theme==='biru') theme = 'teal';
-const me = () => ACCOUNTS.find(a => session && a.email === session.email);
-const S = { leadF:'semua', calc:{nama:'',p:'FLX',d:30,s:8,anak:false,baru:true,buku:false}, absen:{kid:null,st:'hadir'}, showPw:false, err:'' };
+let session = store.get('qec_session2');
+const realUser = () => session ? DB.users.find(u => u.email === session.email && u.aktif) : null;
+const me = () => { const r = realUser(); if(!r) return null; if(r.role==='superadmin' && session.as) return DB.users.find(u=>u.email===session.as) || r; return r; };
+const ini = n => (String(n).replace(/^(Ustadzah|Ustadz|Bu|Pak|Adik|Mas|Staf)\s+/,'').trim()[0] || '?').toUpperCase();
+const CFG = () => DB.settings;
+const PNAME = {REG:'Reguler Online', FLX:'Fleksibel Online', OFF:'Offline Home Visit'};
+const IZIN = {REG:1, FLX:3, OFF:3};
+const S = { leadF:'semua', invF:'semua', per:'bulan', logQ:'', santriQ:'', calc:{nama:'',p:'FLX',d:30,s:8,anak:false,baru:true,buku:false}, absen:{kid:null,st:'hadir'}, showPw:false, err:'', shut:store.get('qec_shut')||[] };
 
-/* ===================== turunan data ===================== */
+/* ===================== aturan bisnis ===================== */
+function hitung({p,d,s,baru,anak,buku}){
+  const c = CFG(), base = c.price[p][d] * s/4;
+  const disc = (s>=8 ? .05 : 0) + (p==='OFF' && anak ? .05 : 0);
+  const reg = baru ? c.daftar : 0, bk = (p==='OFF' && buku) ? c.buku : 0;
+  return {base, disc, potong: base*disc, reg, bk, tot: base*(1-disc) + reg + bk};
+}
+const kuota = k => IZIN[k.p] * k.tot/4;
 const aktif = () => DB.kelas.filter(k => k.st==='aktif');
 const myKelasMentor = () => aktif().filter(k => k.m === me().nama);
 const myKelasSantri = () => aktif().find(k => k.n === me().nama);
 const pendingPerp = k => DB.inv.some(i => i.st==='tunggu' && i.jenis==='perpanjang' && i.meta && i.meta.kid===k.id);
 const perluPerp = () => aktif().filter(k => k.tot - k.used <= 1);
-function masalahList(){
-  const m = [];
-  aktif().filter(k=>k.hari>60).forEach(k=>m.push({t:'Kontrak lewat 60 hari', m:`${k.n} · ${k.m} → mentor istirahat`, c:'bad'}));
-  aktif().filter(k=>k.hari>40 && k.hari<=60 && k.tot-k.used<=1).forEach(k=>m.push({t:'Bonus terancam hangus', m:`${k.n} · sudah hari ke-${k.hari}`, c:'warn'}));
-  DB.mentors.filter(x=>x.calonBlokir && x.st==='aktif').forEach(x=>m.push({t:'Calon blokir', m:`${x.n} · 2 santri berturut-turut tidak lanjut`, c:'warn', mentor:x.n}));
-  DB.match.filter(x=>x.st==='cari' && x.bids.length<2).forEach(x=>m.push({t:'Lowongan sepi', m:`${x.n} · ${x.bids.length} pelamar`, c:'warn'}));
+function masalahAll(){
+  const c = CFG(), m = [];
+  aktif().filter(k=>k.hari>c.sanksiHari).forEach(k=>m.push({key:'k60-'+k.id, t:`Kontrak lewat ${c.sanksiHari} hari`, m:`${k.n} · ${k.m} → mentor istirahat`, c:'bad'}));
+  aktif().filter(k=>k.hari>c.bonusHari && k.hari<=c.sanksiHari && k.tot-k.used<=1).forEach(k=>m.push({key:'k40-'+k.id, t:'Bonus terancam hangus', m:`${k.n} · sudah hari ke-${k.hari}`, c:'warn'}));
+  DB.mentors.filter(x=>x.calonBlokir && x.st==='aktif').forEach(x=>m.push({key:'blk-'+x.n, t:'Calon blokir', m:`${x.n} · 2 santri berturut-turut tidak lanjut`, c:'warn', mentor:x.n}));
+  DB.match.filter(x=>x.st==='cari' && x.bids.length<2).forEach(x=>m.push({key:'sepi-'+x.id, t:'Lowongan sepi', m:`${x.n} · ${x.bids.length} pelamar`, c:'warn'}));
   return m;
 }
+const masalahList = () => masalahAll().filter(x => !DB.resolved.includes(x.key));
 function tutupKontrak(k, lanjut){
-  const pk = POKOK[k.p][k.d] * k.tot/4;
-  const b = (lanjut && k.hari <= 40) ? BONUS[k.p] * k.tot/4 : 0;
-  DB.pay.push({id:nid(), n:k.m, k:`${PNAME[k.p]} ${k.d} · ${k.n} · ${lanjut ? (k.hari<=40 ? 'lanjut ≤ 40 hari' : 'lanjut, lewat 40 hari') : 'santri berhenti'}`, pk, b, st:'belum'});
+  const c = CFG(), pk = c.pokok[k.p][k.d] * k.tot/4;
+  const b = (lanjut && k.hari <= c.bonusHari) ? c.bonus[k.p] * k.tot/4 : 0;
+  DB.pay.push({id:nid(), n:k.m, k:`${PNAME[k.p]} ${k.d} · ${k.n} · ${lanjut ? (k.hari<=c.bonusHari ? `lanjut ≤ ${c.bonusHari} hari` : `lanjut, lewat ${c.bonusHari} hari`) : 'santri berhenti'}`, pk, b, st:'belum', lanjut, ts:now()});
+}
+const invNo = () => `INV-${new Date().toISOString().slice(2,4)}${new Date().toISOString().slice(5,7)}-${String(DB.inv.length+31).padStart(4,'0')}`;
+
+/* ===================== log & notifikasi ===================== */
+function log(t){ const r = realUser(), u = me(); DB.log.push({ts:now(), who: r.role==='superadmin' ? 'Super admin' : u.nama, role: r.role==='superadmin' ? 'superadmin' : u.role, t, sa: r.role==='superadmin'}); if(DB.log.length>500) DB.log = DB.log.slice(-500); }
+function notify(to, t, toName){
+  const n = {id:nid(), to, toName, t, ts:now(), read:[]}; DB.notif.push(n);
+  const u = me(); if(u && forMe(n, u) ){ headsUp(t); pushHp(t); }
+}
+const forMe = (n,u) => n.toName ? n.toName === u.nama : n.to.includes(u.role);
+const myNotif = () => { const u = me(); return DB.notif.filter(n=>forMe(n,u)).slice().reverse(); };
+const unread = () => { const u = me(); return myNotif().filter(n=>!n.read.includes(u.email)).length; };
+function pushHp(t){ try{ if('Notification' in window && Notification.permission==='granted') new Notification(CFG().usaha, {body:t, tag:'qec-'+now()}); }catch(e){} }
+let huT;
+function headsUp(t){
+  let h = document.getElementById('hu'); if(h) h.remove();
+  h = document.createElement('div'); h.id='hu'; h.className='headsup'; h.setAttribute('role','status');
+  h.innerHTML = `<div class="ico">${svg('bell')}</div><div class="grow" style="flex:1"><div class="t" style="font-size:14px">${esc(CFG().usaha)}</div><div class="m">${esc(t)}</div></div>`;
+  document.body.appendChild(h); clearTimeout(huT); huT = setTimeout(()=>h.remove(), 3600);
 }
 
 /* ===================== tampilan bersama ===================== */
+function myTabs(){ const u = me(); const t = (u.tabs && u.tabs.length ? u.tabs : ROLES[u.role].tabs).filter(id=>can(id,u.role)).slice(0,4); return t.concat('lainnya'); }
 function head(title, hero=''){
-  const u = me();
-  return `<header class="top"><div class="bar"><div class="logo">QEC</div><h1>${title}</h1>
-    <button class="avatar" data-act="akun" aria-label="Akun"><i>${u.ini}</i>${ROLES[u.role].label}</button></div>${hero}</header>`;
+  const u = me(), r = realUser(), n = unread();
+  const sa = r.role==='superadmin' && session.as ? `<div class="sabar">${svg('shield')}<span class="grow">Super admin · melihat sebagai ${esc(u.nama)} (${ROLES[u.role].label})</span><button data-act="saBack">Kembali ke super admin</button></div>` : '';
+  const bill = u.role==='owner' ? DB.bills.find(b=>b.st==='belum') : null;
+  const bb = bill ? `<div class="billbar">${svg('card')}<span class="grow"><b>Tagihan aplikasi ${rp(bill.v)}</b> · jatuh tempo ${tgl(bill.due)}</span><a class="btn shake" href="#tagihan">Bayar</a></div>` : '';
+  return sa + `<header class="top"><div class="bar"><div class="logo">QEC</div><h1>${title}</h1>
+    <button class="icon-btn" data-act="help" aria-label="Panduan halaman ini">${svg('help')}</button>
+    <button class="icon-btn" data-act="lonceng" aria-label="Notifikasi${n?`, ${n} belum dibaca`:''}">${svg('bell')}${n?`<span class="n">${n>9?'9+':n}</span>`:''}</button>
+    <button class="avatar" data-act="akunPop" aria-label="Akun ${esc(u.nama)}"><i>${ini(u.nama)}</i><span class="lbl">${ROLES[u.role].label}</span></button></div>${hero}</header>` + bb;
 }
 function tabsBar(cur){
-  const t = ROLES[me().role].tabs;
-  const items = t.map((id,i)=>{ const p = PAGES[id];
+  const items = myTabs().map((id,i)=>{ const p = PAGES[id];
     return `<a href="#${id}" class="${id===cur?'on':''} ${i===2?'mid':''}">${svg(p.icon)}<span>${p.short||p.label}</span></a>`; }).join('');
   return `<nav class="tabs" aria-label="Menu bawah">
     <svg class="bg" viewBox="0 0 400 84" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="tg" x1="0" x2="1"><stop offset="0" stop-color="var(--top1)"/><stop offset=".6" stop-color="var(--top2)"/><stop offset="1" stop-color="var(--top3)"/></linearGradient></defs>
     <path d="M0 16 H140 C162 16 170 0 200 0 C230 0 238 16 260 16 H400 V84 H0 Z" fill="url(#tg)"/></svg>
     <div class="items">${items}</div></nav>`;
 }
+function menuGroups(filter=''){
+  const role = me().role, groups = {}, f = filter.toLowerCase();
+  Object.entries(PAGES).forEach(([id,p])=>{ if(p.hidden || !can(id,role)) return; if(f && !(p.label+' '+(p.short||'')+' '+(HELP[id]||'')).toLowerCase().includes(f)) return; (groups[p.group] = groups[p.group] || []).push([id,p]); });
+  return groups;
+}
+const lockI = p => p.mod && !modOn(p.mod) ? `<span class="lock" title="Terkunci">${svg('lock')}</span>` : '';
 function sideBar(cur){
-  const role = me().role, groups = {};
-  Object.entries(PAGES).forEach(([id,p])=>{ if(p.hidden || !can(id,role)) return; (groups[p.group] = groups[p.group] || []).push([id,p]); });
-  let h = `<div class="brand"><div class="logo">QEC</div>Quran Edu Center</div>`;
-  for(const g in groups){ h += `<div class="g">${g}</div>` + groups[g].map(([id,p])=>{ const b = p.badge ? p.badge() : 0;
-    return `<a href="#${id}" class="${id===cur?'on':''}">${svg(p.icon)}${p.label}${b?`<span class="dot ping">${b}</span>`:''}</a>`; }).join(''); }
-  h += `<div class="g">Akun</div><a href="#lainnya" class="${cur==='lainnya'?'on':''}">${svg('grid')}Lainnya</a>`;
+  const groups = menuGroups(S.sideQ||'');
+  let h = `<div class="brand"><div class="logo">QEC</div>${esc(CFG().usaha)}</div>
+    <div class="search"><input id="sideQ" type="search" placeholder="Cari menu…" value="${esc(S.sideQ||'')}" aria-label="Cari menu"><kbd>/</kbd></div>`;
+  for(const g in groups){ const shut = S.shut.includes(g) && !S.sideQ;
+    h += `<button class="g ${shut?'shut':''}" data-act="fold" data-g="${g}" aria-expanded="${!shut}">${g}${svg('chev')}</button>`;
+    if(!shut) h += groups[g].map(([id,p])=>{ const b = p.badge ? p.badge() : 0;
+      return `<a href="#${id}" class="${id===cur?'on':''}">${svg(p.icon)}${p.label}${b?`<span class="dot ping">${b}</span>`:lockI(p)}</a>`; }).join(''); }
+  if(!Object.keys(groups).length) h += `<div style="padding:10px;opacity:.75;font-size:13px">Menu tidak ditemukan</div>`;
+  h += `<a href="#lainnya" class="${cur==='lainnya'?'on':''}" style="margin-top:8px">${svg('grid')}Lainnya</a><div class="ver">Versi ${APP_VERSION}</div>`;
   return h;
 }
 const card = (ic, t, m, right='') => `<div class="card row"><div class="ico">${svg(ic)}</div><div class="grow"><div class="t">${t}</div><div class="m">${m}</div></div>${right}</div>`;
 const CHIP = {lunas:'<span class="chip ok">Lunas</span>', tunggu:'<span class="chip warn">Menunggu</span>', baru:'<span class="chip bad">Baru</span>', harga:'<span class="chip">Dapat harga</span>', invoice:'<span class="chip warn">Invoice</span>', pilih:'<span class="chip ok">4 kandidat</span>', cari:'<span class="chip warn">Mencari</span>', auto:'<span class="chip">Auto-assign</span>', belum:'<span class="chip warn">Belum dibayar</span>', dibayar:'<span class="chip ok">Dibayar</span>'};
 const empty = t => `<div class="empty">${t}</div>`;
+const copyBtn = v => `<button class="copy" data-act="copy" data-v="${esc(v)}" aria-label="Salin ${esc(v)}">${svg('copy')}</button>`;
 function shortcuts(ids){
   const role = me().role;
-  return `<div class="grid">${ids.filter(i=>can(i,role)).map(i=>{const p=PAGES[i], b=p.badge?p.badge():0;return `<a class="tile" href="#${i}"><div class="ico">${svg(p.icon)}</div>${p.short||p.label}${b?`<span class="dot ping">${b}</span>`:''}</a>`;}).join('')}</div>`;
+  return `<div class="grid">${ids.filter(i=>can(i,role)).map(i=>{const p=PAGES[i], b=p.badge?p.badge():0;return `<a class="tile" href="#${i}"><div class="ico">${svg(p.icon)}</div>${p.short||p.label}${b?`<span class="dot ping">${b}</span>`:(p.mod&&!modOn(p.mod)?`<span class="dot" style="background:var(--mut)">${svg('lock')}</span>`:'')}</a>`;}).join('')}</div>`;
 }
 const act = (label, a, cls='', extra='') => `<button class="btn ${cls}" data-act="${a}" ${extra}>${label}</button>`;
+function annBlock(){
+  const L = DB.ann.filter(a=>a.on).sort((a,b)=>(b.penting-a.penting)||(b.ts-a.ts));
+  return L.map(a=>`<div class="ann ${a.penting?'pen':''}"><div class="ico">${svg('mega')}</div><div class="grow"><div class="t" style="font-size:14px">${a.penting?'Penting':'Pengumuman'}</div><div class="m" style="color:var(--ink)">${esc(a.t)}</div></div></div>`).join('');
+}
+function lockBox(k){
+  const m = DB.modules.find(x=>x.k===k), own = me().role==='owner';
+  return `<div class="card lockbox form"><div class="big">${svg('lock')}</div><div class="t" style="font-size:18px">${esc(m.n)}</div><div class="m" style="margin:6px 0 14px">${esc(m.d)}</div><div class="t">${rp(m.price)} / bulan</div>
+    <div style="margin-top:14px;max-width:320px;margin-left:auto;margin-right:auto">${own?act('Buka sekarang','bukaModul','',`data-k="${k}"`):act('Minta owner membuka','mintaModul','ghost',`data-k="${k}"`)}</div></div>`;
+}
 
 /* ===================== halaman login ===================== */
 function loginView(){
+  const demo = DB.users.filter(u=>u.aktif).slice(0,8), ann = DB.ann.filter(a=>a.on && a.login);
   return `<div class="login"><header class="top">
-    <div class="brandbig"><div class="logo">QEC</div><div><b>Quran Edu Center</b><span>Sistem operasional</span></div></div>
-    <h1>Masuk ke akun</h1><div class="hl">Les ngaji privat, dikelola otomatis</div></header>
+    <div class="brandbig"><div class="logo">QEC</div><div><b>${esc(CFG().usaha)}</b><span>Sistem operasional</span></div></div>
+    <h1>Masuk ke akun</h1><div class="hl">Les ngaji privat, dikelola otomatis</div>
+    <div class="feat"><div>${svg('wa')}Santri &amp; mentor cukup lewat WhatsApp</div><div>${svg('star')}Matching 4 kandidat mentor otomatis</div><div>${svg('receipt')}Invoice, izin &amp; gaji dihitung sistem</div></div></header>
     <div class="wrapin"><div class="box">
+    ${ann.map(a=>`<div class="ann ${a.penting?'pen':''}"><div class="ico">${svg('mega')}</div><div class="m" style="color:var(--ink)">${esc(a.t)}</div></div>`).join('')}
     <form class="card" id="loginForm" novalidate>
       <label class="f" for="em">Email</label><input id="em" type="email" autocomplete="username" placeholder="nama@qec.id" value="${esc(S.email||'')}">
       <label class="f" for="pw">Password</label>
       <div class="pw"><input id="pw" type="${S.showPw?'text':'password'}" autocomplete="current-password" placeholder="••••••••" value="${esc(S.pass||'')}"><button type="button" data-act="showpw">${S.showPw?'Sembunyi':'Lihat'}</button></div>
       ${S.err?`<div class="err" role="alert">${S.err}</div>`:''}
       <div style="margin-top:14px"><button class="btn" type="submit">${svg('lock')}Masuk</button></div>
+      <div style="margin-top:10px"><button type="button" class="btn ghost" data-act="pasang">${svg('phone')}Pasang aplikasi</button></div>
     </form>
     <div class="sec">Akun demo</div>
-    <div class="card">${ACCOUNTS.map(a=>`<div class="acc"><div class="ico">${svg(a.role==='santri'?'user':a.role==='mentor'?'book':a.role==='keuangan'?'wallet':a.role==='cs'?'chat':'star')}</div>
-      <div class="grow"><div class="t">${ROLES[a.role].label}</div><div class="m"><code>${a.email}</code> · <code>${a.pass}</code></div></div>
-      <button class="btn lihat mini" data-act="fill" data-e="${a.email}">Pakai</button></div>`).join('')}</div>
-    <div class="demo">Data contoh tersimpan di browser ini.</div>
+    <div class="card">${demo.map(a=>`<div class="acc"><div class="ico">${svg(a.role==='santri'?'user':a.role==='mentor'?'book':a.role==='keuangan'?'wallet':a.role==='cs'?'chat':a.role==='superadmin'?'shield':'star')}</div>
+      <div class="grow"><div class="t">${ROLES[a.role].label}</div><div class="m"><code>${esc(a.email)}</code> · <code>${esc(a.pass)}</code></div></div>
+      <button class="btn lihat mini" data-act="fill" data-e="${esc(a.email)}">Pakai</button></div>`).join('')}</div>
+    <div class="demo">Versi ${APP_VERSION} · data contoh tersimpan di browser ini</div>
     </div></div></div>`;
 }
 
@@ -417,48 +647,52 @@ const P = {};
 P.beranda = () => {
   const u = me(), r = u.role;
   if(r==='owner'){
-    const omzet = DB.inv.filter(i=>i.st==='lunas').reduce((a,i)=>a+i.v,0);
-    return head('Beranda', `<div class="hero"><div class="hi">Omzet lunas (data contoh)</div><div class="big">${rp(omzet)}</div><div class="sub">Target Rp50–100 jt / bulan</div>
+    const span = {hari:DAY, '7':7*DAY, bulan:30*DAY}[S.per], from = now()-span;
+    const L = DB.inv.filter(i=>i.st==='lunas' && (i.paid||i.ts) >= from), omzet = L.reduce((a,i)=>a+i.v,0);
+    const F = [['hari','Hari ini'],['7','7 hari'],['bulan','Bulan ini']];
+    return head('Beranda', `<div class="hero"><div class="chips" style="margin-bottom:8px">${F.map(([k,l])=>`<button class="${S.per===k?'on':''}" data-act="per" data-v="${k}" style="background:${S.per===k?'#fff':'rgba(255,255,255,.14)'};color:${S.per===k?'var(--pri)':'#fff'};border-color:transparent">${l}</button>`).join('')}</div>
+    <div class="hi">Omzet lunas · ${L.length} invoice</div><div class="big">${rp(omzet)}</div><div class="sub">Target Rp50–100 jt / bulan</div>
     <div class="kpis"><div class="kpi"><b>${aktif().length}</b><span>Kelas aktif</span></div><div class="kpi"><b>${DB.mentors.filter(m=>m.st==='aktif').length}</b><span>Mentor aktif</span></div><div class="kpi"><b>${DB.match.length}</b><span>Menunggu mentor</span></div><div class="kpi"><b>${DB.inv.filter(i=>i.st==='tunggu').length}</b><span>Belum lunas</span></div></div></div>`) +
-    `<main><div class="sec">Perlu tindakan</div>
-    ${card('refresh',`${perluPerp().length} perpanjangan`,'Sisa ≤ 1 sesi · tanpa biaya daftar',`<a class="btn ok mini" href="#perpanjang">Proses</a>`)}
-    ${card('alert',`${masalahList().length} masalah`,'Kontrak 60 hari, calon blokir, lowongan sepi',`<a class="btn lihat mini" href="#masalah">Lihat</a>`)}
+    `<main>${annBlock()}<div class="sec">Perlu tindakan</div>
+    ${card('refresh',`${PAGES.perpanjang.badge()} perpanjangan`,'Sisa ≤ 1 sesi · tanpa biaya daftar',`<a class="btn ok mini" href="#perpanjang">Proses</a>`)}
+    ${card('alert',`${masalahList().length} masalah`,'Belum ditangani',`<a class="btn lihat mini" href="#masalah">Lihat</a>`)}
     ${card('star',`${DB.match.length} santri menunggu mentor`,'Pilih kandidat atau tetapkan otomatis',`<a class="btn lihat mini" href="#matching">Lihat</a>`)}
-    <div class="sec">Menu pintas</div>${shortcuts(['daftar','invoice','payroll','mentor','paket','jurnal'])}</main>`;
+    <div class="sec">Kelas berjalan</div>${aktif().slice(0,6).map(k=>`<div class="card"><div class="row"><div class="ico">${svg('book')}</div><div class="grow"><div class="t">${esc(k.n)}</div><div class="m">${esc(k.m)} · sesi ${k.used}/${k.tot}</div></div>${k.hari>CFG().sanksiHari?`<span class="chip bad">&gt; ${CFG().sanksiHari} hari</span>`:k.tot-k.used<=1?'<span class="chip warn">Perpanjang</span>':'<span class="chip ok">Normal</span>'}</div><div class="prog"><i style="width:${k.used/k.tot*100}%"></i></div></div>`).join('') || empty('Belum ada kelas')}
+    <div class="sec">Menu pintas</div>${shortcuts(['daftar','invoice','payroll','pegawai','paket','laporan'])}</main>`;
   }
   if(r==='keuangan'){
     const masuk = DB.inv.filter(i=>i.st==='lunas').reduce((a,i)=>a+i.v,0), utang = DB.pay.filter(p=>p.st==='belum').reduce((a,p)=>a+p.pk+p.b,0);
     return head('Beranda', `<div class="hero"><div class="hi">Pemasukan lunas (data contoh)</div><div class="big">${rp(masuk)}</div>
     <div class="kpis"><div class="kpi"><b>${DB.inv.filter(i=>i.st==='tunggu').length}</b><span>Invoice belum lunas</span></div><div class="kpi"><b>${rp(utang)}</b><span>Payroll belum dibayar</span></div></div></div>`) +
-    `<main><div class="sec">Invoice terbaru</div>${DB.inv.slice(-4).reverse().map(x=>card('receipt',esc(x.n),esc(x.d),`<div style="text-align:right"><div class="t">${rp(x.v)}</div>${CHIP[x.st]}</div>`)).join('')}
-    <div class="sec">Menu pintas</div>${shortcuts(['invoice','payroll','jurnal','stok'])}</main>`;
+    `<main>${annBlock()}<div class="sec">Invoice terbaru</div>${DB.inv.slice(-4).reverse().map(invCard).join('')}
+    <div class="sec">Menu pintas</div>${shortcuts(['invoice','payroll','jurnal','laporan','stok'])}</main>`;
   }
   if(r==='cs'){
     const baru = DB.leads.filter(l=>l.st==='baru');
     return head('Beranda', `<div class="hero"><div class="hi">Lead aktif</div><div class="big">${DB.leads.filter(l=>l.st!=='lunas').length} lead</div><div class="sub">Bot membalas semua lead baru</div>
     <div class="kpis"><div class="kpi"><b>${baru.length}</b><span>Perlu dibalas manusia</span></div><div class="kpi"><b>${DB.match.length}</b><span>Menunggu mentor</span></div></div></div>`) +
-    `<main><div class="sec">Perlu dibalas</div>${baru.map(l=>card('wa',esc(l.n),esc(l.q),`<span class="chip bad">${l.t}</span>`)).join('') || empty('Semua lead sudah ditangani')}
-    <div class="sec">Menu pintas</div>${shortcuts(['daftar','lead','matching','kelas','perpanjang'])}</main>`;
+    `<main>${annBlock()}<div class="sec">Perlu dibalas</div>${baru.map(l=>card('wa',esc(l.n),esc(l.q),`<span class="chip bad">${lalu(l.ts)}</span>`)).join('') || empty('Semua lead sudah ditangani')}
+    <div class="sec">Menu pintas</div>${shortcuts(['daftar','lead','matching','santri','perpanjang','komplain'])}</main>`;
   }
   if(r==='mentor'){
     const ks = myKelasMentor(), k = ks[0], low = DB.match.filter(m=>m.st!=='auto' && !m.bids.includes(u.nama) && m.bids.length<4)[0];
     const gaji = DB.pay.filter(p=>p.n===u.nama).reduce((a,p)=>a+p.pk+p.b,0);
     return head('Beranda', `<div class="hero"><div class="hi">Assalamu'alaikum,</div><div class="big" style="font-size:24px">${esc(u.nama)}</div>
     <div class="kpis"><div class="kpi"><b>${ks.length}</b><span>Kelas aktif</span></div><div class="kpi"><b>${rp(gaji)}</b><span>Gaji tercatat</span></div></div></div>`) +
-    `<main><div class="sec">Sesi berikutnya</div>
+    `<main>${annBlock()}<div class="sec">Sesi berikutnya</div>
     ${k?`<div class="card"><div class="row"><div class="ico">${svg('book')}</div><div class="grow"><div class="t">${esc(k.n)} · ${PNAME[k.p]} ${k.d}</div><div class="m">Sesi ${Math.min(k.used+1,k.tot)} dari ${k.tot} · izin ${k.iz}/${kuota(k)}</div></div></div>
       <div class="btns"><a class="btn lihat" href="#kelasku">Kelas saya</a><button class="btn ok" data-act="toAbsen" data-id="${k.id}">Isi absen</button></div></div>`:empty('Belum ada kelas')}
     <div class="sec">Lowongan baru</div>
     ${low?`<div class="card"><div class="row"><div class="ico">${svg('brief')}</div><div class="grow"><div class="t">${PNAME[low.p]} ${low.d} · ${esc(low.area)}</div><div class="m">${esc(low.jadwal)} · ${low.bids.length}/4 pelamar</div></div><span class="chip bad">Baru</span></div>
       <div class="btns"><a class="btn ghost" href="#lowongan">Semua</a>${act('Saya minat','minat','',`data-id="${low.id}"`)}</div></div>`:empty('Tidak ada lowongan baru')}
-    <div class="card row" style="background:var(--warn-bg);border-color:#F3D9A4"><div class="ico" style="background:#fff;color:var(--warn)">${svg('alert')}</div><div class="grow"><div class="t" style="color:var(--warn)">Tutup kontrak ≤ 40 hari</div><div class="m">Agar bonus retensi Rp20.000 berlaku</div></div></div></main>`;
+    <div class="card row" style="background:var(--warn-bg);border-color:#F3D9A4"><div class="ico" style="background:#fff;color:var(--warn)">${svg('alert')}</div><div class="grow"><div class="t" style="color:var(--warn)">Tutup kontrak ≤ ${CFG().bonusHari} hari</div><div class="m">Agar bonus retensi berlaku</div></div></div></main>`;
   }
   const k = myKelasSantri(), tag = DB.inv.find(i=>i.n===u.nama && i.st==='tunggu');
   return head('Beranda', `<div class="hero"><div class="hi">Assalamu'alaikum,</div><div class="big" style="font-size:24px">${esc(u.nama)}</div>${k?`<div class="sub">${PNAME[k.p]} · ${k.d} menit</div>
     <div class="kpis"><div class="kpi"><b>${k.tot-k.used} dari ${k.tot}</b><span>Sisa sesi</span></div><div class="kpi"><b>${kuota(k)-k.iz}</b><span>Sisa izin</span></div></div>`:''}</div>`) +
-    `<main>${k?`<div class="sec">Sesi berikutnya</div>
+    `<main>${annBlock()}${k?`<div class="sec">Sesi berikutnya</div>
     <div class="card"><div class="row"><div class="ico">${svg('cal')}</div><div class="grow"><div class="t">Sesi ${Math.min(k.used+1,k.tot)} · Kamis, 19.30 WIB</div><div class="m">${esc(k.m)} · Zoom</div></div></div>
-    <div class="btns">${act('Ajukan izin','izin','ghost')}${act('Reschedule','toast','ghost','data-msg="Permintaan reschedule dikirim ke mentor (simulasi WA)"')}</div></div>`:empty('Belum ada kelas aktif')}
+    <div class="btns">${act('Ajukan izin','izin','ghost')}${act('Reschedule','reschedule','ghost')}</div></div>`:empty('Belum ada kelas aktif')}
     ${tag?`<div class="sec">Tagihan</div><div class="card"><div class="t">${esc(tag.d)}</div><div class="m">${rp(tag.v)}</div><div style="margin-top:12px"><a class="btn shake" href="#bayar">Bayar sekarang</a></div></div>`:
       (k && k.tot-k.used<=1 ? `<div class="sec">Lanjutkan belajar</div><div class="card"><div class="t">Paket hampir habis</div><div class="m">Ambil 8 sesi untuk hemat 5%</div><div style="margin-top:12px">${act('Minta perpanjangan','mintaPerp','shake')}</div></div>`:'')}
     ${card('book','E-modul gratis','Makhorijul Huruf · Tajwid · Shifatul Huruf','<a class="btn lihat mini" href="#progres">Buka</a>')}</main>`;
@@ -468,14 +702,14 @@ P.lead = () => {
   const list = DB.leads.filter(l=>f==='semua'||l.st===f).slice().reverse();
   return head('Lead & Chat WA') + `<main><div class="chips">${F.map(([k,l])=>`<button class="${k===f?'on':''}" data-act="leadF" data-v="${k}">${l}</button>`).join('')}</div>
   ${list.map(l=>`<div class="card"><div class="row"><div class="ico">${svg('wa')}</div><div class="grow"><div class="t">${esc(l.n)}</div><div class="m">"${esc(l.q)}"</div></div>${CHIP[l.st]}</div>
-    <div class="row" style="margin-top:10px;justify-content:space-between"><span class="chip">${esc(l.s)}</span><span class="m">${esc(l.t)} · dibalas bot</span></div>
+    <div class="row" style="margin-top:10px;justify-content:space-between"><span class="chip">${esc(l.s)}</span><span class="m">${lalu(l.ts)} · dibalas bot</span></div>
     ${l.st==='baru'||l.st==='harga'?`<div class="btns">${act('Tandai dibalas','leadReply','lihat',`data-id="${l.id}"`)}${act('Buat invoice','leadInv','',`data-id="${l.id}"`)}</div>`:''}</div>`).join('') || empty('Tidak ada lead')}</main>`;
 };
 P.daftar = () => {
   const c = S.calc, off = c.p==='OFF'; if(off) c.d = 60;
   const h = hitung(c);
   const seg = (k, opts) => `<div class="seg">${opts.map(([v,l])=>`<button type="button" class="${c[k]===v?'on':''}" data-act="calc" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
-  return head('Pendaftaran') + `<main><div class="card">
+  return head('Pendaftaran') + `<main><div class="card form">
   <label class="f" for="nama">Nama santri</label><input id="nama" type="text" data-bind="nama" placeholder="contoh: Bu Siti" value="${esc(c.nama)}">
   <label class="f">Paket</label>${seg('p',[['REG','Reguler'],['FLX','Fleksibel'],['OFF','Offline']])}
   <label class="f">Durasi</label>${seg('d', off?[[60,'60 menit']]:[[30,'30 menit'],[60,'60 menit']])}
@@ -488,26 +722,43 @@ P.daftar = () => {
   <div class="row"><span class="tot">Total</span><span class="tot">${rp(h.tot)}</span></div><div class="m">Kuota izin ${IZIN[c.p]*c.s/4} · ${c.baru?'E-modul gratis terkirim saat lunas':'tanpa biaya daftar'}</div></div>
   <div style="margin-top:12px">${act('Kirim invoice ke WA','kirimInv')}</div></div></main>`;
 };
+const invCard = x => `<div class="card"><div class="row"><div class="ico">${svg('receipt')}</div><div class="grow"><div class="t">${esc(x.n)}</div><div class="m">${esc(x.d)}${x.jenis==='perpanjang'?' · perpanjangan':''}</div></div></div>
+  <div class="row" style="justify-content:space-between;margin-top:10px"><span class="no">${esc(x.no||'')}${x.no?copyBtn(x.no):''}</span><span><b>${rp(x.v)}</b> ${CHIP[x.st]}</span></div>
+  ${x.st==='tunggu' && can('invoice',me().role)?`<div class="btns">${act('Ingatkan','ingat','ghost',`data-id="${x.id}"`)}${act('Tandai lunas','lunas','ok',`data-id="${x.id}"`)}</div>`:''}</div>`;
 P.invoice = () => {
-  const f = S.invF || 'semua', F = [['semua','Semua'],['tunggu','Menunggu'],['lunas','Lunas']];
+  const f = S.invF, F = [['semua','Semua'],['tunggu','Menunggu'],['lunas','Lunas']];
   const list = DB.inv.filter(x=>f==='semua'||x.st===f).slice().reverse();
-  return head('Invoice') + `<main><div class="chips">${F.map(([k,l])=>`<button class="${k===f?'on':''}" data-act="invF" data-v="${k}">${l}</button>`).join('')}</div>
-  ${list.map(x=>`<div class="card"><div class="row"><div class="ico">${svg('receipt')}</div><div class="grow"><div class="t">${esc(x.n)}</div><div class="m">${esc(x.d)}${x.jenis==='perpanjang'?' · perpanjangan':''}</div></div></div>
-  <div class="row" style="justify-content:space-between;margin-top:10px"><b>${rp(x.v)}</b>${CHIP[x.st]}</div>
-  ${x.st==='tunggu'?`<div class="btns">${act('Ingatkan','toast','ghost','data-msg="Pengingat bayar dikirim (simulasi WA)"')}${act('Tandai lunas','lunas','ok',`data-id="${x.id}"`)}</div>`:''}</div>`).join('') || empty('Tidak ada invoice')}</main>`;
+  return head('Invoice') + `<main><div class="chips">${F.map(([k,l])=>`<button class="${k===f?'on':''}" data-act="invF" data-v="${k}">${l}</button>`).join('')}</div>${list.map(invCard).join('') || empty('Tidak ada invoice')}</main>`;
 };
 P.matching = () => head('Matching Mentor') + `<main>${DB.match.map(m=>`<div class="card"><div class="row"><div class="ico">${svg('star')}</div><div class="grow"><div class="t">${esc(m.n)}</div><div class="m">${PNAME[m.p]} ${m.d} mnt · ${m.s} sesi · ${esc(m.area)}</div></div>${CHIP[m.st]}</div>
   <div class="m" style="margin-top:8px">${esc(m.jadwal)} · ${m.st==='auto'?'Reguler: ditetapkan sistem':m.bids.length+'/4 pelamar'}</div>
-  ${m.st==='auto'?`<div class="btns">${act('Kenapa?','toast','ghost','data-msg="Reguler: sistem memilih mentor dengan skor tertinggi yang jadwalnya kosong"')}${act('Tetapkan','tetapkan','ok',`data-id="${m.id}"`)}</div>`:
+  ${m.st==='auto'?`<div class="btns">${act('Kenapa?','toast','ghost','data-msg="Reguler: sistem memilih mentor dengan beban paling ringan dan skor tertinggi"')}${act('Tetapkan','tetapkan','ok',`data-id="${m.id}"`)}</div>`:
    `<div class="btns">${act('Broadcast ulang','broadcast','ghost',`data-id="${m.id}"`)}${act(m.bids.length?`Lihat ${m.bids.length} kandidat`:'Belum ada pelamar','kandidat','',`data-id="${m.id}" ${m.bids.length?'':'disabled'}`)}</div>`}</div>`).join('') || empty('Semua santri sudah punya mentor')}</main>`;
-P.kelas = () => head('Kelas Aktif') + `<main>${aktif().map(k=>{const pct=Math.round(k.used/k.tot*100);
-  return `<div class="card"><div class="row"><div class="ico">${svg('book')}</div><div class="grow"><div class="t">${esc(k.n)}</div><div class="m">${esc(k.m)} · ${PNAME[k.p]} ${k.d}</div></div>${k.hari>60?'<span class="chip bad">&gt; 60 hari</span>':k.hari>40?'<span class="chip warn">&gt; 40 hari</span>':'<span class="chip ok">Normal</span>'}</div>
+P.kelas = () => head('Kelas Aktif') + `<main>${aktif().map(k=>{const pct=Math.round(k.used/k.tot*100), c=CFG();
+  return `<div class="card"><div class="row"><div class="ico">${svg('book')}</div><div class="grow"><div class="t">${esc(k.n)}</div><div class="m">${esc(k.m)} · ${PNAME[k.p]} ${k.d}</div></div>${k.hari>c.sanksiHari?`<span class="chip bad">&gt; ${c.sanksiHari} hari</span>`:k.hari>c.bonusHari?`<span class="chip warn">&gt; ${c.bonusHari} hari</span>`:'<span class="chip ok">Normal</span>'}</div>
   <div class="prog"><i style="width:${pct}%"></i></div><div class="row" style="justify-content:space-between;margin-top:6px"><span class="m">Sesi ${k.used}/${k.tot}</span><span class="m">Izin ${k.iz}/${kuota(k)}</span><span class="m">Hari ke-${k.hari}</span></div></div>`;}).join('') || empty('Belum ada kelas')}</main>`;
 P.perpanjang = () => head('Perpanjangan') + `<main>${perluPerp().map(k=>{const v=hitung({p:k.p,d:k.d,s:k.tot,baru:false}).tot, pend=pendingPerp(k);
   return `<div class="card"><div class="row"><div class="ico">${svg('refresh')}</div><div class="grow"><div class="t">${esc(k.n)}</div><div class="m">${PNAME[k.p]} ${k.d} · ${k.tot} sesi · sisa ${k.tot-k.used} · hari ke-${k.hari}</div></div><div class="t">${rp(v)}</div></div>
   ${pend?`<div class="m" style="margin-top:10px">Invoice perpanjangan terkirim, menunggu bayar.</div>`:`<div class="btns">${act('Tidak lanjut','stop','bad',`data-id="${k.id}"`)}${act('Kirim invoice','kirimPerp','ok',`data-id="${k.id}"`)}</div>`}</div>`;}).join('') || empty('Belum ada paket yang hampir habis')}</main>`;
-P.masalah = () => head('Masalah') + `<main>${masalahList().map(x=>`<div class="card"><div class="row"><div class="ico">${svg('alert')}</div><div class="grow"><div class="t">${x.t}</div><div class="m">${esc(x.m)}</div></div><span class="chip ${x.c}">${x.c==='bad'?'Penting':'Cek'}</span></div>
-  ${x.mentor?`<div class="btns">${act('Tetap aktif','mentorOk','ghost',`data-n="${esc(x.mentor)}"`)}${act('Blokir','blokir','bad',`data-n="${esc(x.mentor)}"`)}</div>`:''}</div>`).join('') || empty('Tidak ada masalah')}</main>`;
+P.santri = () => {
+  const q = S.santriQ.toLowerCase(), rows = [];
+  DB.inv.filter(i=>i.st==='tunggu' && i.jenis==='baru').forEach(i=>rows.push({n:i.n, st:'<span class="chip warn">Menunggu bayar</span>', m:i.d}));
+  DB.match.forEach(m=>rows.push({n:m.n, st:'<span class="chip">Menunggu mentor</span>', m:`${PNAME[m.p]} ${m.d} · ${m.area}`}));
+  DB.kelas.forEach(k=>rows.push({n:k.n, st:k.st==='aktif'?'<span class="chip ok">Aktif</span>':'<span class="chip bad">Berhenti</span>', m:`${PNAME[k.p]} ${k.d} · ${k.m} · sesi ${k.used}/${k.tot}`}));
+  const L = rows.filter(r=>!q || r.n.toLowerCase().includes(q) || r.m.toLowerCase().includes(q));
+  return head('Data Santri') + `<main><div class="card form" style="padding:10px"><input id="santriQ" type="search" placeholder="Cari nama, paket, atau mentor…" value="${esc(S.santriQ)}" aria-label="Cari santri"></div>
+  ${L.map(r=>card('user',esc(r.n),esc(r.m),r.st)).join('') || empty('Tidak ditemukan')}</main>`;
+};
+P.komplain = () => !modOn('komplain') ? head('Komplain & testimoni') + `<main>${lockBox('komplain')}</main>` :
+  head('Komplain & testimoni') + `<main><div class="card form"><label class="f" for="kpn">Nama santri</label><input id="kpn" type="text" placeholder="contoh: Bu Rina">
+  <label class="f" for="kpi">Isi komplain / testimoni</label><textarea id="kpi" placeholder="Tulis singkat…"></textarea>
+  <label class="check"><input type="checkbox" id="kpt"> Ini testimoni (bukan komplain)</label><div style="margin-top:10px">${act('Simpan','addKomplain')}</div></div>
+  ${DB.komplain.slice().reverse().map(x=>`<div class="card"><div class="row"><div class="ico">${svg(x.testi?'star':'chat')}</div><div class="grow"><div class="t">${esc(x.n)}</div><div class="m">${esc(x.t)}</div></div>${x.testi?'<span class="chip ok">Testimoni</span>':x.done?'<span class="chip ok">Selesai</span>':'<span class="chip bad">Baru</span>'}</div>
+  ${!x.testi&&!x.done?`<div style="margin-top:10px">${act('Tandai selesai','doneKomplain','ok sm',`data-id="${x.id}"`)}</div>`:''}</div>`).join('') || empty('Belum ada catatan')}</main>`;
+P.masalah = () => { const L = masalahList(), done = masalahAll().length - L.length;
+  return head('Masalah') + `<main>${L.map(x=>`<div class="card"><div class="row"><div class="ico">${svg('alert')}</div><div class="grow"><div class="t">${x.t}</div><div class="m">${esc(x.m)}</div></div><span class="chip ${x.c}">${x.c==='bad'?'Penting':'Cek'}</span></div>
+  <div class="btns">${x.mentor?act('Blokir','blokir','bad sm',`data-n="${esc(x.mentor)}" data-key="${x.key}"`):act('Lihat','gotoMasalah','lihat sm',`data-key="${x.key}"`)}${act('Tandai sudah ditangani','resolve','ok sm',`data-key="${x.key}"`)}</div></div>`).join('') || empty('Tidak ada masalah')}
+  ${done?`<div class="demo">${done} masalah sudah ditangani</div>`:''}</main>`; };
 P.mentor = () => head('Data Mentor') + `<main>${DB.mentors.map(x=>{const n=aktif().filter(k=>k.m===x.n).length;
   return card('user',esc(x.n),`${esc(x.a)} · ${n} kelas`,`<span class="chip ${x.st==='blokir'?'bad':x.calonBlokir?'warn':'ok'}">${x.st==='blokir'?'Diblokir':'★ '+String(x.s).replace('.',',')}</span>`);}).join('')}</main>`;
 P.payroll = () => { const bel = DB.pay.filter(p=>p.st==='belum'), tot = bel.reduce((a,x)=>a+x.pk+x.b,0);
@@ -522,9 +773,51 @@ P.jurnal = () => {
   `<main><div class="cols">${card('chart','Kas masuk',`${L.length} invoice lunas`,`<b>${rp(kas)}</b>`)}${card('refresh','Perpanjangan',`${L.filter(i=>i.jenis==='perpanjang').length} invoice`,`<b>${rp(L.filter(i=>i.jenis==='perpanjang').reduce((a,i)=>a+i.v,0))}</b>`)}${card('wallet','Gaji dibayar','Mentor',`<b>${rp(gaji)}</b>`)}${card('alert','Utang gaji','Belum dibayar',`<b>${rp(utang)}</b>`)}</div>
   ${act('Unduh rekap (CSV)','csv')}</main>`;
 };
+P.laporan = () => { if(!modOn('laporan')) return head('Laporan premium') + `<main>${lockBox('laporan')}</main>`;
+  const L = DB.inv.filter(i=>i.st==='lunas'), by = {REG:0,FLX:0,OFF:0}; L.forEach(i=>{ if(i.p) by[i.p]+=i.v; });
+  const max = Math.max(1,...Object.values(by)), lanjut = DB.pay.filter(p=>p.lanjut).length, stop = DB.pay.filter(p=>p.lanjut===false).length;
+  const ret = lanjut+stop ? Math.round(lanjut/(lanjut+stop)*100) : 0, avg = L.length ? L.reduce((a,i)=>a+i.v,0)/L.length : 0;
+  return head('Laporan premium', `<div class="hero"><div class="kpis"><div class="kpi"><b>${ret}%</b><span>Retensi (kontrak ditutup)</span></div><div class="kpi"><b>${rp(avg)}</b><span>Rata-rata invoice</span></div><div class="kpi"><b>${L.length}</b><span>Invoice lunas</span></div><div class="kpi"><b>${aktif().length}</b><span>Kelas aktif</span></div></div></div>`) +
+  `<main><div class="card form"><div class="t" style="margin-bottom:8px">Omzet lunas per paket</div><div class="bars">${Object.keys(by).map(k=>`<div class="b"><span>${PNAME[k]}</span><div class="track"><i style="width:${by[k]/max*100}%"></i></div><span class="v">${rp(by[k])}</span></div>`).join('')}</div></div>
+  <div class="card form"><div class="t" style="margin-bottom:8px">Kontrak ditutup</div><div class="bars"><div class="b"><span>Lanjut</span><div class="track"><i style="width:${(lanjut/Math.max(1,lanjut+stop))*100}%"></i></div><span class="v">${lanjut}</span></div><div class="b"><span>Berhenti</span><div class="track"><i style="width:${(stop/Math.max(1,lanjut+stop))*100}%;background:var(--bad)"></i></div><span class="v">${stop}</span></div></div></div></main>`; };
 P.stok = () => head('Stok Buku') + `<main>${card('box','Buku Iqro','Dibawa mentor di sesi pertama',`<span class="chip ${DB.stok.iqro<10?'warn':'ok'}">${DB.stok.iqro}</span>`)}${card('box','Buku Tajwid','Dibawa mentor di sesi pertama',`<span class="chip ${DB.stok.tajwid<10?'warn':'ok'}">${DB.stok.tajwid}</span>`)}</main>`;
-P.paket = () => head('Paket & Harga') + `<main>${Object.keys(PRICE).map(k=>Object.keys(PRICE[k]).map(d=>card('tag',`${PNAME[k]} ${d} mnt`,`4 sesi · izin ${IZIN[k]} · ${k==='REG'?'auto-assign':'pilih dari 4 kandidat'}`,`<b>${rp(PRICE[k][d])}</b>`)).join('')).join('')}
-  ${card('plus','Biaya daftar','Sekali, santri baru',`<b>${rp(DAFTAR)}</b>`)}${card('box','Buku cetak','Add-on offline',`<b>${rp(BUKU)}</b>`)}</main>`;
+P.afiliasi = () => !modOn('afiliasi') ? head('Modul premium & afiliasi') + `<main>${lockBox('afiliasi')}</main>` :
+  head('Modul premium & afiliasi') + `<main>${[['Tahsin Premium (contoh)',99000],['Tajwid Lanjutan (contoh)',79000]].map(([n,v])=>{const l=`qec.id/a/${n.split(' ')[0].toLowerCase()}`;
+  return `<div class="card"><div class="row"><div class="ico">${svg('book')}</div><div class="grow"><div class="t">${n}</div><div class="m">${rp(v)} · komisi afiliasi ${rp(v*.3)} (30%)</div></div></div><div class="row" style="margin-top:10px"><span class="no">${l}</span>${copyBtn(l)}</div></div>`;}).join('')}</main>`;
+P.paket = () => { const c = CFG(), inp = (path,v) => `<input type="number" inputmode="numeric" data-cfg="${path}" value="${v}" min="0" step="1000">`;
+  return head('Paket & Harga') + `<main><div class="card form"><div class="t">Harga per 4 sesi</div><div class="formgrid">
+  ${Object.keys(c.price).map(k=>Object.keys(c.price[k]).map(d=>`<div><label class="f">${PNAME[k]} ${d} mnt</label>${inp(`price.${k}.${d}`,c.price[k][d])}</div>`).join('')).join('')}</div>
+  <div class="t" style="margin-top:16px">Gaji pokok mentor per 4 sesi</div><div class="formgrid">
+  ${Object.keys(c.pokok).map(k=>Object.keys(c.pokok[k]).map(d=>`<div><label class="f">${PNAME[k]} ${d} mnt</label>${inp(`pokok.${k}.${d}`,c.pokok[k][d])}</div>`).join('')).join('')}</div>
+  <div class="t" style="margin-top:16px">Lainnya</div><div class="formgrid">
+  ${Object.keys(c.bonus).map(k=>`<div><label class="f">Bonus retensi ${PNAME[k]}</label>${inp(`bonus.${k}`,c.bonus[k])}</div>`).join('')}
+  <div><label class="f">Biaya daftar</label>${inp('daftar',c.daftar)}</div><div><label class="f">Buku cetak</label>${inp('buku',c.buku)}</div></div>
+  <div style="margin-top:14px">${act('Simpan harga','saveCfg','ok')}</div></div></main>`; };
+P.pegawai = () => head('Pegawai & jabatan') + `<main><div class="card form">${act(`${svg('plus')}Tambah akun`,'addUser')}</div>
+  ${DB.users.filter(u=>u.role!=='superadmin').map(u=>`<button class="card row" style="width:100%;text-align:left;font:inherit;cursor:pointer" data-act="editUser" data-e="${esc(u.email)}"><div class="ico">${svg('user')}</div><div class="grow"><div class="t">${esc(u.nama)}</div><div class="m">${esc(u.email)}</div></div><span class="chip ${u.aktif?'':'bad'}">${u.aktif?ROLES[u.role].label:'Nonaktif'}</span></button>`).join('')}</main>`;
+P.pengumuman = () => head('Pengumuman') + `<main><div class="card form"><label class="f" for="annT">Tulis pengumuman</label><textarea id="annT" placeholder="contoh: Libur pengajian tanggal 25 Desember"></textarea>
+  <label class="check"><input type="checkbox" id="annP"> Sematkan sebagai Penting</label><label class="check"><input type="checkbox" id="annL"> Tampilkan di halaman masuk</label>
+  <div style="margin-top:8px">${act('Terbitkan','addAnn')}</div></div>
+  ${DB.ann.slice().reverse().map(a=>`<div class="card"><div class="row"><div class="ico">${svg('mega')}</div><div class="grow"><div class="t">${a.penting?'Penting':'Pengumuman'} · ${tgl(a.ts)}</div><div class="m">${esc(a.t)}</div></div><span class="chip ${a.on?'ok':''}">${a.on?'Tampil':'Mati'}</span></div>
+  <div class="btns">${act(a.on?'Matikan':'Nyalakan','togAnn','ghost sm',`data-id="${a.id}"`)}${act('Hapus','delAnn','bad sm',`data-id="${a.id}"`)}</div></div>`).join('')}</main>`;
+P.log = () => { const q = S.logQ.toLowerCase(), L = DB.log.filter(l=>!l.sa).slice().reverse().filter(l=>!q || (l.who+' '+l.t).toLowerCase().includes(q)).slice(0,150);
+  return head('Log aktivitas') + `<main><div class="card form" style="padding:10px"><input id="logQ" type="search" placeholder="Cari nama, santri, atau kegiatan…" value="${esc(S.logQ)}" aria-label="Cari log"></div>
+  ${L.map(l=>card('list',esc(l.t),`${esc(l.who)} · ${ROLES[l.role]?ROLES[l.role].label:l.role} · ${tgl(l.ts)} ${jam(l.ts)}`)).join('') || empty('Belum ada aktivitas')}</main>`; };
+P.pengaturan = () => { const c = CFG();
+  return head('Pengaturan') + `<main><div class="card form">
+  <label class="f" for="cfgU">Nama usaha</label><input id="cfgU" type="text" value="${esc(c.usaha)}">
+  <label class="f">Tema warna (semua pengguna)</label><div class="seg">${[['teal','Teal QEC'],['hitam','Hitam']].map(([v,l])=>`<button type="button" class="${c.theme===v?'on':''}" data-act="setTheme" data-v="${v}">${l}</button>`).join('')}</div>
+  <div class="formgrid"><div><label class="f" for="cfgB">Batas hari bonus retensi</label><input id="cfgB" type="number" value="${c.bonusHari}" min="1"></div>
+  <div><label class="f" for="cfgS">Batas hari sanksi mentor</label><input id="cfgS" type="number" value="${c.sanksiHari}" min="1"></div></div>
+  <div class="toggle"><span>Laporan WA otomatis ke owner ${modOn('waauto')?'':'<span class="chip mod" style="background:var(--warn-bg);color:var(--warn)">modul</span>'}</span><input type="checkbox" id="cfgW" ${c.wa?'checked':''} ${modOn('waauto')?'':'disabled'} aria-label="Laporan WA otomatis"></div>
+  <div style="margin-top:12px">${act('Simpan pengaturan','savePeng','ok')}</div></div></main>`; };
+P.modul = () => head('Menu tambahan') + `<main>${DB.modules.map(m=>`<div class="card"><div class="row"><div class="ico">${svg(m.on?'puzzle':'lock')}</div><div class="grow"><div class="t">${esc(m.n)}</div><div class="m">${esc(m.d)}</div></div>${m.on?(m.noRenew?'<span class="chip warn">Tidak lanjut</span>':'<span class="chip ok">Aktif</span>'):`<b>${rp(m.price)}</b>`}</div>
+  <div style="margin-top:12px">${m.on?act(m.noRenew?'Lanjutkan lagi':'Tidak lanjut','renew','ghost sm',`data-k="${m.k}"`):DB.bills.some(b=>b.k===m.k&&b.st==='belum')?'<a class="btn lihat sm" href="#tagihan">Menunggu pembayaran</a>':act('Buka sekarang','bukaModul','sm',`data-k="${m.k}"`)}</div></div>`).join('')}
+  <div class="demo">Menu yang terkunci tetap terlihat dengan gembok.</div></main>`;
+P.tagihan = () => { const bel = DB.bills.filter(b=>b.st==='belum'), lun = DB.bills.filter(b=>b.st==='lunas').slice(-3).reverse();
+  return head('Tagihan aplikasi') + `<main>${bel.map(b=>`<div class="card"><div class="row"><div class="ico">${svg('card')}</div><div class="grow"><div class="t">${esc(b.d)}</div><div class="m"><span class="no">${b.no}</span>${copyBtn(b.no)} · jatuh tempo ${tgl(b.due)}</div></div><b>${rp(b.v)}</b></div>
+  <div style="margin-top:12px">${act('Bayar sekarang','payBill','shake',`data-id="${b.id}"`)}</div></div>`).join('') || empty('Tidak ada tagihan')}
+  ${lun.length?`<div class="sec">Terakhir dibayar</div>${lun.map(b=>card('check',esc(b.d),`${b.no} · ${tgl(b.paidAt)}`,`<b>${rp(b.v)}</b>`)).join('')}`:''}</main>`; };
 P.lowongan = () => { const n = me().nama, list = DB.match.filter(m=>m.st!=='auto');
   return head('Lowongan Kelas') + `<main>${list.map(m=>{const ikut=m.bids.includes(n), penuh=m.bids.length>=4;
   return `<div class="card"><div class="row"><div class="ico">${svg('brief')}</div><div class="grow"><div class="t">${PNAME[m.p]} ${m.d} mnt</div><div class="m">${esc(m.area)} · ${esc(m.jadwal)}</div></div><span class="chip">${m.bids.length}/4</span></div>
@@ -534,7 +827,7 @@ P.kelasku = () => head('Kelas Saya') + `<main>${myKelasMentor().map(k=>`<div cla
 P.absen = () => { const ks = myKelasMentor(); if(!ks.length) return head('Absensi & Progres') + `<main>${empty('Belum ada kelas')}</main>`;
   if(!ks.find(k=>k.id===S.absen.kid)) S.absen.kid = ks[0].id;
   const k = ks.find(x=>x.id===S.absen.kid), st = S.absen.st, done = k.used>=k.tot;
-  return head('Absensi & Progres') + `<main><div class="card">
+  return head('Absensi & Progres') + `<main><div class="card form">
   <label class="f" for="kls">Kelas</label><select id="kls" data-act="pilihKelas">${ks.map(x=>`<option value="${x.id}" ${x.id===k.id?'selected':''}>${esc(x.n)} · sesi ${Math.min(x.used+1,x.tot)}/${x.tot}</option>`).join('')}</select>
   <label class="f">Kehadiran</label><div class="seg">${[['hadir','Hadir'],['izin','Izin'],['hangus','Hangus']].map(([v,l])=>`<button type="button" class="${st===v?'on':''}" data-act="absenSt" data-v="${v}">${l}</button>`).join('')}</div>
   <div class="m" style="margin-top:6px">Sisa izin ${kuota(k)-k.iz} dari ${kuota(k)}</div>
@@ -547,19 +840,43 @@ P.jadwal = () => { const k = myKelasSantri(); if(!k) return head('Jadwal') + `<m
   return head('Jadwal') + `<main>${Array.from({length:k.tot},(_,i)=>card('cal',`Sesi ${i+1}`,`${esc(k.m)} · ${i%2?'Kamis':'Senin'} 19.30`, i<k.used?'<span class="chip ok">Selesai</span>':'<span class="chip">Terjadwal</span>')).join('')}</main>`; };
 P.bayar = () => { const n = me().nama, L = DB.inv.filter(i=>i.n===n).slice().reverse();
   return head('Tagihan') + `<main>${L.map(x=>`<div class="card"><div class="row"><div class="ico">${svg('receipt')}</div><div class="grow"><div class="t">${esc(x.d)}</div><div class="m">${x.jenis==='perpanjang'?'Perpanjangan · tanpa biaya daftar':'Pendaftaran'}</div></div>${CHIP[x.st]}</div>
-  <div class="row" style="justify-content:space-between;margin-top:10px"><span class="tot">${rp(x.v)}</span></div>
+  <div class="row" style="justify-content:space-between;margin-top:10px"><span class="no">${esc(x.no||'')}${x.no?copyBtn(x.no):''}</span><span class="tot">${rp(x.v)}</span></div>
   ${x.st==='tunggu'?`<div style="margin-top:12px">${act('Bayar sekarang','bayarSantri','shake',`data-id="${x.id}"`)}</div>`:''}</div>`).join('') || empty('Tidak ada tagihan')}</main>`; };
 P.progres = () => { const k = myKelasSantri(), L = k ? DB.progres.filter(p=>p.kid===k.id).slice().reverse() : [];
   return head('Progres Belajar') + `<main>${L.map(p=>card('book',esc(p.txt.split(' — ')[0]),esc(p.txt.split(' — ')[1]||''))).join('') || empty('Belum ada laporan')}
   <div class="sec">E-modul gratis</div>${['Makhorijul Huruf','Tajwid','Shifatul Huruf'].map(x=>card('book',x,'PDF',act('Buka','toast','lihat mini',`data-msg="E-modul ${x} dibuka (contoh)"`))).join('')}</main>`; };
-P.lainnya = () => { const u = me(), ids = Object.keys(PAGES).filter(i=>!PAGES[i].hidden && can(i,u.role) && !ROLES[u.role].tabs.includes(i));
-  return head('Lainnya') + `<main>${ids.length?`<div class="sec">Menu</div>${shortcuts(ids)}`:''}
+P.notifikasi = () => { const ok = 'Notification' in window, perm = ok ? Notification.permission : 'tidak didukung';
+  return head('Notifikasi') + `<main><div class="card form">
+  ${card('bell','Notifikasi HP', perm==='granted'?'Diizinkan':perm==='denied'?'Diblokir — ubah di setelan browser/HP':ok?'Belum diizinkan':'Browser ini tidak mendukung', perm==='granted'?'<span class="chip ok">Aktif</span>':'<span class="chip warn">Mati</span>')}
+  <div class="btns">${act('Izinkan notifikasi','izinNotif','',perm==='granted'||!ok?'disabled':'')}${act('Tes notifikasi','tesNotif','lihat')}</div>
+  <div class="m" style="margin-top:12px">Agar notifikasi melayang saat aplikasi tertutup: Pengaturan HP › Notifikasi › ${esc(CFG().usaha)} › izinkan pop up / tampil di layar.</div></div>
+  <div class="sec">Notifikasi saya</div>${myNotif().slice(0,30).map(n=>card('bell',esc(n.t),lalu(n.ts))).join('') || empty('Belum ada notifikasi')}</main>`; };
+P.akun = () => { const u = me();
+  return head('Akun saya') + `<main><div class="card form">
+  <label class="f" for="akN">Nama</label><input id="akN" type="text" value="${esc(u.nama)}">
+  <label class="f" for="akO">Password lama</label><input id="akO" type="password" autocomplete="current-password">
+  <label class="f" for="akP">Password baru</label><input id="akP" type="password" autocomplete="new-password" placeholder="kosongkan kalau tidak diganti">
+  <div style="margin-top:12px">${act('Simpan','saveAkun','ok')}</div></div>
+  <div class="card form">${card('phone','Pasang aplikasi','Android: menu browser › Pasang aplikasi. iPhone: Safari › Bagikan › Tambah ke Layar Utama.')}</div>
+  <div class="demo">${esc(u.email)} · ${ROLES[u.role].label} · versi ${APP_VERSION}</div></main>`; };
+P.panduan = () => { const role = me().role, ids = Object.keys(PAGES).filter(i=>can(i,role) && HELP[i]);
+  return head('Panduan aplikasi') + `<main>${ids.map(i=>card(PAGES[i].icon, PAGES[i].label, HELP[i], `<a class="btn lihat mini" href="#${i}">Buka</a>`)).join('')}</main>`; };
+P.lainnya = () => { const u = me(), tabs = myTabs(), q = S.menuQ||'', groups = menuGroups(q);
+  let list = ''; for(const g in groups){ const ids = groups[g].map(x=>x[0]).filter(i=>!tabs.includes(i)); if(ids.length) list += `<div class="sec">${g}</div>${shortcuts(ids)}`; }
+  return head('Lainnya') + `<main><div class="card form" style="padding:10px"><input id="menuQ" type="search" placeholder="Cari menu…" value="${esc(q)}" aria-label="Cari menu"></div>${list || empty('Menu tidak ditemukan')}
   <div class="sec">Akun</div>
-  <div class="card">${card('user',esc(u.nama),esc(u.email))}
-  ${act(`${svg('sun')}Tema: ${theme==='teal'?'Teal QEC':'Hitam'}`,'theme','ghost')}<div style="height:8px"></div>
-  ${u.role==='owner'?act('Reset data contoh','reset','ghost')+'<div style="height:8px"></div>':''}
+  <div class="card form">${card('user',esc(u.nama),esc(u.email))}
+  ${act(`${svg('grid')}Atur menu bawah`,'aturMenu','ghost')}<div style="height:8px"></div>
   ${act(`${svg('out')}Keluar`,'logout','bad')}</div>
-  <div class="demo">Versi demo · data tersimpan di browser ini</div></main>`; };
+  <div class="demo">Versi ${APP_VERSION} · data contoh tersimpan di browser ini</div></main>`; };
+/* super admin */
+P.sa = () => head('Super admin', `<div class="hero"><div class="kpis"><div class="kpi"><b>${DB.users.filter(u=>u.aktif).length}</b><span>Pengguna aktif</span></div><div class="kpi"><b>${DB.modules.filter(m=>m.on).length}/${DB.modules.length}</b><span>Modul aktif</span></div><div class="kpi"><b>${DB.bills.filter(b=>b.st==='belum').length}</b><span>Tagihan belum lunas</span></div><div class="kpi"><b>${DB.log.length}</b><span>Baris log</span></div></div></div>`) +
+  `<main>${shortcuts(['sa_jabatan','sa_modul','sa_alat'])}<div class="sec">Aktivitas super admin</div>${DB.log.filter(l=>l.sa).slice(-10).reverse().map(l=>card('shield',esc(l.t),`${tgl(l.ts)} ${jam(l.ts)}`)).join('') || empty('Belum ada')}</main>`;
+P.sa_jabatan = () => head('Masuk sebagai jabatan') + `<main>${DB.users.filter(u=>u.role!=='superadmin' && u.aktif).map(u=>card('user',esc(u.nama),`${ROLES[u.role].label} · ${esc(u.email)}`,act('Masuk','saAs','mini',`data-e="${esc(u.email)}"`))).join('')}</main>`;
+P.sa_modul = () => head('Menu & harga modul') + `<main>${DB.modules.map(m=>`<div class="card"><div class="t">${esc(m.n)}</div><div class="m">${esc(m.d)}</div>
+  <div class="formgrid"><div><label class="f">Harga / bulan</label><input type="number" data-modp="${m.k}" value="${m.price}" step="1000"></div><div><label class="f">Status</label><div class="seg"><button type="button" class="${m.on?'on':''}" data-act="saMod" data-k="${m.k}" data-v="1">Aktif</button><button type="button" class="${m.on?'':'on'}" data-act="saMod" data-k="${m.k}" data-v="0">Terkunci</button></div></div></div></div>`).join('')}
+  ${act('Simpan harga modul','saSaveMod','ok')}</main>`;
+P.sa_alat = () => head('Alat & data') + `<main>${card('card','Buat tagihan bulanan','Tagihan langganan untuk owner',act('Buat','saBill','mini'))}${card('refresh','Data contoh','Kembalikan semua data ke awal (DEMO)',act('Reset','reset','bad mini'))}${card('list','Hapus log','Kosongkan log aktivitas',act('Hapus','saClearLog','ghost mini'))}</main>`;
 
 /* ===================== pop up & toast ===================== */
 function openPop(html){
@@ -577,22 +894,28 @@ function toast(msg){
     document.body.appendChild(t); }
   t.textContent = msg; t.style.display='block'; clearTimeout(toastT); toastT = setTimeout(()=>t.style.display='none', 2600);
 }
+const roleSelect = (sel) => `<select id="uR">${Object.keys(ROLES).filter(r=>r!=='superadmin').map(r=>`<option value="${r}" ${r===sel?'selected':''}>${ROLES[r].label}</option>`).join('')}</select>`;
 
 /* ===================== router ===================== */
+let curPage = 'beranda';
 function render(){
-  document.documentElement.dataset.theme = theme;
-  document.querySelector('meta[name=theme-color]').content = theme==='teal' ? '#0E8A88' : '#1E2120';
+  document.documentElement.dataset.theme = CFG().theme;
+  document.querySelector('meta[name=theme-color]').content = CFG().theme==='teal' ? '#0E8A88' : '#1E2120';
   const app = document.getElementById('app'), side = document.getElementById('side');
-  if(!me()){ side.style.display='none'; app.innerHTML = loginView(); return; }
+  const u = me();
+  if(!u){ side.style.display='none'; app.innerHTML = loginView(); return; }
   side.style.display='';
   let id = location.hash.replace('#','') || 'beranda';
-  if(!P[id] || !can(id, me().role)) id = 'beranda';
+  if(u.role==='superadmin' && id==='beranda') id = 'sa';
+  if(!P[id] || !can(id, u.role)) id = u.role==='superadmin' ? 'sa' : 'beranda';
+  curPage = id;
   app.innerHTML = P[id]() + tabsBar(id);
   side.innerHTML = sideBar(id);
 }
 window.addEventListener('hashchange', () => { render(); window.scrollTo(0,0); });
 const go = id => { if(location.hash === '#'+id) render(); else location.hash = '#'+id; };
-const done = msg => { save(); closePop(); render(); if(msg) toast(msg); };
+const done = msg => { if(msg) log(msg); save(); closePop(); render(); if(msg) toast(msg); };
+function refocus(id){ const el = document.getElementById(id); if(el){ el.focus(); const v = el.value; el.setSelectionRange && el.setSelectionRange(v.length, v.length); } }
 
 /* ===================== aksi ===================== */
 document.addEventListener('submit', e => {
@@ -600,20 +923,29 @@ document.addEventListener('submit', e => {
   e.preventDefault();
   const em = document.getElementById('em').value.trim().toLowerCase(), pw = document.getElementById('pw').value;
   S.email = em; S.pass = pw;
-  const a = ACCOUNTS.find(x => x.email === em && x.pass === pw);
   if(!em || !pw){ S.err = 'Isi email dan password.'; return render(); }
+  const a = DB.users.find(x => x.email === em && x.pass === pw);
   if(!a){ S.err = 'Email atau password salah.'; return render(); }
-  S.err = ''; S.pass = ''; session = {email:a.email}; store.set('qec_session', session);
-  location.hash = '#beranda'; render(); toast(`Assalamu'alaikum, ${a.nama}`);
+  if(!a.aktif){ S.err = 'Akun ini sudah dinonaktifkan owner.'; return render(); }
+  S.err = ''; S.pass = ''; session = {email:a.email}; store.set('qec_session2', session);
+  location.hash = a.role==='superadmin' ? '#sa' : '#beranda'; log('Masuk ke aplikasi'); save(); render(); toast(`Assalamu'alaikum, ${a.nama}`);
 });
 document.addEventListener('input', e => {
-  const b = e.target.dataset.bind; if(b) S.calc[b] = e.target.value;
-  if(e.target.id==='em') S.email = e.target.value; if(e.target.id==='pw') S.pass = e.target.value;
+  const t = e.target, b = t.dataset.bind; if(b) S.calc[b] = t.value;
+  if(t.id==='em') S.email = t.value; if(t.id==='pw') S.pass = t.value;
+  if(t.id==='sideQ'){ S.sideQ = t.value; document.getElementById('side').innerHTML = sideBar(curPage); refocus('sideQ'); }
+  if(t.id==='menuQ'){ S.menuQ = t.value; render(); refocus('menuQ'); }
+  if(t.id==='logQ'){ S.logQ = t.value; render(); refocus('logQ'); }
+  if(t.id==='santriQ'){ S.santriQ = t.value; render(); refocus('santriQ'); }
 });
 document.addEventListener('change', e => {
   const el = e.target;
   if(el.dataset.act==='calcb'){ S.calc[el.dataset.k] = el.checked; render(); }
   if(el.dataset.act==='pilihKelas'){ S.absen.kid = Number(el.value); render(); }
+});
+document.addEventListener('keydown', e => {
+  if(e.key==='/' && !e.target.closest('input,textarea,select') && document.getElementById('sideQ') && innerWidth>=960){ e.preventDefault(); document.getElementById('sideQ').focus(); }
+  if(e.key==='Escape') closePop();
 });
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if(!el || el.disabled) return;
@@ -623,50 +955,76 @@ document.addEventListener('click', e => {
     case 'close': if(e.target===el) closePop(); return;
     case 'toast': closePop(); toast(el.dataset.msg); return;
     case 'showpw': S.showPw = !S.showPw; render(); return;
-    case 'fill': { const x = ACCOUNTS.find(y=>y.email===el.dataset.e); S.email = x.email; S.pass = x.pass; S.err=''; render(); return; }
-    case 'logout': { session = null; store.del('qec_session'); S.email=''; S.pass=''; S.err=''; closePop(); const t=document.getElementById('toast'); if(t) t.style.display='none'; history.replaceState(null,'',location.pathname); render(); window.scrollTo(0,0); return; }
-    case 'akun': openPop(`<h2>${esc(u.nama)}</h2><div class="m" style="margin-bottom:14px">${esc(u.email)} · ${ROLES[u.role].label}</div>${act(`${svg('out')}Keluar`,'logout','bad')}`); return;
-    case 'theme': theme = theme==='teal'?'hitam':'teal'; try{ localStorage.setItem('qec_theme',theme); }catch(_){} render(); return;
-    case 'reset': DB = seed(); return done('Data contoh dikembalikan');
+    case 'fill': { const x = DB.users.find(y=>y.email===el.dataset.e); S.email = x.email; S.pass = x.pass; S.err=''; render(); return; }
+    case 'pasang': openPop(`<h2>Pasang aplikasi</h2>${card('phone','Android (Chrome)','Menu ⋮ › Pasang aplikasi / Tambahkan ke layar utama')}${card('phone','iPhone (Safari)','Tombol Bagikan › Tambah ke Layar Utama')}<div class="demo">Setelah dipasang, aplikasi terbuka penuh tanpa baris alamat.</div>`); return;
+    case 'logout': { log('Keluar dari aplikasi'); save(); session = null; store.del('qec_session2'); S.email=''; S.pass=''; S.err=''; closePop(); const t=document.getElementById('toast'); if(t) t.style.display='none'; history.replaceState(null,'',location.pathname); render(); window.scrollTo(0,0); return; }
+    case 'akunPop': openPop(`<h2>${esc(u.nama)}</h2><div class="m" style="margin-bottom:14px">${esc(u.email)} · ${ROLES[u.role].label}</div><a class="btn ghost" href="#akun" data-act="close2">${svg('user')}Akun saya</a><div style="height:8px"></div>${act(`${svg('out')}Keluar`,'logout','bad')}`); return;
+    case 'close2': closePop(); return;
+    case 'help': { const p = PAGES[curPage]; openPop(`<h2>${svg('help').replace('<svg','<svg style="width:22px;height:22px;vertical-align:-4px;margin-right:6px;color:var(--pri)"')}${p.label}</h2><p style="margin:0 0 14px;line-height:1.6">${HELP[curPage]||'—'}</p><a class="btn lihat" href="#panduan" data-act="close2">Lihat panduan semua halaman</a>`); return; }
+    case 'lonceng': { const L = myNotif().slice(0,20);
+      openPop(`<div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">Notifikasi</h2>${L.length?`<button class="btn lihat mini" data-act="readAll">Tandai dibaca</button>`:''}</div>
+      ${L.map(n=>`<div class="notif-item ${n.read.includes(u.email)?'':'unread'}"><div class="ico">${svg('bell')}</div><div class="grow"><div class="t" style="font-size:14px">${esc(n.t)}</div><div class="m">${lalu(n.ts)}</div></div></div>`).join('') || empty('Belum ada notifikasi')}
+      <div style="margin-top:12px"><a class="btn ghost" href="#notifikasi" data-act="close2">Pengaturan notifikasi</a></div>`); return; }
+    case 'readAll': myNotif().forEach(n=>{ if(!n.read.includes(u.email)) n.read.push(u.email); }); save(); closePop(); render(); return;
+    case 'copy': { const v = el.dataset.v; try{ navigator.clipboard.writeText(v).then(()=>toast(`${v} tersalin`), ()=>toast(v)); }catch(_){ toast(v); } return; }
+    case 'fold': { const g = el.dataset.g; S.shut = S.shut.includes(g) ? S.shut.filter(x=>x!==g) : S.shut.concat(g); store.set('qec_shut', S.shut); document.getElementById('side').innerHTML = sideBar(curPage); return; }
+    case 'aturMenu': { const role = u.role, cur = myTabs().filter(x=>x!=='lainnya'), all = Object.keys(PAGES).filter(i=>!PAGES[i].hidden && can(i,role));
+      S.pickT = cur.slice();
+      const draw = () => openPop(`<h2>Atur menu bawah</h2><div class="m" style="margin-bottom:8px">Pilih maksimal 4 menu. Menu ke-3 tampil di lengkungan. "Lainnya" selalu di akhir.</div>
+        <div class="card">${all.map(i=>{const k=S.pickT.indexOf(i);return `<label class="pick"><input type="checkbox" data-act="pickT" data-v="${i}" ${k>=0?'checked':''} ${k<0&&S.pickT.length>=4?'disabled':''} style="width:22px;height:22px;accent-color:var(--pri)"><span class="grow" style="flex:1">${PAGES[i].label}</span>${k>=0?`<span class="ord">${k+1}</span>`:''}</label>`;}).join('')}</div>
+        <div class="btns">${act('Bawaan','resetTabs','ghost')}${act('Simpan','saveTabs','ok',S.pickT.length?'':'disabled')}</div>`);
+      window._drawPick = draw; draw(); return; }
+    case 'pickT': { const v = el.dataset.v; S.pickT = S.pickT.includes(v) ? S.pickT.filter(x=>x!==v) : (S.pickT.length<4 ? S.pickT.concat(v) : S.pickT); window._drawPick(); return; }
+    case 'saveTabs': { const usr = DB.users.find(x=>x.email===u.email); usr.tabs = S.pickT.slice(); return done('Menu bawah diatur ulang'); }
+    case 'resetTabs': { const usr = DB.users.find(x=>x.email===u.email); delete usr.tabs; return done('Menu bawah kembali ke bawaan'); }
+    case 'per': S.per = el.dataset.v; render(); return;
+    case 'reset': DB = seed(); session = {email:realUser()?realUser().email:'superadmin@qec.id'}; store.set('qec_session2', session); save(); closePop(); render(); return toast('Data contoh dikembalikan');
     case 'leadF': S.leadF = el.dataset.v; render(); return;
     case 'invF': S.invF = el.dataset.v; render(); return;
-    case 'leadReply': { const l = DB.leads.find(x=>x.id===id); l.st='harga'; return done('Ditandai sudah dibalas'); }
+    case 'leadReply': { const l = DB.leads.find(x=>x.id===id); l.st='harga'; return done(`Lead ${l.n} ditandai sudah dibalas`); }
     case 'leadInv': { const l = DB.leads.find(x=>x.id===id); S.calc.nama = l.n; S.calc.baru = true; go('daftar'); return; }
     case 'calc': { const k = el.dataset.k; S.calc[k] = k==='p' ? el.dataset.v : Number(el.dataset.v); render(); return; }
     case 'kirimInv': {
       const c = S.calc, nama = c.nama.trim(); if(!nama){ toast('Isi nama santri dulu'); document.getElementById('nama').focus(); return; }
-      const h = hitung(c);
+      const h = hitung(c), no = invNo();
       const d = `${PNAME[c.p]} ${c.d} mnt · ${c.s} sesi${h.disc?` − ${Math.round(h.disc*100)}%`:''}${h.reg?' + daftar':''}${h.bk?' + buku':''}`;
-      DB.inv.push({id:nid(), n:nama, d, v:h.tot, st:'tunggu', jenis:'baru', meta:{p:c.p,d:c.d,s:c.s,buku:!!h.bk}});
-      const l = DB.leads.find(x=>x.n===nama); if(l) l.st='invoice'; else DB.leads.push({id:nid(), n:nama, s:'Input admin', q:`${PNAME[c.p]} ${c.d} mnt`, st:'invoice', t:'baru saja'});
-      S.calc.nama = ''; return done(`Invoice ${rp(h.tot)} dikirim ke WA ${nama} (simulasi)`);
+      DB.inv.push({id:nid(), no, n:nama, d, v:h.tot, st:'tunggu', jenis:'baru', p:c.p, ts:now(), meta:{p:c.p,d:c.d,s:c.s,buku:!!h.bk}});
+      const l = DB.leads.find(x=>x.n===nama); if(l) l.st='invoice'; else DB.leads.push({id:nid(), n:nama, s:'Input admin', q:`${PNAME[c.p]} ${c.d} mnt`, st:'invoice', ts:now()});
+      notify(['owner','keuangan'], `Invoice baru ${rp(h.tot)} untuk ${nama}`);
+      S.calc.nama = ''; return done(`Invoice ${no} ${rp(h.tot)} dikirim ke WA ${nama} (simulasi)`);
     }
+    case 'ingat': { const v = V(); return done(`Pengingat bayar ${v.no} dikirim ke WA ${v.n} (simulasi)`); }
     case 'lunas': case 'bayarSantri': {
-      const v = V(); if(!v || v.st==='lunas') return; v.st = 'lunas';
+      const v = V(); if(!v || v.st==='lunas') return; v.st = 'lunas'; v.paid = now();
+      notify(['owner','keuangan'], `${v.no} ${rp(v.v)} dari ${v.n} sudah lunas`);
       if(v.jenis==='baru' && v.meta){
-        DB.match.push({id:nid(), n:v.n, p:v.meta.p, d:v.meta.d, s:v.meta.s, area:v.meta.p==='OFF'?'Surabaya (offline)':'Online', jadwal:'Sesuai permintaan', st:v.meta.p==='REG'?'auto':'cari', bids:[]});
+        const m = {id:nid(), n:v.n, p:v.meta.p, d:v.meta.d, s:v.meta.s, area:v.meta.p==='OFF'?'Surabaya (offline)':'Online', jadwal:'Sesuai permintaan', st:v.meta.p==='REG'?'auto':'cari', bids:[]};
+        DB.match.push(m);
         if(v.meta.buku) DB.stok.iqro = Math.max(0, DB.stok.iqro-1);
         const l = DB.leads.find(x=>x.n===v.n); if(l) l.st='lunas';
-        return done(a==='bayarSantri' ? 'Pembayaran berhasil (simulasi). E-modul gratis terkirim.' : 'Lunas · jurnal tercatat · e-modul terkirim · lowongan di-broadcast');
+        if(m.st!=='auto') notify(['mentor'], `Lowongan baru: ${PNAME[m.p]} ${m.d} · ${m.area}`);
+        notify(['cs'], `${v.n} lunas, menunggu mentor`);
+        return done(a==='bayarSantri' ? `Pembayaran ${v.no} berhasil (simulasi). E-modul gratis terkirim.` : `${v.no} lunas · jurnal tercatat · e-modul terkirim · lowongan di-broadcast`);
       }
       if(v.jenis==='perpanjang'){
         const k = DB.kelas.find(x=>x.id===v.meta.kid);
-        if(k){ tutupKontrak(k, true); Object.assign(k, {used:0, iz:0, hari:0}); }
-        return done('Lunas · kontrak baru dimulai · gaji mentor tercatat');
+        if(k){ tutupKontrak(k, true); Object.assign(k, {used:0, iz:0, hari:0}); notify([], `Kontrak ${k.n} diperpanjang, gaji tercatat`, k.m); }
+        return done(`${v.no} lunas · kontrak baru ${v.n} dimulai · gaji mentor tercatat`);
       }
-      return done('Ditandai lunas');
+      return done(`${v.no} ditandai lunas`);
     }
     case 'broadcast': {
       const m = M(), cand = DB.mentors.filter(x=>x.st==='aktif' && !m.bids.includes(x.n) && x.n!=='Ustadzah Aisyah');
       if(m.bids.length>=4) return toast('Sudah 4 kandidat terkunci');
       if(!cand.length) return toast('Tidak ada mentor lain yang tersedia');
       m.bids.push(cand[0].n); if(m.bids.length>=4) m.st='pilih';
-      return done(`${cand[0].n} menyatakan minat (simulasi)`);
+      return done(`Broadcast ulang ${m.n}: ${cand[0].n} menyatakan minat (simulasi)`);
     }
     case 'minat': {
       const m = M(); if(!m || m.bids.includes(u.nama) || m.bids.length>=4) return;
       m.bids.push(u.nama); if(m.bids.length>=4 && m.st!=='auto') m.st='pilih';
-      return done('Minat terkirim. Profil & voice note Anda ikut dikirim ke santri.');
+      notify(['owner','cs'], `${u.nama} minat ke lowongan ${m.n} (${m.bids.length}/4)`);
+      return done(`Minat ke lowongan ${m.n} terkirim`);
     }
     case 'kandidat': {
       const m = M();
@@ -680,40 +1038,99 @@ document.addEventListener('click', e => {
       if(a==='tetapkan'){ const free = DB.mentors.filter(x=>x.st==='aktif').map(x=>({x, load:aktif().filter(k=>k.m===x.n).length})).sort((p,q)=>p.load-q.load || q.x.s-p.x.s); n = free[0].x.n; }
       DB.kelas.push({id:nid(), n:m.n, m:n, p:m.p, d:m.d, used:0, tot:m.s, iz:0, hari:0, st:'aktif'});
       DB.match = DB.match.filter(x=>x.id!==m.id);
-      return done(`${n} ditetapkan · jadwal dibuat · grup kelas dibuat (simulasi)`);
+      notify([], `Anda ditetapkan sebagai mentor ${m.n}`, n);
+      return done(`${n} ditetapkan untuk ${m.n} · jadwal & grup kelas dibuat (simulasi)`);
     }
     case 'toAbsen': S.absen.kid = id; S.absen.st='hadir'; go('absen'); return;
     case 'absenSt': S.absen.st = el.dataset.v; render(); return;
     case 'simpanAbsen': {
       const k = DB.kelas.find(x=>x.id===S.absen.kid), st = S.absen.st, mat = (document.getElementById('materi').value||'').trim();
-      if(st==='izin'){ if(k.iz >= kuota(k)) return toast('Kuota izin habis — sesi dihitung hangus'); k.iz++; k.hari += 3; return done('Izin dicatat · sesi digeser'); }
+      if(st==='izin'){ if(k.iz >= kuota(k)) return toast('Kuota izin habis — sesi dihitung hangus'); k.iz++; k.hari += 3; return done(`Izin ${k.n} dicatat · sesi digeser`); }
       k.used = Math.min(k.tot, k.used+1); k.hari += 3;
       DB.progres.push({kid:k.id, txt:`Sesi ${k.used} · ${st==='hangus'?'Hangus':'Hadir'} — ${mat || (st==='hangus'?'santri tidak hadir':'tanpa catatan')}`});
+      notify([], `Laporan progres sesi ${k.used} sudah diisi mentor`, k.n);
       const sisa = k.tot - k.used;
-      return done(sisa<=1 ? `Tersimpan · sisa ${sisa} sesi → alert perpanjangan ke admin` : 'Tersimpan · laporan progres terkirim ke santri');
+      if(sisa<=1) notify(['owner','cs'], `${k.n}: sisa ${sisa} sesi, siapkan perpanjangan`);
+      return done(sisa<=1 ? `Absen ${k.n} tersimpan · sisa ${sisa} sesi → alert perpanjangan` : `Absen ${k.n} tersimpan · progres terkirim ke santri`);
     }
     case 'riwayat': { const L = DB.progres.filter(p=>p.kid===id); openPop(`<h2>Riwayat progres</h2>${L.slice().reverse().map(p=>card('book',esc(p.txt.split(' — ')[0]),esc(p.txt.split(' — ')[1]||''))).join('') || empty('Belum ada catatan')}`); return; }
-    case 'izin': {
-      const k = myKelasSantri(); if(!k) return;
-      openPop(`<h2>Ajukan izin</h2><div class="card"><div class="t">Sesi ${Math.min(k.used+1,k.tot)}</div><div class="m">Sisa kuota izin: ${kuota(k)-k.iz} · sesi digeser, tidak hangus</div></div>${act('Kirim izin','kirimIzin','ok')}`); return;
-    }
-    case 'kirimIzin': { const k = myKelasSantri(); if(k.iz >= kuota(k)) { closePop(); return toast('Ditolak otomatis: kuota izin habis'); } k.iz++; return done(`Izin disetujui otomatis · sisa ${kuota(k)-k.iz}`); }
-    case 'mintaPerp': return toast('Permintaan perpanjangan dikirim ke admin');
+    case 'izin': { const k = myKelasSantri(); if(!k) return;
+      openPop(`<h2>Ajukan izin</h2><div class="card"><div class="t">Sesi ${Math.min(k.used+1,k.tot)}</div><div class="m">Sisa kuota izin: ${kuota(k)-k.iz} · sesi digeser, tidak hangus</div></div>${act('Kirim izin','kirimIzin','ok')}`); return; }
+    case 'kirimIzin': { const k = myKelasSantri(); if(k.iz >= kuota(k)) { closePop(); return toast('Ditolak otomatis: kuota izin habis'); } k.iz++; notify([], `${k.n} izin untuk sesi berikutnya`, k.m); return done(`Izin disetujui otomatis · sisa ${kuota(k)-k.iz}`); }
+    case 'reschedule': { const k = myKelasSantri(); notify([], `${k.n} minta reschedule sesi berikutnya`, k.m); return done('Permintaan reschedule dikirim ke mentor'); }
+    case 'mintaPerp': notify(['owner','cs'], `${u.nama} minta perpanjangan paket`); return done('Permintaan perpanjangan dikirim ke admin');
     case 'kirimPerp': {
-      const k = K(), h = hitung({p:k.p,d:k.d,s:k.tot,baru:false});
-      DB.inv.push({id:nid(), n:k.n, d:`${PNAME[k.p]} ${k.d} mnt · ${k.tot} sesi${h.disc?' − 5%':''}`, v:h.tot, st:'tunggu', jenis:'perpanjang', meta:{kid:k.id}});
-      return done(`Invoice perpanjangan ${rp(h.tot)} dikirim ke WA ${k.n} (simulasi)`);
+      const k = K(), h = hitung({p:k.p,d:k.d,s:k.tot,baru:false}), no = invNo();
+      DB.inv.push({id:nid(), no, n:k.n, d:`${PNAME[k.p]} ${k.d} mnt · ${k.tot} sesi${h.disc?' − 5%':''}`, v:h.tot, st:'tunggu', jenis:'perpanjang', p:k.p, ts:now(), meta:{kid:k.id}});
+      notify([], `Tagihan perpanjangan ${rp(h.tot)} siap dibayar`, k.n);
+      return done(`Invoice perpanjangan ${no} ${rp(h.tot)} dikirim ke WA ${k.n} (simulasi)`);
     }
-    case 'stop': { const k = K(); tutupKontrak(k, false); k.st='berhenti'; return done('Santri berhenti · pesan maaf + link testimoni terkirim'); }
-    case 'bayarGaji': { DB.pay.forEach(p=>{ if(p.st==='belum') p.st='dibayar'; }); return done('Gaji dibayar · slip dikirim ke WA mentor (simulasi)'); }
+    case 'stop': { const k = K(); tutupKontrak(k, false); k.st='berhenti'; if(modOn('komplain')) DB.komplain.push({id:nid(), n:k.n, t:'Link testimoni terkirim, menunggu isian', testi:true}); return done(`${k.n} berhenti · pesan maaf + link testimoni terkirim`); }
+    case 'bayarGaji': { const L = DB.pay.filter(p=>p.st==='belum'); L.forEach(p=>{ p.st='dibayar'; notify([], `Gaji ${rp(p.pk+p.b)} sudah ditransfer`, p.n); }); return done(`${L.length} gaji mentor dibayar · slip dikirim ke WA (simulasi)`); }
     case 'blokir': { const x = DB.mentors.find(y=>y.n===el.dataset.n); x.st='blokir'; x.calonBlokir=false; return done(`${x.n} diblokir · tidak menerima lowongan`); }
-    case 'mentorOk': { const x = DB.mentors.find(y=>y.n===el.dataset.n); x.calonBlokir=false; return done(`${x.n} tetap aktif`); }
+    case 'resolve': { DB.resolved.push(el.dataset.key); return done('Masalah ditandai sudah ditangani'); }
+    case 'gotoMasalah': { const k = el.dataset.key; go(k.startsWith('sepi')?'matching':'kelas'); return; }
+    case 'addKomplain': { const n = document.getElementById('kpn').value.trim(), t = document.getElementById('kpi').value.trim(), testi = document.getElementById('kpt').checked;
+      if(!n||!t) return toast('Isi nama dan isinya dulu'); DB.komplain.push({id:nid(), n, t, testi, done:false}); if(!testi) notify(['owner'], `Komplain baru dari ${n}`); return done(`${testi?'Testimoni':'Komplain'} ${n} dicatat`); }
+    case 'doneKomplain': { const x = DB.komplain.find(y=>y.id===id); x.done=true; return done(`Komplain ${x.n} selesai`); }
     case 'csv': {
-      const rows = [['Tanggal','Santri','Rincian','Jenis','Jumlah','Status']].concat(DB.inv.map(i=>[new Date().toISOString().slice(0,10), i.n, i.d, i.jenis, Math.round(i.v), i.st]));
+      const rows = [['No','Tanggal','Santri','Rincian','Jenis','Jumlah','Status']].concat(DB.inv.map(i=>[i.no||'', new Date(i.ts||now()).toISOString().slice(0,10), i.n, i.d, i.jenis, Math.round(i.v), i.st]));
       const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
       const aEl = document.createElement('a'); aEl.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); aEl.download = 'rekap-qec.csv'; document.body.appendChild(aEl); aEl.click(); aEl.remove();
-      toast('Rekap diunduh'); return;
+      log('Unduh rekap CSV'); save(); toast('Rekap diunduh'); return;
     }
+    /* owner: pengaturan & data */
+    case 'saveCfg': { document.querySelectorAll('[data-cfg]').forEach(inp=>{ const path = inp.dataset.cfg.split('.'), v = Math.max(0, Number(inp.value)||0); let o = DB.settings; for(let i=0;i<path.length-1;i++) o = o[path[i]]; o[path.at(-1)] = v; }); return done('Harga paket & gaji mentor diperbarui'); }
+    case 'setTheme': DB.settings.theme = el.dataset.v; return done(`Tema diganti ke ${el.dataset.v==='teal'?'Teal QEC':'Hitam'}`);
+    case 'savePeng': { const c = DB.settings; c.usaha = document.getElementById('cfgU').value.trim() || c.usaha; c.bonusHari = Math.max(1, Number(document.getElementById('cfgB').value)||40); c.sanksiHari = Math.max(c.bonusHari+1, Number(document.getElementById('cfgS').value)||60); const w = document.getElementById('cfgW'); if(!w.disabled) c.wa = w.checked; return done('Pengaturan disimpan'); }
+    case 'addUser': openPop(`<h2>Tambah akun</h2><label class="f" for="uN">Nama</label><input id="uN" type="text" placeholder="contoh: Ustadzah Salma">
+      <label class="f" for="uE">Email</label><input id="uE" type="email" placeholder="nama@qec.id"><label class="f" for="uP">Password awal</label><input id="uP" type="text" placeholder="minimal 6 karakter">
+      <label class="f" for="uR">Jabatan</label>${roleSelect('mentor')}<div style="margin-top:14px">${act('Buat akun','saveUser','ok')}</div>`); return;
+    case 'saveUser': { const n = document.getElementById('uN').value.trim(), em = document.getElementById('uE').value.trim().toLowerCase(), pw = document.getElementById('uP').value, r = document.getElementById('uR').value;
+      if(!n || !/^\S+@\S+\.\S+$/.test(em) || pw.length<6) return toast('Isi nama, email yang benar, dan password minimal 6 karakter');
+      if(DB.users.some(x=>x.email===em)) return toast('Email sudah dipakai');
+      DB.users.push({email:em, pass:pw, role:r, nama:n, aktif:true});
+      if(r==='mentor' && !DB.mentors.some(x=>x.n===n)) DB.mentors.push({n, a:'Mentor baru', s:4.5, st:'aktif'});
+      return done(`Akun ${n} (${ROLES[r].label}) dibuat`); }
+    case 'editUser': { const x = DB.users.find(y=>y.email===el.dataset.e);
+      openPop(`<h2>${esc(x.nama)}</h2><div class="m" style="margin-bottom:6px">${esc(x.email)}</div><label class="f" for="uR">Jabatan</label>${roleSelect(x.role)}
+      <label class="f" for="uP2">Reset password</label><input id="uP2" type="text" placeholder="kosongkan kalau tidak diganti">
+      <div class="btns">${act(x.aktif?'Nonaktifkan':'Aktifkan','togUser',x.aktif?'bad':'ok',`data-e="${esc(x.email)}"`)}${act('Simpan','updUser','',`data-e="${esc(x.email)}"`)}</div>`); return; }
+    case 'updUser': { const x = DB.users.find(y=>y.email===el.dataset.e), r = document.getElementById('uR').value, pw = document.getElementById('uP2').value;
+      if(x.email===u.email && r!=='owner') return toast('Tidak bisa mengubah jabatan akun sendiri');
+      x.role = r; if(pw){ if(pw.length<6) return toast('Password minimal 6 karakter'); x.pass = pw; } delete x.tabs;
+      if(r==='mentor' && !DB.mentors.some(m=>m.n===x.nama)) DB.mentors.push({n:x.nama, a:'Mentor baru', s:4.5, st:'aktif'});
+      return done(`Akun ${x.nama} diperbarui (${ROLES[r].label})`); }
+    case 'togUser': { const x = DB.users.find(y=>y.email===el.dataset.e); if(x.email===u.email) return toast('Tidak bisa menonaktifkan akun sendiri'); x.aktif = !x.aktif; return done(`Akun ${x.nama} ${x.aktif?'diaktifkan':'dinonaktifkan'}`); }
+    case 'addAnn': { const t = document.getElementById('annT').value.trim(); if(!t) return toast('Tulis pengumumannya dulu');
+      DB.ann.push({id:nid(), t, penting:document.getElementById('annP').checked, on:true, login:document.getElementById('annL').checked, ts:now()});
+      notify(['owner','keuangan','cs','mentor','santri'], `Pengumuman: ${t.slice(0,60)}`); return done('Pengumuman diterbitkan'); }
+    case 'togAnn': { const x = DB.ann.find(y=>y.id===id); x.on = !x.on; return done(`Pengumuman ${x.on?'dinyalakan':'dimatikan'}`); }
+    case 'delAnn': { DB.ann = DB.ann.filter(y=>y.id!==id); return done('Pengumuman dihapus'); }
+    case 'bukaModul': { const m = DB.modules.find(x=>x.k===el.dataset.k);
+      if(!DB.bills.some(b=>b.k===m.k && b.st==='belum')) DB.bills.push({id:nid(), no:`TAG-${String(DB.bills.length+1).padStart(2,'0')}-${m.k.toUpperCase()}`, d:`Modul ${m.n} · 1 bulan`, v:m.price, st:'belum', due:now()+3*DAY, ts:now(), k:m.k});
+      log(`Membuka modul ${m.n} (tagihan dibuat)`); save(); closePop(); go('tagihan'); return; }
+    case 'mintaModul': { const m = DB.modules.find(x=>x.k===el.dataset.k); notify(['owner'], `${u.nama} minta modul ${m.n} dibuka`); return done(`Permintaan modul ${m.n} dikirim ke owner`); }
+    case 'renew': { const m = DB.modules.find(x=>x.k===el.dataset.k); m.noRenew = !m.noRenew; return done(m.noRenew?`${m.n}: tidak lanjut, tetap aktif sampai masa berlaku habis`:`${m.n}: dilanjutkan lagi`); }
+    case 'payBill': { const b = DB.bills.find(x=>x.id===id);
+      openPop(`<h2>Pembayaran</h2><div class="card"><div class="t">${esc(b.d)}</div><div class="m">${b.no}</div><div class="sum"><div class="row"><span class="tot">Total</span><span class="tot">${rp(b.v)}</span></div></div></div>
+      <div class="m" style="margin-bottom:10px">Halaman pembayaran Mayar (simulasi). Pilih metode:</div>
+      <div class="btns">${act('QRIS','paid','',`data-id="${b.id}"`)}${act('Transfer / VA','paid','ghost',`data-id="${b.id}"`)}</div>`); return; }
+    case 'paid': { const b = DB.bills.find(x=>x.id===id); b.st='lunas'; b.paidAt=now(); if(b.k){ const m = DB.modules.find(x=>x.k===b.k); m.on = true; m.noRenew=false; notify(['owner'], `Modul ${m.n} aktif`); } return done(`${b.no} lunas${b.k?' · modul langsung aktif':''}`); }
+    /* super admin */
+    case 'saAs': session.as = el.dataset.e; store.set('qec_session2', session); log(`Masuk sebagai ${el.dataset.e}`); save(); location.hash = '#beranda'; render(); return;
+    case 'saBack': delete session.as; store.set('qec_session2', session); location.hash = '#sa'; render(); return;
+    case 'saMod': { const m = DB.modules.find(x=>x.k===el.dataset.k); m.on = el.dataset.v==='1'; return done(`Modul ${m.n} ${m.on?'diaktifkan':'dikunci'} oleh super admin`); }
+    case 'saSaveMod': { document.querySelectorAll('[data-modp]').forEach(inp=>{ DB.modules.find(m=>m.k===inp.dataset.modp).price = Math.max(0, Number(inp.value)||0); }); return done('Harga modul disimpan'); }
+    case 'saBill': { DB.bills.push({id:nid(), no:`TAG-${String(DB.bills.length+1).padStart(2,'0')}`, d:'Langganan aplikasi · bulan berjalan', v:99000, st:'belum', due:now()+7*DAY, ts:now()}); notify(['owner'], 'Tagihan aplikasi baru Rp99.000'); return done('Tagihan bulanan dibuat'); }
+    case 'saClearLog': DB.log = []; return done('Log dikosongkan');
+    /* pribadi */
+    case 'izinNotif': { try{ Notification.requestPermission().then(()=>render()); }catch(_){ toast('Browser ini tidak mendukung notifikasi'); } return; }
+    case 'tesNotif': headsUp('Ini notifikasi tes. Notifikasi berjalan baik.'); pushHp('Ini notifikasi tes.'); return;
+    case 'saveAkun': { const usr = DB.users.find(x=>x.email===u.email), n = document.getElementById('akN').value.trim(), o = document.getElementById('akO').value, p = document.getElementById('akP').value;
+      if(p){ if(o!==usr.pass) return toast('Password lama salah'); if(p.length<6) return toast('Password baru minimal 6 karakter'); usr.pass = p; }
+      if(n && n!==usr.nama){ const old = usr.nama; usr.nama = n; if(usr.role==='mentor'){ DB.mentors.forEach(m=>{ if(m.n===old) m.n=n; }); DB.kelas.forEach(k=>{ if(k.m===old) k.m=n; }); DB.pay.forEach(x=>{ if(x.n===old) x.n=n; }); } if(usr.role==='santri'){ DB.kelas.forEach(k=>{ if(k.n===old) k.n=n; }); DB.inv.forEach(i=>{ if(i.n===old) i.n=n; }); } }
+      return done(p?'Nama & password disimpan':'Akun disimpan'); }
   }
 });
 document.addEventListener('contextmenu', e => { if(!e.target.closest('input,textarea')) e.preventDefault(); });
