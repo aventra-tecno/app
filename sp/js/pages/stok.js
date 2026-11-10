@@ -1,6 +1,6 @@
 import { supa, rpc, fetchAll } from '../supa.js';
 import { store, nameOf } from '../store.js';
-import { esc, rp, num, fmtDateTime, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, loadScript, beep, skuMatch, normSku } from '../ui.js';
+import { esc, rp, num, fmtDateTime, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, loadScript, beep, skuMatch, normSku, codeOr } from '../ui.js';
 import { scanBox, bindScan } from '../scanner.js';
 
 const MOV = { initial: 'Stok awal', in_win: 'Masuk dari WIN', pick: 'Diambil picker', to_packing: 'Langsung ke packing', pack_no_pick: 'Dipacking tanpa pick', return_good: 'Retur baik kembali', return_damaged: 'Retur rusak → karantina', opname: 'Stok opname', adjust: 'Penyesuaian manual', move_rack: 'Pindah rak', cancel_back: 'Cancel, kembali ke rak' };
@@ -46,7 +46,7 @@ async function tabBarang(box) {
     try {
       data = await fetchAll(() => {
         let qy = supa.from('products').select('id, sku, name, rack_code, stock, stock_karantina, min_stock, harga_beli').eq('active', true).order('rack_code', { nullsFirst: false }).order('name').order('id');
-        if (search) qy = qy.or(`name.ilike.%${search}%,sku.ilike.%${search}%,rack_code.ilike.%${search}%${normSku(search) ? `,sku_norm.ilike.%${normSku(search)}%` : ''}`); // kode dengan / tanpa strip sama
+        { const f = codeOr(search, ['rack_code']); if (f) qy = qy.or(f); } // kode dengan / tanpa strip sama
         if (filter === 'rak') qy = qy.gt('stock', 0);
         if (filter === 'zero') qy = qy.lte('stock', 0);
         if (filter === 'norack') qy = qy.is('rack_code', null);
