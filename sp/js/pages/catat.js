@@ -11,7 +11,7 @@ const KEY = 'catat-store';
 export default {
   tour: [
     { sel: '#stores', title: '1. Pilih toko', body: 'Pilih toko sekali. Semua resi yang di-scan masuk ke toko itu sampai tokonya diganti.' },
-    { sel: '#scanwrap', title: '2. Scan resi, lalu scan barang', body: 'Scan barcode resi di label kirim, lalu scan setiap barangnya. Barang diambil dari meja kepala gudang (kalau meja kosong, dari rak).' },
+    { sel: '#scanwrap', title: '2. Scan resi, lalu scan barang', body: 'Scan barcode resi di label kirim, lalu scan setiap barangnya. Stok barang WIN dipakai dulu, kalau habis dari stok rak.' },
     { sel: '#today', title: 'Resi per tanggal & toko', body: 'Daftar resi yang sudah dicatat. Pilih tanggal lain atau centang Semua toko. Tekan resi untuk membukanya lagi.' }
   ],
   async render(el) {
@@ -77,7 +77,7 @@ export default {
           <div class="row" style="flex-wrap:nowrap"><input class="input mono grow" id="ono" value="${esc(order.order_no === order.resi ? '' : order.order_no)}" placeholder="ketik / scan no. pesanan" ${editable ? '' : 'disabled'}>${editable ? '<button class="btn btn-sm" id="savno">Simpan</button>' : ''}</div></label>
         ${items?.length ? `<div class="list no-page" style="margin-top:8px">${items.map((i) => `<div class="list-item cat-item">
             <div class="grow" style="min-width:0"><b>${esc(i.name)}</b><div class="xs muted mono">${esc(i.sku || '')}</div>
-              <div class="xs" style="margin-top:3px">${newFlow ? `${i.meja_qty ? `<span class="tag green">${i.meja_qty} dari meja</span> ` : ''}${i.rack_qty ? `<span class="tag blue">${i.rack_qty} dari rak ${esc(i.products?.rack_code || '')}</span>` : ''}`
+              <div class="xs" style="margin-top:3px">${newFlow ? `${i.meja_qty ? `<span class="tag green">${i.meja_qty} barang WIN</span> ` : ''}${i.rack_qty ? `<span class="tag blue">${i.rack_qty} dari rak ${esc(i.products?.rack_code || '')}</span>` : ''}`
                 : `${i.rack_qty ? `<span class="tag green">${i.rack_qty} diambil dari rak ${esc(i.products?.rack_code || '')}</span> ` : ''}${i.qty > i.rack_qty ? `<span class="tag yellow">${i.qty - i.rack_qty} tunggu WIN</span> ` : ''}${i.po_id ? '<span class="tag blue">sudah di daftar beli</span>' : '<span class="tag">belum dibeli</span>'}`}</div></div>
             <div class="right"><b style="font-size:18px">×${i.qty}</b><div class="xs muted">${rp(i.price)}</div>${editable && !i.po_id ? `<button class="btn btn-ghost btn-sm" data-undo="${i.id}" style="color:var(--red);padding:0 6px">−1</button>` : ''}</div></div>`).join('')}</div>
           <div class="line-row total"><span>${items.reduce((a, i) => a + i.qty, 0)} barang</span><span>${rp(total)}</span></div>` : '<div class="muted small" style="margin-top:8px">Belum ada barang. Scan kode barang sekarang.</div>'}
@@ -121,8 +121,8 @@ export default {
       const box = el.querySelector('#meja'); if (!box) return;
       const { data } = await supa.from('products').select('id, sku, name, meja_qty').gt('meja_qty', 0).order('name').limit(300);
       const list = data || [];
-      box.innerHTML = `<summary class="row between"><span><b>Barang di meja kepala gudang</b> <span class="small muted">${list.reduce((a, p) => a + p.meja_qty, 0)} pcs · ${list.length} macam</span></span>${icon('chev', 16)}</summary>
-        ${list.length ? `<div class="list no-page">${list.map((p) => `<div class="list-item" style="padding:6px 0"><div class="grow" style="min-width:0"><span class="small">${esc(p.name)}</span><div class="xs muted mono">${esc(p.sku)}</div></div><b>${p.meja_qty}</b></div>`).join('')}</div>` : '<div class="small muted" style="padding-top:8px">Meja kosong. Barang dari picker & WIN muncul di sini setelah dicek kepala gudang.</div>'}`;
+      box.innerHTML = `<summary class="row between"><span><b>Barang WIN di stok gudang</b> <span class="small muted">${list.reduce((a, p) => a + p.meja_qty, 0)} pcs · ${list.length} macam</span></span>${icon('chev', 16)}</summary>
+        ${list.length ? `<div class="list no-page">${list.map((p) => `<div class="list-item" style="padding:6px 0"><div class="grow" style="min-width:0"><span class="small">${esc(p.name)}</span><div class="xs muted mono">${esc(p.sku)}</div></div><b>${p.meja_qty}</b></div>`).join('')}</div>` : '<div class="small muted" style="padding-top:8px">Kosong. Barang WIN muncul di sini setelah di-scan kepala gudang di Terima barang WIN.</div>'}`;
     };
     const openResi = async (code) => {
       await finishCur();
@@ -155,7 +155,7 @@ export default {
           return { ok: false, title: r.empty ? 'Barang belum ada' : r.msg, info: r.empty ? r.msg : '' };
         }
         beep(true); await paintCur();
-        if (r.alur_kg) { paintMeja(); return { ok: true, title: r.name, info: r.from_meja ? `Dari meja · sisa meja ${r.meja_left}` : `Meja kosong · ambil di rak ${r.rack || '-'} (sisa stok ${r.stock_left})` }; }
+        if (r.alur_kg) { paintMeja(); return { ok: true, title: r.name, info: r.from_meja ? `Stok barang WIN · sisa ${r.meja_left}` : `Dari rak ${r.rack || '-'} · sisa stok rak ${r.stock_left}` }; }
         return { ok: true, title: r.name, info: r.from_rack ? `Ambil dari rak ${r.rack || '-'} · sisa stok ${r.stock_left} · tetap dibeli di WIN` : 'Stok rak kosong · tunggu barang WIN' };
       } catch (e) { beep(false); toastErr(e); return { ok: false, title: e.message || 'Gagal' }; }
     });
