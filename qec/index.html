@@ -289,7 +289,7 @@ textarea{width:100%;min-height:90px;border-radius:12px;border:1.5px solid var(--
 <div id="popwrap"></div>
 
 <script>
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.1.0';
 /* ===================== ikon ===================== */
 const I = {
   home:'<path class="fill" fill-opacity="0" d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
@@ -392,7 +392,7 @@ const HELP = {
   beranda:'Ringkasan pekerjaan Anda hari ini. Tekan kartu atau tombol untuk langsung ke pekerjaannya.',
   lead:'Semua chat calon santri dari WhatsApp. Bot sudah membalas otomatis; tandai yang sudah Anda balas, lalu buat invoice.',
   daftar:'Isi nama santri, pilih paket, durasi, dan jumlah sesi. Total dihitung otomatis termasuk diskon, biaya daftar, dan buku.',
-  matching:'Santri yang sudah lunas menunggu mentor. Fleksibel & Offline: pilih dari 4 kandidat. Reguler: tetapkan otomatis.',
+  matching:'Santri Fleksibel & Offline yang sudah lunas menunggu mentor. 4 pelamar pertama dikunci lalu santri memilih sendiri; staf bisa memilihkan. Reguler langsung dapat mentor otomatis saat lunas.',
   kelas:'Semua kontrak aktif. Merah = lewat batas sanksi, kuning = lewat batas bonus.',
   perpanjang:'Paket yang tinggal ≤ 1 sesi. Kirim invoice perpanjangan (tanpa biaya daftar) atau tandai tidak lanjut.',
   santri:'Daftar semua santri beserta status: menunggu bayar, menunggu mentor, aktif, atau berhenti.',
@@ -412,7 +412,7 @@ const HELP = {
   pengaturan:'Nama usaha, tema warna untuk semua pengguna, dan aturan batas hari.',
   modul:'Menu tambahan berbayar. Menu yang terkunci tetap terlihat dengan gembok.',
   tagihan:'Tagihan aplikasi dan modul. Bayar sekarang membuka halaman pembayaran.',
-  lowongan:'Lowongan kelas baru. Tekan Saya minat; 4 pelamar pertama dikirim ke santri.',
+  lowongan:'Lowongan kelas baru. Tekan Saya minat; 4 pelamar pertama dikirim ke santri untuk dipilih. Kalau ada kontrak lewat batas sanksi, Anda istirahat dulu.',
   absen:'Isi kehadiran dan progres setiap selesai mengajar. Izin memakai kuota santri.',
   kelasku:'Kelas yang Anda ajar dan riwayat progresnya.',
   gaji:'Gaji yang sudah tercatat dari kontrak yang ditutup.',
@@ -432,7 +432,7 @@ const store = {
   set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
   del(k){ try{ localStorage.removeItem(k); }catch(e){} }
 };
-const DBKEY = 'qec_db_v2';
+const DBKEY = 'qec_db_v3';
 let uid = now();
 const nid = () => ++uid;
 function seed(){
@@ -444,6 +444,7 @@ function seed(){
       {email:'cs@qec.id',pass:'cs123',role:'cs',nama:'Staf CS',aktif:true},
       {email:'mentor@qec.id',pass:'mentor123',role:'mentor',nama:'Ustadzah Aisyah',aktif:true},
       {email:'santri@qec.id',pass:'santri123',role:'santri',nama:'Bu Rina (contoh)',aktif:true},
+      {email:'santribaru@qec.id',pass:'santri123',role:'santri',nama:'Santri baru 5 (contoh)',aktif:true},
       {email:'superadmin@qec.id',pass:'super123',role:'superadmin',nama:'Super admin',aktif:true}
     ],
     settings:{usaha:'Quran Edu Center', theme:'teal', bonusHari:40, sanksiHari:60, daftar:30000, buku:20000,
@@ -451,10 +452,10 @@ function seed(){
       pokok:{REG:{30:80000,60:140000}, FLX:{30:80000,60:140000}, OFF:{60:220000}},
       bonus:{REG:20000, FLX:20000, OFF:0}},
     modules:[
-      {k:'laporan',n:'Laporan premium',d:'Omzet per paket, retensi, nilai rata-rata invoice',price:49000,on:false},
-      {k:'komplain',n:'Komplain & testimoni',d:'Catat komplain santri dan kumpulkan testimoni',price:29000,on:false},
-      {k:'afiliasi',n:'Modul premium & afiliasi',d:'Jual modul premium lewat link afiliasi (70:30)',price:39000,on:false},
-      {k:'waauto',n:'Laporan WA otomatis',d:'Rekap harian, mingguan, bulanan ke WhatsApp owner',price:25000,on:false}
+      {k:'laporan',n:'Laporan premium',d:'Omzet per paket, retensi, nilai rata-rata invoice',price:49000,on:true},
+      {k:'komplain',n:'Komplain & testimoni',d:'Catat komplain santri dan kumpulkan testimoni',price:29000,on:true},
+      {k:'afiliasi',n:'Modul premium & afiliasi',d:'Jual modul premium lewat link afiliasi (70:30)',price:39000,on:true},
+      {k:'waauto',n:'Laporan WA otomatis',d:'Rekap harian, mingguan, bulanan ke WhatsApp owner',price:25000,on:true}
     ],
     bills:[{id:1,no:'TAG-2611-01',d:'Langganan aplikasi · November 2026',v:99000,st:'belum',due:t+5*DAY,ts:t-2*DAY}],
     leads:[
@@ -470,25 +471,26 @@ function seed(){
       {n:'Ustadzah Khadijah',a:'Online · 4 th mengajar',s:4.7,st:'aktif'},
       {n:'Ustadz Hasan',a:'Online · 6 th mengajar',s:4.8,st:'aktif'},
       {n:'Ustadz Yusuf',a:'Online · 2 th mengajar',s:4.5,st:'aktif'},
-      {n:'Ustadz Rahman',a:'Offline Sidoarjo · 1 th',s:3.9,st:'aktif',calonBlokir:true}
+      {n:'Ustadz Rahman',a:'Offline Sidoarjo · 1 th',s:3.9,st:'aktif'}
     ],
     match:[
       {id:11,n:'Santri baru 5 (contoh)',p:'FLX',d:30,s:4,area:'Online',jadwal:'Sen & Rab malam',st:'pilih',bids:['Ustadzah Fatimah','Ustadzah Maryam','Ustadzah Khadijah','Ustadz Hasan']},
-      {id:12,n:'Santri baru 6 (contoh)',p:'OFF',d:60,s:4,area:'Surabaya Timur',jadwal:'Sel & Kam sore',st:'cari',bids:['Ustadzah Fatimah']},
-      {id:13,n:'Santri baru 7 (contoh)',p:'REG',d:30,s:4,area:'Online',jadwal:'Sab pagi',st:'auto',bids:[]}
+      {id:12,n:'Santri baru 6 (contoh)',p:'OFF',d:60,s:4,area:'Surabaya Timur',jadwal:'Sel & Kam sore',st:'cari',bids:['Ustadzah Fatimah']}
     ],
     kelas:[
-      {id:21,n:'Bu Rina (contoh)',m:'Ustadzah Aisyah',p:'FLX',d:30,used:2,tot:4,iz:0,hari:12,st:'aktif'},
-      {id:22,n:'Pak Doni (contoh)',m:'Ustadz Hasan',p:'REG',d:60,used:3,tot:4,iz:1,hari:24,st:'aktif'},
-      {id:23,n:'Adik Zahra (contoh)',m:'Ustadzah Aisyah',p:'OFF',d:60,used:7,tot:8,iz:2,hari:38,st:'aktif'},
-      {id:24,n:'Mas Arif (contoh)',m:'Ustadz Yusuf',p:'FLX',d:60,used:4,tot:4,iz:3,hari:61,st:'aktif'}
+      {id:25,n:'Ibu Lina (contoh)',m:'Ustadz Rahman',p:'OFF',d:60,used:4,tot:4,iz:0,start:t-30*DAY,st:'aktif'},
+      {id:21,n:'Bu Rina (contoh)',m:'Ustadzah Aisyah',p:'FLX',d:30,used:2,tot:4,iz:0,start:t-12*DAY,st:'aktif'},
+      {id:22,n:'Pak Doni (contoh)',m:'Ustadz Hasan',p:'REG',d:60,used:3,tot:4,iz:1,start:t-24*DAY,st:'aktif'},
+      {id:23,n:'Adik Zahra (contoh)',m:'Ustadzah Aisyah',p:'OFF',d:60,used:7,tot:8,iz:2,start:t-38*DAY,st:'aktif'},
+      {id:24,n:'Mas Arif (contoh)',m:'Ustadz Yusuf',p:'FLX',d:60,used:4,tot:4,iz:3,start:t-61*DAY,st:'aktif'}
     ],
     inv:[
       {id:31,no:'INV-2611-0031',n:'Bu Rina (contoh)',d:'Fleksibel 30 mnt · 4 sesi + daftar',v:220000,st:'lunas',jenis:'baru',p:'FLX',ts:t-12*DAY,paid:t-12*DAY},
       {id:32,no:'INV-2611-0032',n:'Pak Doni (contoh)',d:'Reguler 60 mnt · 4 sesi + daftar',v:290000,st:'lunas',jenis:'baru',p:'REG',ts:t-24*DAY,paid:t-6*DAY},
       {id:33,no:'INV-2611-0033',n:'Calon santri 4 (contoh)',d:'Offline 60 mnt · 8 sesi − 10% + daftar + buku',v:878000,st:'tunggu',jenis:'baru',p:'OFF',ts:t-3*36e5,meta:{p:'OFF',d:60,s:8,buku:true}}
     ],
-    pay:[{id:41,n:'Ustadz Hasan',k:'Reguler 60 · santri lain berhenti',pk:140000,b:0,st:'belum',lanjut:false,ts:t-4*DAY}],
+    pay:[{id:41,n:'Ustadz Hasan',k:'Reguler 60 · santri lain berhenti',pk:140000,b:0,st:'belum',lanjut:false,ts:t-4*DAY},
+         {id:42,n:'Ustadz Rahman',k:'Offline 60 · santri lain berhenti',pk:220000,b:0,st:'dibayar',lanjut:false,ts:t-20*DAY}],
     progres:[{kid:21,txt:'Sesi 1 · Makhorijul Huruf — huruf halq, perlu diulang'},{kid:21,txt:'Sesi 2 · Tajwid — hukum nun mati, lancar'}],
     stok:{iqro:24,tajwid:5},
     ann:[{id:51,t:'Mulai Desember, pendaftaran offline dibuka untuk area Sidoarjo.',penting:false,on:true,login:true,ts:t-DAY},
@@ -496,6 +498,7 @@ function seed(){
     notif:[
       {id:61,to:['owner','keuangan'],t:'Invoice baru Rp878.000 untuk Calon santri 4 (contoh)',ts:t-3*36e5,read:[]},
       {id:62,to:['owner','cs'],t:'Lowongan Offline Surabaya Timur baru dapat 1 pelamar',ts:t-5*36e5,read:[]},
+      {id:64,to:[],toName:'Santri baru 5 (contoh)',t:'4 kandidat mentor siap dipilih. Pilih dalam 24 jam.',ts:t-2*36e5,read:[]},
       {id:63,to:['mentor'],t:'Lowongan baru: Offline 60 · Surabaya Timur',ts:t-5*36e5,read:[]}
     ],
     log:[{ts:t-3*36e5,who:'Staf CS',role:'cs',t:'Invoice Rp878.000 dikirim ke WA Calon santri 4 (contoh)'}],
@@ -528,17 +531,32 @@ const pendingPerp = k => DB.inv.some(i => i.st==='tunggu' && i.jenis==='perpanja
 const perluPerp = () => aktif().filter(k => k.tot - k.used <= 1);
 function masalahAll(){
   const c = CFG(), m = [];
-  aktif().filter(k=>k.hari>c.sanksiHari).forEach(k=>m.push({key:'k60-'+k.id, t:`Kontrak lewat ${c.sanksiHari} hari`, m:`${k.n} · ${k.m} → mentor istirahat`, c:'bad'}));
+  aktif().filter(k=>k.hari>c.sanksiHari).forEach(k=>m.push({key:'k60-'+k.id, t:`Kontrak lewat ${c.sanksiHari} hari`, m:`${k.n} · ${k.m} otomatis istirahat sampai kontrak ditutup`, c:'bad'}));
   aktif().filter(k=>k.hari>c.bonusHari && k.hari<=c.sanksiHari && k.tot-k.used<=1).forEach(k=>m.push({key:'k40-'+k.id, t:'Bonus terancam hangus', m:`${k.n} · sudah hari ke-${k.hari}`, c:'warn'}));
   DB.mentors.filter(x=>x.calonBlokir && x.st==='aktif').forEach(x=>m.push({key:'blk-'+x.n, t:'Calon blokir', m:`${x.n} · 2 santri berturut-turut tidak lanjut`, c:'warn', mentor:x.n}));
   DB.match.filter(x=>x.st==='cari' && x.bids.length<2).forEach(x=>m.push({key:'sepi-'+x.id, t:'Lowongan sepi', m:`${x.n} · ${x.bids.length} pelamar`, c:'warn'}));
   return m;
 }
+/* aturan otomatis: hari kontrak dari tanggal mulai, mentor istirahat saat lewat batas sanksi */
+function applyRules(){
+  const c = CFG(); let changed = false;
+  DB.kelas.forEach(k => { if(k.start==null) k.start = now() - (k.hari||0)*DAY; const h = Math.floor((now()-k.start)/DAY); if(k.hari!==h){ k.hari = h; changed = true; } });
+  DB.mentors.forEach(m => {
+    const late = aktif().filter(k => k.m===m.n && k.hari > c.sanksiHari);
+    if(late.length && m.st==='aktif'){ m.st='istirahat'; changed = true; DB.notif.push({id:nid(), to:['owner'], t:`${m.n} otomatis istirahat: kontrak ${late[0].n} lewat ${c.sanksiHari} hari`, ts:now(), read:[]}); DB.notif.push({id:nid(), to:[], toName:m.n, t:`Status Anda istirahat: tutup kontrak ${late[0].n} dulu`, ts:now(), read:[]}); }
+    if(!late.length && m.st==='istirahat'){ m.st='aktif'; changed = true; }
+  });
+  if(changed) save();
+}
+const pilihMentorOtomatis = () => DB.mentors.filter(x=>x.st==='aktif').map(x=>({x, load:aktif().filter(k=>k.m===x.n).length})).sort((p,q)=>p.load-q.load || q.x.s-p.x.s)[0];
 const masalahList = () => masalahAll().filter(x => !DB.resolved.includes(x.key));
 function tutupKontrak(k, lanjut){
   const c = CFG(), pk = c.pokok[k.p][k.d] * k.tot/4;
   const b = (lanjut && k.hari <= c.bonusHari) ? c.bonus[k.p] * k.tot/4 : 0;
   DB.pay.push({id:nid(), n:k.m, k:`${PNAME[k.p]} ${k.d} · ${k.n} · ${lanjut ? (k.hari<=c.bonusHari ? `lanjut ≤ ${c.bonusHari} hari` : `lanjut, lewat ${c.bonusHari} hari`) : 'santri berhenti'}`, pk, b, st:'belum', lanjut, ts:now()});
+  const last2 = DB.pay.filter(p=>p.n===k.m).slice(-2), mt = DB.mentors.find(x=>x.n===k.m);
+  if(mt && last2.length===2 && last2.every(p=>p.lanjut===false) && !mt.calonBlokir && mt.st!=='blokir'){ mt.calonBlokir = true; DB.notif.push({id:nid(), to:['owner'], t:`${k.m} ditandai calon blokir: 2 santri berturut-turut tidak lanjut`, ts:now(), read:[]}); }
+  if(lanjut && mt) mt.calonBlokir = false;
 }
 const invNo = () => `INV-${new Date().toISOString().slice(2,4)}${new Date().toISOString().slice(5,7)}-${String(DB.inv.length+31).padStart(4,'0')}`;
 
@@ -675,11 +693,11 @@ P.beranda = () => {
     <div class="sec">Menu pintas</div>${shortcuts(['daftar','lead','matching','santri','perpanjang','komplain'])}</main>`;
   }
   if(r==='mentor'){
-    const ks = myKelasMentor(), k = ks[0], low = DB.match.filter(m=>m.st!=='auto' && !m.bids.includes(u.nama) && m.bids.length<4)[0];
+    const ks = myKelasMentor(), k = ks[0], mt = DB.mentors.find(x=>x.n===u.nama), off = mt && mt.st!=='aktif', low = off ? null : DB.match.filter(m=>m.st!=='auto' && !m.bids.includes(u.nama) && m.bids.length<4)[0];
     const gaji = DB.pay.filter(p=>p.n===u.nama).reduce((a,p)=>a+p.pk+p.b,0);
     return head('Beranda', `<div class="hero"><div class="hi">Assalamu'alaikum,</div><div class="big" style="font-size:24px">${esc(u.nama)}</div>
     <div class="kpis"><div class="kpi"><b>${ks.length}</b><span>Kelas aktif</span></div><div class="kpi"><b>${rp(gaji)}</b><span>Gaji tercatat</span></div></div></div>`) +
-    `<main>${annBlock()}<div class="sec">Sesi berikutnya</div>
+    `<main>${annBlock()}${off?`<div class="card row" style="background:var(--bad-bg);border-color:#F5C9C9"><div class="ico" style="background:#fff;color:var(--bad)">${svg('alert')}</div><div class="grow"><div class="t" style="color:var(--bad)">Status ${mt.st==='blokir'?'diblokir':'istirahat'}</div><div class="m">Tidak menerima lowongan baru sampai kontrak yang lewat batas ditutup</div></div></div>`:''}<div class="sec">Sesi berikutnya</div>
     ${k?`<div class="card"><div class="row"><div class="ico">${svg('book')}</div><div class="grow"><div class="t">${esc(k.n)} · ${PNAME[k.p]} ${k.d}</div><div class="m">Sesi ${Math.min(k.used+1,k.tot)} dari ${k.tot} · izin ${k.iz}/${kuota(k)}</div></div></div>
       <div class="btns"><a class="btn lihat" href="#kelasku">Kelas saya</a><button class="btn ok" data-act="toAbsen" data-id="${k.id}">Isi absen</button></div></div>`:empty('Belum ada kelas')}
     <div class="sec">Lowongan baru</div>
@@ -687,12 +705,12 @@ P.beranda = () => {
       <div class="btns"><a class="btn ghost" href="#lowongan">Semua</a>${act('Saya minat','minat','',`data-id="${low.id}"`)}</div></div>`:empty('Tidak ada lowongan baru')}
     <div class="card row" style="background:var(--warn-bg);border-color:#F3D9A4"><div class="ico" style="background:#fff;color:var(--warn)">${svg('alert')}</div><div class="grow"><div class="t" style="color:var(--warn)">Tutup kontrak ≤ ${CFG().bonusHari} hari</div><div class="m">Agar bonus retensi berlaku</div></div></div></main>`;
   }
-  const k = myKelasSantri(), tag = DB.inv.find(i=>i.n===u.nama && i.st==='tunggu');
+  const k = myKelasSantri(), tag = DB.inv.find(i=>i.n===u.nama && i.st==='tunggu'), wm = DB.match.find(m=>m.n===u.nama);
   return head('Beranda', `<div class="hero"><div class="hi">Assalamu'alaikum,</div><div class="big" style="font-size:24px">${esc(u.nama)}</div>${k?`<div class="sub">${PNAME[k.p]} · ${k.d} menit</div>
-    <div class="kpis"><div class="kpi"><b>${k.tot-k.used} dari ${k.tot}</b><span>Sisa sesi</span></div><div class="kpi"><b>${kuota(k)-k.iz}</b><span>Sisa izin</span></div></div>`:''}</div>`) +
-    `<main>${annBlock()}${k?`<div class="sec">Sesi berikutnya</div>
+    <div class="kpis"><div class="kpi"><b>${k.tot-k.used} dari ${k.tot}</b><span>Sisa sesi</span></div><div class="kpi"><b>${kuota(k)-k.iz}</b><span>Sisa izin</span></div></div>`:(wm?'<div class="sub">Pembayaran diterima, tinggal pilih mentor</div>':'')}</div>`) +
+    `<main>${annBlock()}${wm?`<div class="sec">Mentor Anda</div><div class="card"><div class="row"><div class="ico">${svg('star')}</div><div class="grow"><div class="t">${wm.bids.length?`${wm.bids.length} kandidat mentor siap dipilih`:'Sedang mencarikan mentor'}</div><div class="m">${PNAME[wm.p]} ${wm.d} mnt · ${wm.bids.length?'pilih dalam 24 jam':'kami kabari lewat WA'}</div></div></div>${wm.bids.length?`<div style="margin-top:12px">${act('Lihat & pilih mentor','kandidat','shake',`data-id="${wm.id}"`)}</div>`:''}</div>`:''}${k?`<div class="sec">Sesi berikutnya</div>
     <div class="card"><div class="row"><div class="ico">${svg('cal')}</div><div class="grow"><div class="t">Sesi ${Math.min(k.used+1,k.tot)} · Kamis, 19.30 WIB</div><div class="m">${esc(k.m)} · Zoom</div></div></div>
-    <div class="btns">${act('Ajukan izin','izin','ghost')}${act('Reschedule','reschedule','ghost')}</div></div>`:empty('Belum ada kelas aktif')}
+    <div class="btns">${act('Ajukan izin','izin','ghost')}${act('Reschedule','reschedule','ghost')}</div></div>`:(wm?'':empty('Belum ada kelas aktif'))}
     ${tag?`<div class="sec">Tagihan</div><div class="card"><div class="t">${esc(tag.d)}</div><div class="m">${rp(tag.v)}</div><div style="margin-top:12px"><a class="btn shake" href="#bayar">Bayar sekarang</a></div></div>`:
       (k && k.tot-k.used<=1 ? `<div class="sec">Lanjutkan belajar</div><div class="card"><div class="t">Paket hampir habis</div><div class="m">Ambil 8 sesi untuk hemat 5%</div><div style="margin-top:12px">${act('Minta perpanjangan','mintaPerp','shake')}</div></div>`:'')}
     ${card('book','E-modul gratis','Makhorijul Huruf · Tajwid · Shifatul Huruf','<a class="btn lihat mini" href="#progres">Buka</a>')}</main>`;
@@ -730,7 +748,7 @@ P.invoice = () => {
   const list = DB.inv.filter(x=>f==='semua'||x.st===f).slice().reverse();
   return head('Invoice') + `<main><div class="chips">${F.map(([k,l])=>`<button class="${k===f?'on':''}" data-act="invF" data-v="${k}">${l}</button>`).join('')}</div>${list.map(invCard).join('') || empty('Tidak ada invoice')}</main>`;
 };
-P.matching = () => head('Matching Mentor') + `<main>${DB.match.map(m=>`<div class="card"><div class="row"><div class="ico">${svg('star')}</div><div class="grow"><div class="t">${esc(m.n)}</div><div class="m">${PNAME[m.p]} ${m.d} mnt · ${m.s} sesi · ${esc(m.area)}</div></div>${CHIP[m.st]}</div>
+P.matching = () => head('Matching Mentor') + `<main><div class="card form row" style="background:var(--tint)"><div class="ico" style="background:#fff">${svg('star')}</div><div class="grow"><div class="m" style="color:var(--ink)"><b>Reguler</b> langsung dapat mentor otomatis saat lunas. <b>Fleksibel &amp; Offline</b>: 4 pelamar pertama dikunci, santri memilih sendiri dalam 24 jam.</div></div></div>${DB.match.map(m=>`<div class="card"><div class="row"><div class="ico">${svg('star')}</div><div class="grow"><div class="t">${esc(m.n)}</div><div class="m">${PNAME[m.p]} ${m.d} mnt · ${m.s} sesi · ${esc(m.area)}</div></div>${CHIP[m.st]}</div>
   <div class="m" style="margin-top:8px">${esc(m.jadwal)} · ${m.st==='auto'?'Reguler: ditetapkan sistem':m.bids.length+'/4 pelamar'}</div>
   ${m.st==='auto'?`<div class="btns">${act('Kenapa?','toast','ghost','data-msg="Reguler: sistem memilih mentor dengan beban paling ringan dan skor tertinggi"')}${act('Tetapkan','tetapkan','ok',`data-id="${m.id}"`)}</div>`:
    `<div class="btns">${act('Broadcast ulang','broadcast','ghost',`data-id="${m.id}"`)}${act(m.bids.length?`Lihat ${m.bids.length} kandidat`:'Belum ada pelamar','kandidat','',`data-id="${m.id}" ${m.bids.length?'':'disabled'}`)}</div>`}</div>`).join('') || empty('Semua santri sudah punya mentor')}</main>`;
@@ -760,7 +778,7 @@ P.masalah = () => { const L = masalahList(), done = masalahAll().length - L.leng
   <div class="btns">${x.mentor?act('Blokir','blokir','bad sm',`data-n="${esc(x.mentor)}" data-key="${x.key}"`):act('Lihat','gotoMasalah','lihat sm',`data-key="${x.key}"`)}${act('Tandai sudah ditangani','resolve','ok sm',`data-key="${x.key}"`)}</div></div>`).join('') || empty('Tidak ada masalah')}
   ${done?`<div class="demo">${done} masalah sudah ditangani</div>`:''}</main>`; };
 P.mentor = () => head('Data Mentor') + `<main>${DB.mentors.map(x=>{const n=aktif().filter(k=>k.m===x.n).length;
-  return card('user',esc(x.n),`${esc(x.a)} · ${n} kelas`,`<span class="chip ${x.st==='blokir'?'bad':x.calonBlokir?'warn':'ok'}">${x.st==='blokir'?'Diblokir':'★ '+String(x.s).replace('.',',')}</span>`);}).join('')}</main>`;
+  return card('user',esc(x.n),`${esc(x.a)} · ${n} kelas`,`<span class="chip ${x.st==='blokir'?'bad':x.st==='istirahat'||x.calonBlokir?'warn':'ok'}">${x.st==='blokir'?'Diblokir':x.st==='istirahat'?'Istirahat':x.calonBlokir?'Calon blokir':'★ '+String(x.s).replace('.',',')}</span>`);}).join('')}</main>`;
 P.payroll = () => { const bel = DB.pay.filter(p=>p.st==='belum'), tot = bel.reduce((a,x)=>a+x.pk+x.b,0);
   return head('Payroll Mentor', `<div class="hero"><div class="hi">Belum dibayar</div><div class="big">${rp(tot)}</div></div>`) +
   `<main>${DB.pay.slice().reverse().map(x=>`<div class="card"><div class="row"><div class="ico">${svg('user')}</div><div class="grow"><div class="t">${esc(x.n)}</div><div class="m">${esc(x.k)}</div></div><div class="t">${rp(x.pk+x.b)}</div></div>
@@ -818,7 +836,8 @@ P.tagihan = () => { const bel = DB.bills.filter(b=>b.st==='belum'), lun = DB.bil
   return head('Tagihan aplikasi') + `<main>${bel.map(b=>`<div class="card"><div class="row"><div class="ico">${svg('card')}</div><div class="grow"><div class="t">${esc(b.d)}</div><div class="m"><span class="no">${b.no}</span>${copyBtn(b.no)} · jatuh tempo ${tgl(b.due)}</div></div><b>${rp(b.v)}</b></div>
   <div style="margin-top:12px">${act('Bayar sekarang','payBill','shake',`data-id="${b.id}"`)}</div></div>`).join('') || empty('Tidak ada tagihan')}
   ${lun.length?`<div class="sec">Terakhir dibayar</div>${lun.map(b=>card('check',esc(b.d),`${b.no} · ${tgl(b.paidAt)}`,`<b>${rp(b.v)}</b>`)).join('')}`:''}</main>`; };
-P.lowongan = () => { const n = me().nama, list = DB.match.filter(m=>m.st!=='auto');
+P.lowongan = () => { const n = me().nama, mt = DB.mentors.find(x=>x.n===n), list = DB.match.filter(m=>m.st!=='auto');
+  if(mt && mt.st!=='aktif') return head('Lowongan Kelas') + `<main><div class="card form row" style="background:var(--bad-bg);border-color:#F5C9C9"><div class="ico" style="background:#fff;color:var(--bad)">${svg('alert')}</div><div class="grow"><div class="t" style="color:var(--bad)">Status ${mt.st==='blokir'?'diblokir':'istirahat'}</div><div class="m">${mt.st==='blokir'?'Hubungi owner.':'Tutup kontrak yang lewat batas hari dulu, lalu lowongan terbuka lagi.'}</div></div></div></main>`;
   return head('Lowongan Kelas') + `<main>${list.map(m=>{const ikut=m.bids.includes(n), penuh=m.bids.length>=4;
   return `<div class="card"><div class="row"><div class="ico">${svg('brief')}</div><div class="grow"><div class="t">${PNAME[m.p]} ${m.d} mnt</div><div class="m">${esc(m.area)} · ${esc(m.jadwal)}</div></div><span class="chip">${m.bids.length}/4</span></div>
   <div style="margin-top:12px">${ikut?act('Minat terkirim','x','lihat','disabled'):penuh?act('Kuota kandidat penuh','x','ghost','disabled'):act('Saya minat','minat','',`data-id="${m.id}"`)}</div></div>`;}).join('') || empty('Tidak ada lowongan')}</main>`; };
@@ -902,6 +921,7 @@ function render(){
   document.documentElement.dataset.theme = CFG().theme;
   document.querySelector('meta[name=theme-color]').content = CFG().theme==='teal' ? '#0E8A88' : '#1E2120';
   const app = document.getElementById('app'), side = document.getElementById('side');
+  applyRules();
   const u = me();
   if(!u){ side.style.display='none'; app.innerHTML = loginView(); return; }
   side.style.display='';
@@ -998,17 +1018,20 @@ document.addEventListener('click', e => {
       const v = V(); if(!v || v.st==='lunas') return; v.st = 'lunas'; v.paid = now();
       notify(['owner','keuangan'], `${v.no} ${rp(v.v)} dari ${v.n} sudah lunas`);
       if(v.jenis==='baru' && v.meta){
-        const m = {id:nid(), n:v.n, p:v.meta.p, d:v.meta.d, s:v.meta.s, area:v.meta.p==='OFF'?'Surabaya (offline)':'Online', jadwal:'Sesuai permintaan', st:v.meta.p==='REG'?'auto':'cari', bids:[]};
-        DB.match.push(m);
+        const m = {id:nid(), n:v.n, p:v.meta.p, d:v.meta.d, s:v.meta.s, area:v.meta.p==='OFF'?'Surabaya (offline)':'Online', jadwal:'Sesuai permintaan', st:'cari', bids:[], ts:now()};
+        let auto = null;
+        if(m.p==='REG'){ const f = pilihMentorOtomatis(); if(f){ auto = f.x.n; DB.kelas.push({id:nid(), n:m.n, m:auto, p:m.p, d:m.d, used:0, tot:m.s, iz:0, start:now(), hari:0, st:'aktif'}); notify([], `Anda ditetapkan otomatis sebagai mentor ${m.n} (Reguler)`, auto); notify([], `Mentor Anda: ${auto}. Jadwal & grup kelas sudah dibuat.`, m.n); } else { m.st='auto'; DB.match.push(m); } }
+        else DB.match.push(m);
         if(v.meta.buku) DB.stok.iqro = Math.max(0, DB.stok.iqro-1);
         const l = DB.leads.find(x=>x.n===v.n); if(l) l.st='lunas';
-        if(m.st!=='auto') notify(['mentor'], `Lowongan baru: ${PNAME[m.p]} ${m.d} · ${m.area}`);
-        notify(['cs'], `${v.n} lunas, menunggu mentor`);
-        return done(a==='bayarSantri' ? `Pembayaran ${v.no} berhasil (simulasi). E-modul gratis terkirim.` : `${v.no} lunas · jurnal tercatat · e-modul terkirim · lowongan di-broadcast`);
+        if(!auto) notify(['mentor'], `Lowongan baru: ${PNAME[m.p]} ${m.d} · ${m.area}`);
+        notify(['cs'], auto ? `${v.n} lunas, mentor Reguler otomatis: ${auto}` : `${v.n} lunas, menunggu mentor`);
+        const tail = auto ? `mentor otomatis: ${auto}` : 'lowongan di-broadcast';
+        return done(a==='bayarSantri' ? `Pembayaran ${v.no} berhasil (simulasi). E-modul gratis terkirim · ${tail}` : `${v.no} lunas · jurnal tercatat · e-modul terkirim · ${tail}`);
       }
       if(v.jenis==='perpanjang'){
         const k = DB.kelas.find(x=>x.id===v.meta.kid);
-        if(k){ tutupKontrak(k, true); Object.assign(k, {used:0, iz:0, hari:0}); notify([], `Kontrak ${k.n} diperpanjang, gaji tercatat`, k.m); }
+        if(k){ tutupKontrak(k, true); Object.assign(k, {used:0, iz:0, hari:0, start:now()}); notify([], `Kontrak ${k.n} diperpanjang, gaji tercatat`, k.m); }
         return done(`${v.no} lunas · kontrak baru ${v.n} dimulai · gaji mentor tercatat`);
       }
       return done(`${v.no} ditandai lunas`);
@@ -1017,36 +1040,39 @@ document.addEventListener('click', e => {
       const m = M(), cand = DB.mentors.filter(x=>x.st==='aktif' && !m.bids.includes(x.n) && x.n!=='Ustadzah Aisyah');
       if(m.bids.length>=4) return toast('Sudah 4 kandidat terkunci');
       if(!cand.length) return toast('Tidak ada mentor lain yang tersedia');
-      m.bids.push(cand[0].n); if(m.bids.length>=4) m.st='pilih';
+      m.bids.push(cand[0].n); if(m.bids.length>=4){ m.st='pilih'; notify([], '4 kandidat mentor siap dipilih. Pilih dalam 24 jam.', m.n); }
       return done(`Broadcast ulang ${m.n}: ${cand[0].n} menyatakan minat (simulasi)`);
     }
     case 'minat': {
       const m = M(); if(!m || m.bids.includes(u.nama) || m.bids.length>=4) return;
-      m.bids.push(u.nama); if(m.bids.length>=4 && m.st!=='auto') m.st='pilih';
+      m.bids.push(u.nama); if(m.bids.length>=4 && m.st!=='auto'){ m.st='pilih'; notify([], '4 kandidat mentor siap dipilih. Pilih dalam 24 jam.', m.n); }
       notify(['owner','cs'], `${u.nama} minat ke lowongan ${m.n} (${m.bids.length}/4)`);
       return done(`Minat ke lowongan ${m.n} terkirim`);
     }
     case 'kandidat': {
       const m = M();
-      openPop(`<h2>${m.bids.length} kandidat terkunci</h2><div class="m" style="margin-bottom:10px">${esc(m.n)} · ${PNAME[m.p]} ${m.d}</div>${m.bids.map(n=>{const x=DB.mentors.find(y=>y.n===n)||{a:'',s:''};
+      const isS = u.role==='santri';
+      openPop(`<h2>${isS?'Pilih mentor Anda':m.bids.length+' kandidat terkunci'}</h2><div class="m" style="margin-bottom:10px">${esc(m.n)} · ${PNAME[m.p]} ${m.d} · ${isS?'dengarkan voice note tilawahnya, lalu pilih satu':'biasanya dipilih santri sendiri; staf bisa memilihkan'}</div>${m.bids.map(n=>{const x=DB.mentors.find(y=>y.n===n)||{a:'',s:''};
         return `<div class="card"><div class="row"><button class="play" data-act="toast" data-msg="Memutar voice note tilawah ${esc(n)} (contoh)" aria-label="Putar voice note ${esc(n)}">${svg('playi')}</button><div class="grow"><div class="t">${esc(n)}</div><div class="m">${esc(x.a)} · ★ ${String(x.s).replace('.',',')}</div>${wave()}</div></div>
-        <div style="margin-top:10px">${act('Pilih mentor ini','pilihMentor','mini',`data-id="${m.id}" data-n="${esc(n)}" style="width:100%"`)}</div></div>`;}).join('')}`);
+        <div style="margin-top:10px">${act(isS?'Pilih mentor ini':'Pilihkan untuk santri','pilihMentor','mini',`data-id="${m.id}" data-n="${esc(n)}" style="width:100%"`)}</div></div>`;}).join('')}`);
       return;
     }
     case 'pilihMentor': case 'tetapkan': {
       const m = M(); let n = el.dataset.n;
-      if(a==='tetapkan'){ const free = DB.mentors.filter(x=>x.st==='aktif').map(x=>({x, load:aktif().filter(k=>k.m===x.n).length})).sort((p,q)=>p.load-q.load || q.x.s-p.x.s); n = free[0].x.n; }
-      DB.kelas.push({id:nid(), n:m.n, m:n, p:m.p, d:m.d, used:0, tot:m.s, iz:0, hari:0, st:'aktif'});
+      if(a==='tetapkan'){ const f = pilihMentorOtomatis(); if(!f) return toast('Tidak ada mentor aktif'); n = f.x.n; }
+      if(u.role==='santri' && m.n!==u.nama) return;
+      DB.kelas.push({id:nid(), n:m.n, m:n, p:m.p, d:m.d, used:0, tot:m.s, iz:0, start:now(), hari:0, st:'aktif'});
       DB.match = DB.match.filter(x=>x.id!==m.id);
-      notify([], `Anda ditetapkan sebagai mentor ${m.n}`, n);
-      return done(`${n} ditetapkan untuk ${m.n} · jadwal & grup kelas dibuat (simulasi)`);
+      notify([], `Anda dipilih sebagai mentor ${m.n}`, n);
+      if(u.role!=='santri') notify([], `Mentor Anda: ${n}. Jadwal & grup kelas sudah dibuat.`, m.n); else notify(['owner','cs'], `${m.n} memilih ${n} sebagai mentor`);
+      return done(u.role==='santri' ? `Anda memilih ${n} · jadwal & grup kelas dibuat` : `${n} ditetapkan untuk ${m.n} · jadwal & grup kelas dibuat (simulasi)`);
     }
     case 'toAbsen': S.absen.kid = id; S.absen.st='hadir'; go('absen'); return;
     case 'absenSt': S.absen.st = el.dataset.v; render(); return;
     case 'simpanAbsen': {
       const k = DB.kelas.find(x=>x.id===S.absen.kid), st = S.absen.st, mat = (document.getElementById('materi').value||'').trim();
-      if(st==='izin'){ if(k.iz >= kuota(k)) return toast('Kuota izin habis — sesi dihitung hangus'); k.iz++; k.hari += 3; return done(`Izin ${k.n} dicatat · sesi digeser`); }
-      k.used = Math.min(k.tot, k.used+1); k.hari += 3;
+      if(st==='izin'){ if(k.iz >= kuota(k)) return toast('Kuota izin habis — sesi dihitung hangus'); k.iz++; return done(`Izin ${k.n} dicatat · sesi digeser`); }
+      k.used = Math.min(k.tot, k.used+1);
       DB.progres.push({kid:k.id, txt:`Sesi ${k.used} · ${st==='hangus'?'Hangus':'Hadir'} — ${mat || (st==='hangus'?'santri tidak hadir':'tanpa catatan')}`});
       notify([], `Laporan progres sesi ${k.used} sudah diisi mentor`, k.n);
       const sisa = k.tot - k.used;
@@ -1056,7 +1082,7 @@ document.addEventListener('click', e => {
     case 'riwayat': { const L = DB.progres.filter(p=>p.kid===id); openPop(`<h2>Riwayat progres</h2>${L.slice().reverse().map(p=>card('book',esc(p.txt.split(' — ')[0]),esc(p.txt.split(' — ')[1]||''))).join('') || empty('Belum ada catatan')}`); return; }
     case 'izin': { const k = myKelasSantri(); if(!k) return;
       openPop(`<h2>Ajukan izin</h2><div class="card"><div class="t">Sesi ${Math.min(k.used+1,k.tot)}</div><div class="m">Sisa kuota izin: ${kuota(k)-k.iz} · sesi digeser, tidak hangus</div></div>${act('Kirim izin','kirimIzin','ok')}`); return; }
-    case 'kirimIzin': { const k = myKelasSantri(); if(k.iz >= kuota(k)) { closePop(); return toast('Ditolak otomatis: kuota izin habis'); } k.iz++; notify([], `${k.n} izin untuk sesi berikutnya`, k.m); return done(`Izin disetujui otomatis · sisa ${kuota(k)-k.iz}`); }
+    case 'kirimIzin': { const k = myKelasSantri(); if(k.iz >= kuota(k)) { closePop(); return toast('Ditolak otomatis: kuota izin habis. Kalau tidak hadir, sesi dihitung hangus.'); } k.iz++; notify([], `${k.n} izin untuk sesi berikutnya`, k.m); return done(`Izin disetujui otomatis · sisa ${kuota(k)-k.iz}`); }
     case 'reschedule': { const k = myKelasSantri(); notify([], `${k.n} minta reschedule sesi berikutnya`, k.m); return done('Permintaan reschedule dikirim ke mentor'); }
     case 'mintaPerp': notify(['owner','cs'], `${u.nama} minta perpanjangan paket`); return done('Permintaan perpanjangan dikirim ke admin');
     case 'kirimPerp': {
@@ -1065,7 +1091,7 @@ document.addEventListener('click', e => {
       notify([], `Tagihan perpanjangan ${rp(h.tot)} siap dibayar`, k.n);
       return done(`Invoice perpanjangan ${no} ${rp(h.tot)} dikirim ke WA ${k.n} (simulasi)`);
     }
-    case 'stop': { const k = K(); tutupKontrak(k, false); k.st='berhenti'; if(modOn('komplain')) DB.komplain.push({id:nid(), n:k.n, t:'Link testimoni terkirim, menunggu isian', testi:true}); return done(`${k.n} berhenti · pesan maaf + link testimoni terkirim`); }
+    case 'stop': { const k = K(); tutupKontrak(k, false); k.st='berhenti'; DB.komplain.push({id:nid(), n:k.n, t:'Link testimoni terkirim, menunggu isian', testi:true}); notify([], 'Terima kasih sudah belajar bersama kami. Mohon isi testimoni singkat.', k.n); return done(`${k.n} berhenti · pesan maaf + link testimoni terkirim`); }
     case 'bayarGaji': { const L = DB.pay.filter(p=>p.st==='belum'); L.forEach(p=>{ p.st='dibayar'; notify([], `Gaji ${rp(p.pk+p.b)} sudah ditransfer`, p.n); }); return done(`${L.length} gaji mentor dibayar · slip dikirim ke WA (simulasi)`); }
     case 'blokir': { const x = DB.mentors.find(y=>y.n===el.dataset.n); x.st='blokir'; x.calonBlokir=false; return done(`${x.n} diblokir · tidak menerima lowongan`); }
     case 'resolve': { DB.resolved.push(el.dataset.key); return done('Masalah ditandai sudah ditangani'); }
