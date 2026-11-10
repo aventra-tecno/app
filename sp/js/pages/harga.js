@@ -1,4 +1,5 @@
-import { supa, rpc, fetchAll } from '../supa.js';
+import { supa, rpc } from '../supa.js';
+import { allProductsCached } from '../products-cache.js';
 import { store, nameOf } from '../store.js';
 import { esc, rp, num, fmtDate, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, parseNum, confirmBox, todayStr, normSku, codeHit, copyBtn } from '../ui.js';
 import { downloadHargaExcel } from '../excel-harga.js';
@@ -166,9 +167,9 @@ export default {
     };
     const load = async () => {
       let data;
-      try { data = await fetchAll(() => supa.from('products').select('id, sku, name, category, supplier, macallan, harga_5, harga_beli, harga_shopee, diskon_pct, price_group, price_locked, pending_price').eq('active', true).order('name').order('id')); }
+      try { data = await allProductsCached({ force: true, active: true }); }
       catch (error) { return toastErr(error); }
-      all = data; changed.clear(); sel.clear(); paintTabs(); paintFilters(); paint(); paintRumus();
+      all = data.map((p) => ({ ...p })).sort((a, b) => String(a.name).localeCompare(String(b.name), 'id') || a.id - b.id); changed.clear(); sel.clear(); paintTabs(); paintFilters(); paint(); paintRumus();
     };
     const hist = async () => {
       const { data } = await supa.from('price_history').select('*, products(name, supplier)').neq('field', 'harga_5').order('created_at', { ascending: false }).limit(25);

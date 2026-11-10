@@ -37,7 +37,7 @@ if (!configured) renderLogin(root);
 else {
   supa.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') { booted = false; renderLogin(root, { recovery: true }); return; }
-    if (event === 'SIGNED_OUT' || !session) { booted = false; teardown(); renderLogin(root); return; }
+    if (event === 'SIGNED_OUT' || !session) { booted = false; teardown(); import('./products-cache.js').then((m) => m.clearProductsCache()).catch(() => {}); renderLogin(root); return; }
     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && !booted) { booted = true; setTimeout(() => boot(session), 0); }
   });
 }

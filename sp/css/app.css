@@ -1797,3 +1797,7 @@ html[data-theme="hitam"] .cpy { color: #6B4A00; background: #FFF4D6; }
 .win-po[open] summary svg { transform: rotate(90deg); }
 .win-po[open] summary { border-bottom: 1px solid var(--line); }
 .win-q { font-size: 20px; }
+/* 2.36 — isian dengan satuan (hari) */
+.input-suffix { display: flex; align-items: center; gap: 8px; }
+.input-suffix .input { flex: 1; min-width: 0; }
+.input-suffix > span { color: var(--muted); font-size: 13px; }

@@ -135,8 +135,9 @@ function newPasswordForm(body) {
 export function renderPending(root, profile) {
   root.innerHTML = `<div class="login"><section class="login-side"><div class="login-card stack">
     <div class="brand-mark"><span class="logo logo-img"><img src="assets/logo.svg" alt="" width="44" height="44"></span>${esc(APP_NAME)}</div>
-    <h2>${profile && profile.active === false ? 'Akun dinonaktifkan' : 'Akun menunggu jabatan'}</h2>
-    <p class="muted" style="margin:0">Halo ${esc(profile?.full_name || '')}, akunmu sudah terdaftar tetapi belum diberi jabatan oleh owner (atau sedang dinonaktifkan). Minta owner membuka menu <b>Pegawai &amp; jabatan</b>.</p>
+    ${profile ? `<h2>${profile.active === false ? 'Akun dinonaktifkan' : 'Akun menunggu jabatan'}</h2>
+    <p class="muted" style="margin:0">Halo ${esc(profile.full_name || '')}, akunmu sudah terdaftar tetapi belum diberi jabatan oleh owner (atau sedang dinonaktifkan). Minta owner membuka menu <b>Pegawai &amp; jabatan</b>.</p>`
+    : `<h2>Akun bukan untuk aplikasi ini</h2><p class="muted" style="margin:0">Akun ini terdaftar di aplikasi lain, jadi tidak bisa membuka ${esc(APP_NAME)}. Minta owner membuatkan akun di menu <b>Pegawai &amp; jabatan</b>.</p>`}
     <button class="btn btn-lg" id="po">Keluar</button>
   </div></section></div>`;
   root.querySelector('#po').onclick = () => supa.auth.signOut();

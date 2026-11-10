@@ -66,7 +66,7 @@ export default {
           const email = v('f-e'), password = v('f-p'), full_name = v('f-n');
           if (!full_name || !email || password.length < 6) { toast('Isi nama, email, dan password minimal 6 karakter', 'err'); return false; }
           const tc = tempClient();
-          const { data, error } = await tc.auth.signUp({ email, password, options: { data: { full_name } } });
+          const { data, error } = await tc.auth.signUp({ email, password, options: { data: { full_name, app: 'sp' } } });
           if (error) throw new Error(errMsg(error));
           const uid = data.user?.id;
           if (!uid) throw new Error('Akun tidak terbentuk. Cek pengaturan Auth di Supabase.');

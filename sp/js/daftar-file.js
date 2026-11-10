@@ -123,8 +123,8 @@ export function matchLines(lines, products) {
 
 // semua barang aktif (untuk mencocokkan daftar)
 export async function allProducts() {
-  const { fetchAll } = await import('./supa.js');
-  return fetchAll(() => supa.from('products').select('id, sku, name, rack_code, stock, meja_qty, harga_beli, harga_shopee, supplier').eq('active', true).order('id'));
+  const { allProductsCached } = await import('./products-cache.js');
+  return allProductsCached({ force: true, active: true });
 }
 
 // kotak cari barang (nama / kode, aturan sama dengan scan) dengan daftar hasil di bawahnya

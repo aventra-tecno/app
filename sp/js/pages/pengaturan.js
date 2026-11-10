@@ -35,6 +35,15 @@ export default {
           <label class="field">Batas retur / cancel belum kembali (hari)<input class="input num" name="retur_grace_days" inputmode="numeric" value="${s.retur_grace_days}"></label></div>
           <label class="check"><input type="checkbox" name="wajib_foto_packing" ${s.wajib_foto_packing ? 'checked' : ''}> Wajib foto paket sebelum packing selesai</label>
           <div class="small muted">Stok yang diubah manual di luar jam kerja dilaporkan ke owner.</div></section>
+        ${'foto_simpan_hari' in s ? `<section class="card stack" id="simpan"><h2 class="sec-title">Penyimpanan data</h2>
+          <div class="small muted">Setiap hari 02.00 WIB hanya data yang <b>umurnya sudah lewat</b> batas di bawah yang dihapus. Data yang lebih baru tetap aman. Pesanan, stok, harga, dan foto komplain tidak pernah dihapus.</div>
+          <div class="grid gauto">
+            <label class="field">Foto (packing, nota, retur, QC, absen) disimpan<span class="input-suffix"><input class="input num" name="foto_simpan_hari" inputmode="numeric" value="${s.foto_simpan_hari}"><span>hari</span></span></label>
+            <label class="field">Notifikasi disimpan<span class="input-suffix"><input class="input num" name="notif_simpan_hari" inputmode="numeric" value="${s.notif_simpan_hari}"><span>hari</span></span></label>
+            <label class="field">Catatan halaman dibuka disimpan<span class="input-suffix"><input class="input num" name="log_halaman_hari" inputmode="numeric" value="${s.log_halaman_hari}"><span>hari</span></span></label>
+            <label class="field">Log aktivitas disimpan<span class="input-suffix"><input class="input num" name="log_simpan_hari" inputmode="numeric" value="${s.log_simpan_hari}"><span>hari</span></span></label></div>
+          <div id="bersihinfo"></div>
+          <button type="button" class="btn" id="bersih">Bersihkan sekarang</button></section>` : ''}
         <button class="btn btn-primary btn-lg">Simpan pengaturan</button>
       </form>
       <section class="card stack" id="tg" style="margin-top:16px"><h2 class="sec-title">${icon('send', 18)} Notifikasi Telegram</h2><div class="skeleton" style="height:90px"></div></section>
@@ -49,9 +58,32 @@ export default {
         shopee_fee_pct: +fd.get('shopee_fee_pct') || 0, jam_mulai: fd.get('jam_mulai'), jam_selesai: fd.get('jam_selesai'),
         ui_theme: fd.get('ui_theme') || 'biru', retur_grace_days: +fd.get('retur_grace_days') || 2, wajib_foto_packing: fd.get('wajib_foto_packing') === 'on', upload_pesanan: fd.get('upload_pesanan') === 'on', ...('alur_kg' in s ? { alur_kg: fd.get('alur_kg') === 'on' } : {}), updated_at: new Date().toISOString()
       };
+      if ('foto_simpan_hari' in s) {
+        const lim = (k, a, b, d) => Math.min(b, Math.max(a, parseInt(fd.get(k), 10) || d));
+        Object.assign(upd, { foto_simpan_hari: lim('foto_simpan_hari', 14, 3650, 60), notif_simpan_hari: lim('notif_simpan_hari', 7, 3650, 60),
+          log_halaman_hari: lim('log_halaman_hari', 7, 3650, 30), log_simpan_hari: lim('log_simpan_hari', 30, 3650, 180) });
+      }
       const { error } = await supa.from('settings').update(upd).eq('id', 1);
       if (error) return toastErr(error);
       Object.assign(store.settings, upd); toast('Pengaturan tersimpan', 'ok');
+    });
+
+    // ---------- penyimpanan data (2.36) ----------
+    const paintBersih = (h, at) => {
+      const box = el.querySelector('#bersihinfo'); if (!box) return;
+      box.innerHTML = at ? `<div class="small muted">Terakhir dibersihkan ${new Date(at).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}: ${h?.foto != null ? num(h.foto) + ' foto, ' : ''}${num(h?.notif || 0)} notifikasi, ${num((h?.log || 0) + (h?.log_halaman || 0))} catatan log.</div>` : '<div class="small muted">Belum pernah dibersihkan.</div>';
+    };
+    paintBersih(s.bersih_hasil, s.bersih_terakhir);
+    el.querySelector('#bersih')?.addEventListener('click', async (e) => {
+      e.target.disabled = true; const old = e.target.textContent; e.target.textContent = 'Membersihkan…';
+      try {
+        const { data, error } = await supa.functions.invoke('bersih', { body: {} });
+        let r = data;
+        if (error || !data?.ok) r = await rpc('bersih_data');   // Edge Function belum dipasang: data lama tetap dibersihkan, foto tidak
+        paintBersih(r, new Date().toISOString());
+        toast(r?.foto != null ? `Selesai: ${r.foto} foto lama dihapus` : 'Data lama dibersihkan. Foto butuh Edge Function "bersih".', r?.foto != null ? 'ok' : '');
+      } catch (err) { toastErr(err); }
+      e.target.disabled = false; e.target.textContent = old;
     });
 
     // ---------- toko ----------

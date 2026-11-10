@@ -1,4 +1,5 @@
 import { supa, rpc, fetchAll } from '../supa.js';
+import { allProductsCached } from '../products-cache.js';
 import { store, nameOf } from '../store.js';
 import { esc, rp, num, fmtDateTime, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, loadScript, beep, skuMatch, normSku, codeOr, copyBtn } from '../ui.js';
 import { pickRack } from '../rak-pilih.js';
@@ -34,7 +35,7 @@ async function tabBarang(box) {
     <div class="row wrap"><input class="input grow" id="q" placeholder="Cari nama / kode / rak, atau scan barcode" aria-label="Cari barang" style="min-width:220px">${chips('f', [['rak', 'Ada di rak'], ['win', 'Barang WIN (belum di rak)'], ['low', 'Stok menipis'], ['zero', 'Habis'], ['all', 'Semua barang ›']], filter)}</div>
     <div class="card flush" id="list">${skeleton()}</div></div>`;
   const kpi = async () => {
-    const data = await fetchAll(() => supa.from('products').select('stock, meja_qty, harga_beli, min_stock').eq('active', true).order('id')).catch(() => []);
+    const data = await allProductsCached({ force: true, active: true }).catch(() => []);
     const low = (data || []).filter((p) => p.min_stock > 0 && p.stock <= p.min_stock).length;
     const val = (data || []).reduce((a, p) => a + (Math.max(0, p.stock) + (p.meja_qty || 0)) * p.harga_beli, 0);
     const win = (data || []).reduce((a, p) => a + (p.meja_qty || 0), 0);

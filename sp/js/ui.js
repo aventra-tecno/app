@@ -261,7 +261,7 @@ export function pickPhoto() {
     inp.click();
   });
 }
-export async function compress(file, max = 1280, quality = 0.62) {
+export async function compress(file, max = 960, quality = 0.55) {   // 2.36: ±80–120 KB per foto
   const bmp = await createImageBitmap(file);
   const r = Math.min(1, max / Math.max(bmp.width, bmp.height));
   const c = document.createElement('canvas');

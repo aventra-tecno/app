@@ -1,6 +1,7 @@
-import { fetchAll, supa } from '../supa.js';
+import { supa } from '../supa.js';
+import { allProductsCached, touchProducts } from '../products-cache.js';
 import { store } from '../store.js';
-import { esc, rp, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, parseNum, codeOr, copyBtn, chips } from '../ui.js';
+import { esc, rp, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, parseNum, codeOr, copyBtn, chips, codeHit } from '../ui.js';
 import { pctBadges, pctChips, pctMatch } from '../pct.js';
 import { openProduct, printLabels } from './stok.js';
 
@@ -12,7 +13,7 @@ export default {
   async render(el, { params }) {
     const canEdit = ['owner', 'admin', 'kepala_gudang', 'supervisor'].includes(store.role);
     const seePrice = ['owner', 'admin'].includes(store.role);
-    let search = params.q || '', sel = new Set(), unkList = [], filter = 'all', sup = 'all', all = [];
+    let search = params.q || '', sel = new Set(), unkList = [], filter = 'all', sup = 'all', all = [], src = [], shown = 200;
     el.innerHTML = `${pageHead('Master barang', 'Kode barcode, nama, rak, dan stok minimum. Harga diatur owner di menu Atur harga.',
       `${canEdit ? `<button class="btn btn-primary" id="add">${icon('plus', 18)} Tambah barang</button>` : ''}<button class="btn" id="lbl">${icon('print', 18)} Cetak label (yang dicentang / semua)</button><a class="btn" href="#/upload">${icon('upload', 18)} Upload pricelist WIN</a>`)}
       <div class="stack"><div id="unk"></div>
@@ -32,10 +33,12 @@ export default {
     const load = async () => {
       let data;
       try {
-        data = await fetchAll(() => { let qy = supa.from('products').select('*').order('name').order('id'); const f = codeOr(search); if (f) qy = qy.or(f); return qy; });
+        data = await allProductsCached({ force: true });
       } catch (error) { return toastErr(error); }
-      all = data; paintFilters(); paint();
+      src = data.sort((a, b) => String(a.name).localeCompare(String(b.name), 'id') || a.id - b.id); applySearch();
     };
+    // pencarian di HP (tanpa ambil ulang dari server), aturan sama dengan scan
+    const applySearch = () => { all = search ? src.filter((p) => codeHit(search, p)) : src; shown = 200; paintFilters(); paint(); };
     const supOf = (p) => p.supplier || 'WIN';
     const paintFilters = () => {
       const sups = [...new Set(all.map(supOf))].sort();
@@ -52,15 +55,15 @@ export default {
       filter === 'all' ? true : filter === 'locked' ? p.price_locked : filter === 'zero' ? !Number(p.harga_beli)
         : filter === 'low' ? p.min_stock > 0 && p.stock <= p.min_stock : filter === 'off' ? !p.active : pctMatch(filter, p)));
     const paint = () => {
-      const data = visible();
+      const vis = visible(), data = vis.slice(0, shown);
       el.querySelector('#list').innerHTML = data.length ? `<div class="table-wrap"><table class="tbl" style="min-width:${seePrice ? 860 : 600}px"><thead><tr><th></th><th>Kode · Barang</th><th>Kategori</th><th>Rak</th><th class="right">Stok</th><th class="right">Min.</th>${seePrice ? '<th class="right">Macallan</th><th class="right">Harga beli</th><th class="right">Harga Shopee</th>' : ''}<th></th></tr></thead><tbody>
         ${data.map((p) => `<tr class="${p.active ? '' : 'bad'}"><td><input type="checkbox" class="check" data-sel="${p.id}" ${sel.has(p.id) ? 'checked' : ''} aria-label="Pilih"></td>
           <td><b>${esc(p.name)}</b>${p.supplier && p.supplier !== 'WIN' ? ` <span class="tag blue">${esc(p.supplier)}</span>` : ''}${p.price_locked ? ' <span class="tag dark">dikunci</span>' : ''}<div class="xs muted mono">${esc(p.sku)}${copyBtn(p.sku)}</div>${seePrice ? pctBadges(p) : ''}${p.isi_set ? `<details class="isi-set"><summary class="xs">Isi set (${p.isi_set.split('\n').length})</summary><ul>${p.isi_set.split('\n').map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}</td><td class="small">${esc(p.category || '')}</td><td class="mono">${esc(p.rack_code || '—')}</td>
           <td class="num"><b>${p.stock}</b></td><td class="num">${p.min_stock}</td>
           ${seePrice ? `<td class="num">${rp(p.macallan)}</td><td class="num ${!Number(p.harga_beli) ? 'neg' : ''}">${rp(p.harga_beli)}</td><td class="num">${rp(p.harga_shopee)}</td>` : ''}
           <td class="nowrap"><button class="btn btn-sm" data-hist="${p.id}">Riwayat</button>${canEdit ? ` <button class="btn btn-sm" data-edit="${p.id}">Ubah</button>` : ''}</td></tr>`).join('')}
-      </tbody></table></div>` : emptyState('Belum ada barang. Upload Pricelist WIN atau tambah manual.', 'list');
-      el._data = data;
+      </tbody></table></div>${vis.length > data.length ? `<div class="row" style="padding:10px 16px"><span class="xs muted grow">Menampilkan ${data.length} dari ${vis.length} barang</span><button class="btn btn-sm" id="more">Tampilkan lebih banyak</button></div>` : ''}` : emptyState(src.length ? 'Tidak ada barang yang cocok.' : 'Belum ada barang. Upload Pricelist WIN atau tambah manual.', 'list');
+      el._data = vis;
     };
     on(el, 'click', '[data-sup]', (e, b) => { sup = b.dataset.sup; filter = 'all'; paintFilters(); paint(); });
     on(el, 'click', '[data-chips="f"] .chip', (e, b) => { filter = b.dataset.v; paintFilters(); paint(); });
@@ -116,10 +119,11 @@ export default {
           return true;
         } }]
       });
-      if (r) { toast('Tersimpan', 'ok'); load(); unknown(); }
+      if (r) { toast('Tersimpan', 'ok'); touchProducts(); load(); unknown(); }
     }
 
-    el.querySelector('#q').addEventListener('input', debounce((e) => { search = e.target.value.trim().replace(/[,%()]/g, ''); load(); }, 300));
+    el.querySelector('#q').addEventListener('input', debounce((e) => { search = e.target.value.trim(); applySearch(); }, 200));
+    on(el, 'click', '#more', () => { shown += 300; paint(); });
     el.querySelector('#add')?.addEventListener('click', () => edit(null));
     on(el, 'click', '[data-edit]', (e, b) => edit(el._data.find((x) => x.id === +b.dataset.edit)));
     on(el, 'click', '[data-hist]', (e, b) => openProduct(+b.dataset.hist, load));
