@@ -20,7 +20,7 @@ export default {
             <div class="small muted">Nyalakan kalau marketplace memakai SKU / kode barang yang sama dengan pricelist. Matikan kalau tidak ada SKU: pesanan dicatat kepala gudang di menu <b>Catat pesanan</b> (scan resi + scan barang).</div></div>
             <label class="switch"><input type="checkbox" name="upload_pesanan" ${s.upload_pesanan !== false ? 'checked' : ''} aria-label="Upload file pesanan"><span></span></label></div>
           <div class="list-item" style="padding:12px 0 0;border:0;border-top:1px solid var(--line)"><div class="grow"><b>Alur kepala gudang dulu</b>
-            <div class="small muted">Kepala gudang menugaskan picker & beli di WIN, barang dicek di meja kepala gudang, lalu admin scan resi & barang di <b>Catat pesanan</b>. Matikan untuk alur lama (resi dicatat dulu, semua barang dibeli di WIN).</div></div>
+            <div class="small muted">Kepala gudang beli langsung di WIN & scan barangnya di Terima barang WIN (masuk stok gudang). Admin scan resi & barang di <b>Catat pesanan</b>: stok barang WIN dipakai dulu, kalau habis dari rak. Matikan untuk alur lama.</div></div>
             <label class="switch"><input type="checkbox" name="alur_kg" ${s.alur_kg !== false ? 'checked' : ''} aria-label="Alur kepala gudang dulu"><span></span></label></div></section>
         <section class="card stack" id="stores"><div class="row between wrap"><h2 class="sec-title">Toko / marketplace</h2><button type="button" class="btn btn-sm" id="addstore">${icon('plus', 16)} Tambah toko</button></div>
           <div class="small muted">Dipilih kepala gudang saat scan resi. Rekap harian bisa dilihat per toko.</div><div id="storelist"></div></section>
