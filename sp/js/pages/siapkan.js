@@ -3,6 +3,7 @@ import { store } from '../store.js';
 import { esc, num, fmtDateTime, chips, on, toast, toastErr, pageHead, emptyState, skeleton, icon, beep, confirmBox } from '../ui.js';
 import { scanBox, bindScan } from '../scanner.js';
 import { listEditor } from '../daftar-file.js';
+import { pickRack } from '../rak-pilih.js';
 
 // 2.33 Kepala gudang: tugaskan picker ambil di rak, cek barang dari picker, dan isi meja kepala gudang.
 // Barang di meja (dari picker & dari WIN) nanti dipakai admin saat scan resi di Catat pesanan.
@@ -71,11 +72,12 @@ async function renderMeja(box) {
   box.innerHTML = `<div class="stack">
     <div class="hero"><div class="label">Barang WIN belum di rak</div><div class="big">${num(tot)}</div><div class="small" style="color:#C9CCC8">${data.length} macam · dipakai admin saat scan resi</div></div>
     <div class="card flush">${data.length ? `<div class="list no-page">${data.map((p) => `<div class="list-item"><div class="grow" style="min-width:0"><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)} · rak ${esc(p.rack_code || '–')} · stok rak ${p.stock}</div></div>
-        <b style="font-size:18px">${p.meja_qty}</b><button class="btn btn-sm" data-back="${p.id}">Taruh di rak</button></div>`).join('')}</div>` : emptyState('Semua barang WIN sudah di rak / terpakai.', 'box')}</div></div>`;
+        <b style="font-size:18px">${p.meja_qty}</b><button class="btn btn-sm" data-back="${p.id}">Tambah ke rak</button></div>`).join('')}</div>` : emptyState('Semua barang WIN sudah di rak / terpakai.', 'box')}</div></div>`;
   on(box, 'click', '[data-back]', async (e, b) => {
     const p = data.find((x) => x.id === +b.dataset.back);
-    if (!(await confirmBox('Taruh di rak?', `${p.meja_qty} pcs <b>${esc(p.name)}</b> ditaruh di rak ${esc(p.rack_code || '–')}. Stok rak bertambah.`, 'Taruh di rak'))) return;
-    try { await rpc('meja_back', { p_product: p.id, p_qty: null }); toast('Sudah ditaruh di rak', 'ok'); renderMeja(box); } catch (err) { toastErr(err); }
+    const k = await pickRack({ title: 'Tambah ke rak', product: p, qtyMax: p.meja_qty, okLabel: 'Tambah ke rak' });
+    if (!k) return;
+    try { const x = await rpc('meja_to_rack', { p_product: p.id, p_qty: k.qty, p_rack: k.rack }); toast(`${x.qty} pcs ditaruh di rak ${x.rack}`, 'ok'); renderMeja(box); } catch (err) { toastErr(err); }
   });
 }
 

@@ -1,6 +1,6 @@
 import { supa, rpc, fetchAll } from '../supa.js';
 import { store, nameOf } from '../store.js';
-import { esc, rp, num, fmtDate, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, parseNum, confirmBox, todayStr, normSku, codeHit } from '../ui.js';
+import { esc, rp, num, fmtDate, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, parseNum, confirmBox, todayStr, normSku, codeHit, copyBtn } from '../ui.js';
 import { downloadHargaExcel } from '../excel-harga.js';
 
 // Harga per supplier (WIN, STRONG, …). Setiap supplier punya rumus sendiri:
@@ -152,7 +152,7 @@ export default {
         ${list.map((p) => {
           const ch = changed.has(p.id), m = margin(p), pend = p.pending_price;
           return `<tr class="${ch || sel.has(p.id) ? 'hl' : ''}" data-row="${p.id}"><td><input type="checkbox" class="check" data-sel="${p.id}" ${sel.has(p.id) ? 'checked' : ''} aria-label="Pilih"></td>
-            <td><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}</div>${pctBadges(p)}</td>
+            <td><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}${copyBtn(p.sku)}</div>${pctBadges(p)}</td>
             ${fields.map(([f]) => `<td class="right"><input class="input sm num ${p.price_locked || ch ? 'locked' : f === 'harga_beli' || (f === 'harga_shopee' && r.shopee_mode === 'rumus') ? 'calc' : ''}" style="width:104px" data-f="${f}" data-id="${p.id}" data-money value="${num(val(p, f))}" inputmode="numeric" aria-label="${f}"></td>`).join('')}
             <td class="num"><b class="${m == null ? '' : m < 0 ? 'neg' : 'pos'}">${m == null ? '–' : rp(m)}</b></td>
             <td>${pend ? `<button class="tag yellow" style="border:0;cursor:pointer" data-pend="${p.id}">Beda: ${esc(pend.sumber)} ${pend.macallan ? 'Macallan ' + num(pend.macallan) : ''}${pend.harga_shopee ? ' Shopee ' + num(pend.harga_shopee) : ''}</button>`

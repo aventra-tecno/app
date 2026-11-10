@@ -70,6 +70,15 @@ export function skuMatch(scan, sku) {
   if (!a || !b) return false;
   return a === b || (a.length > 6 && /[0-9]$/.test(a) && a.slice(0, -1) === b);
 }
+// 2.35: tombol salin kode (span, supaya boleh di dalam baris yang bisa diklik)
+const COPY_SVG = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+export const copyBtn = (text) => text ? `<span class="cpy" role="button" tabindex="0" data-copy="${esc(text)}" title="Salin kode" aria-label="Salin ${esc(text)}">${COPY_SVG}</span>` : '';
+export const codeCopy = (text, cls = 'xs muted mono') => `<span class="${cls} code-c">${esc(text || '')}${copyBtn(text)}</span>`;
+export async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); }
+  catch (_) { const ta = document.createElement('textarea'); ta.value = t; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (__) {} ta.remove(); }
+  toast('Disalin: ' + t, 'ok');
+}
 // pencarian teks yang sama dengan aturan scan: nama / kode berisi kata, kode tanpa strip,
 // dan barcode dengan 1 angka tambahan di belakang ('01B3830547AA1' -> '01B3830547AA')
 export function codeHit(q, p) {

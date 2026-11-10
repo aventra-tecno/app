@@ -1,6 +1,7 @@
 import { fetchAll, supa } from '../supa.js';
 import { store } from '../store.js';
-import { esc, rp, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, parseNum, codeOr } from '../ui.js';
+import { esc, rp, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, parseNum, codeOr, copyBtn, chips } from '../ui.js';
+import { pctBadges, pctChips, pctMatch } from '../pct.js';
 import { openProduct, printLabels } from './stok.js';
 
 export default {
@@ -11,11 +12,12 @@ export default {
   async render(el, { params }) {
     const canEdit = ['owner', 'admin', 'kepala_gudang', 'supervisor'].includes(store.role);
     const seePrice = ['owner', 'admin'].includes(store.role);
-    let search = params.q || '', sel = new Set(), unkList = [];
+    let search = params.q || '', sel = new Set(), unkList = [], filter = 'all', sup = 'all', all = [];
     el.innerHTML = `${pageHead('Master barang', 'Kode barcode, nama, rak, dan stok minimum. Harga diatur owner di menu Atur harga.',
       `${canEdit ? `<button class="btn btn-primary" id="add">${icon('plus', 18)} Tambah barang</button>` : ''}<button class="btn" id="lbl">${icon('print', 18)} Cetak label (yang dicentang / semua)</button><a class="btn" href="#/upload">${icon('upload', 18)} Upload pricelist WIN</a>`)}
       <div class="stack"><div id="unk"></div>
       <input class="input" id="q" placeholder="Cari nama / kode" value="${esc(search)}" aria-label="Cari barang">
+      <div id="sups"></div><div id="filters" class="chip-scroll"></div>
       <div class="card flush" id="list">${skeleton()}</div></div>`;
 
     const unknown = async () => {
@@ -32,15 +34,36 @@ export default {
       try {
         data = await fetchAll(() => { let qy = supa.from('products').select('*').order('name').order('id'); const f = codeOr(search); if (f) qy = qy.or(f); return qy; });
       } catch (error) { return toastErr(error); }
+      all = data; paintFilters(); paint();
+    };
+    const supOf = (p) => p.supplier || 'WIN';
+    const paintFilters = () => {
+      const sups = [...new Set(all.map(supOf))].sort();
+      if (sup !== 'all' && !sups.includes(sup)) sup = 'all';
+      el.querySelector('#sups').innerHTML = sups.length > 1 ? `<div class="sup-tabs">${[['all', 'Semua', all.length], ...sups.map((c) => [c, c, all.filter((p) => supOf(p) === c).length])].map(([v, l, n]) => `<button class="sup-tab ${sup === v ? 'on' : ''}" data-sup="${esc(v)}"><b>${esc(l)}</b><span class="xs">${n} barang</span></button>`).join('')}</div>` : '';
+      const list = all.filter((p) => sup === 'all' || supOf(p) === sup);
+      const c = { locked: list.filter((p) => p.price_locked).length, zero: list.filter((p) => !Number(p.harga_beli)).length, low: list.filter((p) => p.min_stock > 0 && p.stock <= p.min_stock).length, off: list.filter((p) => !p.active).length };
+      if (filter !== 'all' && !filter.includes(':') && !c[filter]) filter = 'all';
+      el.querySelector('#filters').innerHTML = chips('f', [['all', `Semua (${list.length})`], ...(seePrice ? pctChips(list) : []),
+        ...(seePrice && c.locked ? [['locked', `Dikunci (${c.locked})`]] : []), ...(seePrice && c.zero ? [['zero', `Modal kosong (${c.zero})`]] : []),
+        ...(c.low ? [['low', `Stok menipis (${c.low})`]] : []), ...(c.off ? [['off', `Tidak aktif (${c.off})`]] : [])], filter);
+    };
+    const visible = () => all.filter((p) => (sup === 'all' || supOf(p) === sup) && (
+      filter === 'all' ? true : filter === 'locked' ? p.price_locked : filter === 'zero' ? !Number(p.harga_beli)
+        : filter === 'low' ? p.min_stock > 0 && p.stock <= p.min_stock : filter === 'off' ? !p.active : pctMatch(filter, p)));
+    const paint = () => {
+      const data = visible();
       el.querySelector('#list').innerHTML = data.length ? `<div class="table-wrap"><table class="tbl" style="min-width:${seePrice ? 860 : 600}px"><thead><tr><th></th><th>Kode · Barang</th><th>Kategori</th><th>Rak</th><th class="right">Stok</th><th class="right">Min.</th>${seePrice ? '<th class="right">Macallan</th><th class="right">Harga beli</th><th class="right">Harga Shopee</th>' : ''}<th></th></tr></thead><tbody>
         ${data.map((p) => `<tr class="${p.active ? '' : 'bad'}"><td><input type="checkbox" class="check" data-sel="${p.id}" ${sel.has(p.id) ? 'checked' : ''} aria-label="Pilih"></td>
-          <td><b>${esc(p.name)}</b>${p.supplier && p.supplier !== 'WIN' ? ` <span class="tag blue">${esc(p.supplier)}</span>` : ''}${p.price_locked ? ' <span class="tag dark">dikunci</span>' : ''}<div class="xs muted mono">${esc(p.sku)}${p.price_group === 'tanpa' ? ' · <span class="tag green">tanpa potongan</span>' : ''}</div>${p.isi_set ? `<details class="isi-set"><summary class="xs">Isi set (${p.isi_set.split('\n').length})</summary><ul>${p.isi_set.split('\n').map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}</td><td class="small">${esc(p.category || '')}</td><td class="mono">${esc(p.rack_code || '—')}</td>
+          <td><b>${esc(p.name)}</b>${p.supplier && p.supplier !== 'WIN' ? ` <span class="tag blue">${esc(p.supplier)}</span>` : ''}${p.price_locked ? ' <span class="tag dark">dikunci</span>' : ''}<div class="xs muted mono">${esc(p.sku)}${copyBtn(p.sku)}</div>${seePrice ? pctBadges(p) : ''}${p.isi_set ? `<details class="isi-set"><summary class="xs">Isi set (${p.isi_set.split('\n').length})</summary><ul>${p.isi_set.split('\n').map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}</td><td class="small">${esc(p.category || '')}</td><td class="mono">${esc(p.rack_code || '—')}</td>
           <td class="num"><b>${p.stock}</b></td><td class="num">${p.min_stock}</td>
           ${seePrice ? `<td class="num">${rp(p.macallan)}</td><td class="num ${!Number(p.harga_beli) ? 'neg' : ''}">${rp(p.harga_beli)}</td><td class="num">${rp(p.harga_shopee)}</td>` : ''}
           <td class="nowrap"><button class="btn btn-sm" data-hist="${p.id}">Riwayat</button>${canEdit ? ` <button class="btn btn-sm" data-edit="${p.id}">Ubah</button>` : ''}</td></tr>`).join('')}
       </tbody></table></div>` : emptyState('Belum ada barang. Upload Pricelist WIN atau tambah manual.', 'list');
       el._data = data;
     };
+    on(el, 'click', '[data-sup]', (e, b) => { sup = b.dataset.sup; filter = 'all'; paintFilters(); paint(); });
+    on(el, 'click', '[data-chips="f"] .chip', (e, b) => { filter = b.dataset.v; paintFilters(); paint(); });
 
     async function edit(p, preset = {}) {
       const isNew = !p;

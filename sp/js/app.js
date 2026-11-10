@@ -2,7 +2,7 @@ import { supa, configured, rpc, logEvent, logPage } from './supa.js';
 import { store, loadNotifs, unreadCount, markRead, loadProfiles, onEvt, emit } from './store.js';
 import { PAGES, TABS, HOME, canOpen, menuFor, isLocked, tabsFor } from './nav.js';
 import { loadModules, modOn, paywall, ROLE_MOD } from './modules.js';
-import { esc, icon, iconSolid, applyTheme, toast, toastErr, ago, ROLE_LABEL, ROLE_COLOR, modal, rp, fmtDate, todayStr, addDays } from './ui.js';
+import { esc, icon, iconSolid, applyTheme, toast, toastErr, ago, ROLE_LABEL, ROLE_COLOR, modal, rp, fmtDate, todayStr, addDays, copyText } from './ui.js';
 import { renderLogin, renderPending } from './auth.js';
 import { runTour, mainSteps } from './tour.js';
 import { APP_NAME } from './config.js';
@@ -83,8 +83,8 @@ async function boot(session) {
     // 2.30: sekali saja di Android, setelah notifikasi diizinkan: tunjukkan cara membuat notifikasi tampil MELAYANG saat aplikasi ditutup
     setTimeout(() => {
       try {
-        if (!/Android/i.test(navigator.userAgent) || !('Notification' in window) || Notification.permission !== 'granted' || localStorage.getItem('hu-guide')) return;
-        localStorage.setItem('hu-guide', '1');
+        if (!/Android/i.test(navigator.userAgent) || !('Notification' in window) || Notification.permission !== 'granted' || localStorage.getItem('hu-guide2')) return;
+        localStorage.setItem('hu-guide2', '1');
         import('./pages/notifikasi.js').then((m) => m.headsUpGuide()).catch(() => {});
       } catch (_) {}
     }, 4000);
@@ -440,6 +440,10 @@ addEventListener('scroll', paintScrollInd, { passive: true });
 // Kolom isian tetap bisa tekan-lama untuk salin / tempel.
 const editable = (t) => t?.closest?.('input, textarea, select, [contenteditable="true"], .allow-menu, .mono');
 addEventListener('contextmenu', (e) => { if (!editable(e.target)) e.preventDefault(); });
+// 2.35: tombol salin kode di mana saja (capture: tidak ikut membuka baris yang diklik)
+const copyHit = (e) => { const b = e.target.closest?.('[data-copy]'); if (!b) return; e.preventDefault(); e.stopPropagation(); copyText(b.dataset.copy); b.classList.add('done'); setTimeout(() => b.classList.remove('done'), 900); };
+addEventListener('click', copyHit, true);
+addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-copy]')) copyHit(e); }, true);
 addEventListener('dragstart', (e) => { if (e.target?.closest?.('a, img')) e.preventDefault(); });
 // ---------- menu samping laptop: kategori buka-tutup, cari menu, mode ikon saja ----------
 const LS = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (_) { return d; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} } };

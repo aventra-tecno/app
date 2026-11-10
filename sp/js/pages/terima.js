@@ -1,6 +1,6 @@
 import { supa, rpc } from '../supa.js';
 import { store } from '../store.js';
-import { esc, on, toast, toastErr, emptyState, skeleton, icon, beep, confirmBox, fmtDateTime } from '../ui.js';
+import { esc, on, toast, toastErr, emptyState, skeleton, icon, beep, confirmBox, fmtDateTime, chips, todayStr, addDays, copyBtn, rp } from '../ui.js';
 import { scanBox, bindScan } from '../scanner.js';
 import { poTag } from './beli.js';
 
@@ -18,18 +18,22 @@ export default {
     const canDirect = ['owner', 'kepala_gudang', 'supervisor'].includes(store.role);
     const open = all.find((p) => p.direct);
     const data = all.filter((p) => !p.direct);
-    const { data: done } = await supa.from('purchase_orders').select('id, code, finished_at, po_items(received_qty)').eq('direct', true).eq('status', 'selesai').order('finished_at', { ascending: false }).limit(5);
     el.innerHTML = `<div class="stack">
       ${canDirect ? `<section class="card stack direct-card" id="direct"><div><h2 class="sec-title" style="margin:0">Barang WIN datang</h2>
           <div class="small muted">Scan semua barang yang dibeli di WIN. Langsung masuk stok gudang (belum di rak), siap dipakai admin.</div></div>
         ${open ? `<a class="btn btn-primary btn-lg" href="#/terima?po=${open.id}">${icon('scan', 20)} Lanjutkan scan · ${open.po_items.reduce((a, i) => a + i.received_qty, 0)} barang</a>`
           : `<button class="btn btn-primary btn-lg" id="start">${icon('scan', 20)} Mulai scan barang WIN</button>`}
-        ${(done || []).length ? `<div class="list no-page">${done.map((p) => `<a class="list-item" href="#/terima?po=${p.id}" style="padding:8px 0"><span class="grow"><b class="mono">${esc(p.code)}</b> <span class="xs muted">${fmtDateTime(p.finished_at)}</span></span><span class="small">${p.po_items.reduce((a, i) => a + i.received_qty, 0)} barang</span>${icon('chev', 16)}</a>`).join('')}</div>` : ''}</section>` : ''}
+        </section>
+      <section class="card stack" id="lap"><div class="row between wrap"><h2 class="sec-title" style="margin:0">Laporan barang WIN</h2><button class="btn btn-sm" id="xls">${icon('download', 16)} Unduh Excel</button></div>
+        ${chips('d', [['today', 'Hari ini'], ['yday', 'Kemarin'], ['pick', 'Pilih tanggal']], 'today')}
+        <div class="grid g2 hidden" id="range"><label class="field">Dari<input type="date" class="input" id="d1" value="${todayStr()}"></label><label class="field">Sampai<input type="date" class="input" id="d2" value="${todayStr()}"></label></div>
+        <div id="laplist">${skeleton(2)}</div></section>` : ''}
       ${data.length || !canDirect ? `<h2 class="sec-title">Barang WIN dari daftar beli</h2>` : ''}
       ${data.length ? `<div class="card flush"><div class="list">${data.map((p) => `<a class="list-item" href="#/terima?po=${p.id}"><div class="grow"><div class="row wrap"><b class="mono">${esc(p.code)}</b>${poTag(p.status)}</div>
         <div class="small muted">${p.po_items.reduce((a, i) => a + i.qty, 0)} item · sopir ${esc(store.profilesById[p.driver_id]?.full_name || '–')}${p.arrived_at ? ' · sampai ' + fmtDateTime(p.arrived_at) : ''}</div></div>
         <span class="btn btn-sm ${p.status === 'sampai' ? 'btn-primary' : ''}">${icon('scan', 16)} Scan</span></a>`).join('')}</div></div>` : canDirect ? '' : `<div class="card">${emptyState('Tidak ada barang WIN yang ditunggu.', 'truck')}</div>`}
       <div class="alert blue small">Barang retur & cancel di-scan di menu <a href="#/retur">Retur</a>.</div></div>`;
+    if (canDirect) report(el);
     el.querySelector('#start')?.addEventListener('click', async (e) => {
       e.target.disabled = true;
       try { const id = await rpc('win_direct_start'); location.hash = '#/terima?po=' + id; } catch (err) { toastErr(err); e.target.disabled = false; }
@@ -127,4 +131,55 @@ async function scanDirect(el, id, p, load) {
     if (!(await confirmBox('Batalkan penerimaan ini?', 'Semua scan di daftar ini dihapus. Stok tidak berubah.', 'Batalkan', true))) return;
     try { await rpc('win_direct_cancel', { p_po: id }); toast('Dibatalkan', 'ok'); location.hash = '#/terima'; } catch (e) { toastErr(e); }
   };
+}
+
+// 2.35: laporan barang WIN diterima per tanggal (hari ini / kemarin / rentang), buka-tutup per nomor WIN, unduh Excel
+function report(el) {
+  let mode = 'today', last = { pos: [], dates: [] };
+  const money = ['owner', 'admin'].includes(store.role);
+  const range = () => {
+    const t = todayStr();
+    if (mode === 'today') return [t, t];
+    if (mode === 'yday') return [addDays(t, -1), addDays(t, -1)];
+    let a = el.querySelector('#d1').value || t, b = el.querySelector('#d2').value || a;
+    if (a > b) [a, b] = [b, a];
+    return [a, b];
+  };
+  const days = (a, b) => { const out = []; for (let d = a; d <= b && out.length < 62; d = addDays(d, 1)) out.push(d); return out; };
+  const jkt = (ts) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date(ts));
+  const load = async () => {
+    const box = el.querySelector('#laplist'); box.innerHTML = skeleton(2);
+    const [a, b] = range();
+    const { data, error } = await supa.from('purchase_orders').select('id, code, direct, finished_at, created_at, win_order_no, po_items(received_qty, unit_cost, products(sku, name))')
+      .eq('status', 'selesai').gte('finished_at', a + 'T00:00:00+07:00').lt('finished_at', addDays(b, 1) + 'T00:00:00+07:00').order('finished_at', { ascending: false });
+    if (error) { box.innerHTML = `<div class="alert red small">${esc(error.message)}</div>`; return; }
+    data.forEach((p) => { p.finished_at = p.finished_at || p.created_at || new Date().toISOString(); });
+    const dates = days(a, b);
+    last = { pos: data, dates, a, b };
+    const tot = data.reduce((x, p) => x + p.po_items.reduce((y, i) => y + i.received_qty, 0), 0);
+    box.innerHTML = data.length ? `<div class="small muted">${data.length} kiriman · <b>${tot}</b> barang${a === b ? '' : ` · ${dates.length} hari`}</div>
+      <div class="win-rep">${data.map((p) => {
+        const items = p.po_items.filter((i) => i.received_qty > 0).sort((x, y) => String(x.products?.name).localeCompare(String(y.products?.name)));
+        const q = items.reduce((x, i) => x + i.received_qty, 0);
+        return `<details class="win-po"><summary><span class="grow"><b class="mono">${esc(p.code)}</b>${p.direct ? '' : ' <span class="tag">daftar beli</span>'}<div class="xs muted">${a === b ? '' : jkt(p.finished_at).split('-').reverse().join('/') + ' · '}${new Date(p.finished_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} · ${items.length} macam</div></span>
+          <b class="win-q">${q}</b>${icon('chev', 16)}</summary>
+          <div class="list no-page">${items.map((i) => `<div class="list-item" style="padding:8px 0"><div class="grow" style="min-width:0"><span class="small">${esc(i.products?.name || '')}</span><div class="xs muted mono">${esc(i.products?.sku || '')}${copyBtn(i.products?.sku)}</div></div>${money ? `<span class="xs muted">${rp(i.unit_cost)}</span>` : ''}<b>${i.received_qty}</b></div>`).join('')}</div></details>`;
+      }).join('')}</div>` : emptyState(mode === 'today' ? 'Belum ada barang WIN yang diterima hari ini.' : 'Tidak ada barang WIN di tanggal ini.', 'truck');
+  };
+  on(el, 'click', '[data-chips="d"] .chip', (e, b) => {
+    mode = b.dataset.v; b.parentElement.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c === b));
+    el.querySelector('#range').classList.toggle('hidden', mode !== 'pick'); load();
+  });
+  on(el, 'change', '#d1, #d2', () => { if (mode === 'pick') load(); });
+  el.querySelector('#xls').onclick = async (e) => {
+    const [a, b] = range();
+    if (!last.pos || last.a !== a || last.b !== b) await load();
+    e.target.disabled = true;
+    try {
+      const { downloadWinExcel } = await import('../excel-win.js');
+      await downloadWinExcel({ pos: last.pos, dates: last.dates, money, shop: store.settings?.nama_toko || '' }, `barang-win-${a}${a === b ? '' : '_sd_' + b}.xlsx`);
+    } catch (err) { toastErr(err); }
+    e.target.disabled = false;
+  };
+  load();
 }

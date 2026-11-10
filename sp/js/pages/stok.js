@@ -1,9 +1,10 @@
 import { supa, rpc, fetchAll } from '../supa.js';
 import { store, nameOf } from '../store.js';
-import { esc, rp, num, fmtDateTime, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, loadScript, beep, skuMatch, normSku, codeOr } from '../ui.js';
+import { esc, rp, num, fmtDateTime, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, loadScript, beep, skuMatch, normSku, codeOr, copyBtn } from '../ui.js';
+import { pickRack } from '../rak-pilih.js';
 import { scanBox, bindScan } from '../scanner.js';
 
-const MOV = { initial: 'Stok awal', in_win: 'Masuk dari WIN', pick: 'Diambil picker', to_packing: 'Langsung ke packing', pack_no_pick: 'Dipacking tanpa pick', return_good: 'Retur baik kembali', return_damaged: 'Retur rusak → karantina', opname: 'Stok opname', adjust: 'Penyesuaian manual', move_rack: 'Pindah rak', cancel_back: 'Cancel, kembali ke rak' };
+const MOV = { initial: 'Stok awal', in_win: 'Masuk dari WIN', pick: 'Diambil picker', to_packing: 'Langsung ke packing', pack_no_pick: 'Dipacking tanpa pick', return_good: 'Retur baik kembali', return_damaged: 'Retur rusak → karantina', opname: 'Stok opname', adjust: 'Penyesuaian manual', move_rack: 'Pindah rak', cancel_back: 'Cancel, kembali ke rak', to_meja: 'Barang WIN masuk stok gudang', meja_back: 'Ditaruh di rak' };
 
 export default {
   tour: [
@@ -30,7 +31,7 @@ async function tabBarang(box) {
   // tampilan awal: barang yang ada di rak (stok > 0), bukan semua barang pricelist
   let filter = 'rak', search = '';
   box.innerHTML = `<div class="stack"><div class="grid gauto" id="kpi"></div>
-    <div class="row wrap"><input class="input grow" id="q" placeholder="Cari nama / kode / rak, atau scan barcode" aria-label="Cari barang" style="min-width:220px">${chips('f', [['rak', 'Ada di rak'], ['win', 'Barang WIN (belum di rak)'], ['all', 'Semua barang'], ['low', 'Stok menipis'], ['zero', 'Habis'], ['norack', 'Tanpa rak']], filter)}</div>
+    <div class="row wrap"><input class="input grow" id="q" placeholder="Cari nama / kode / rak, atau scan barcode" aria-label="Cari barang" style="min-width:220px">${chips('f', [['rak', 'Ada di rak'], ['win', 'Barang WIN (belum di rak)'], ['low', 'Stok menipis'], ['zero', 'Habis'], ['all', 'Semua barang ›']], filter)}</div>
     <div class="card flush" id="list">${skeleton()}</div></div>`;
   const kpi = async () => {
     const data = await fetchAll(() => supa.from('products').select('stock, meja_qty, harga_beli, min_stock').eq('active', true).order('id')).catch(() => []);
@@ -52,16 +53,15 @@ async function tabBarang(box) {
         if (filter === 'rak') qy = qy.gt('stock', 0);
         if (filter === 'win') qy = qy.gt('meja_qty', 0);
         if (filter === 'zero') qy = qy.lte('stock', 0);
-        if (filter === 'norack') qy = qy.is('rack_code', null);
         return qy;
       });
     } catch (error) { return toastErr(error); }
     const list = filter === 'low' ? data.filter((p) => p.min_stock > 0 && p.stock <= p.min_stock) : data;
     box.querySelector('#list').innerHTML = list.length ? `<div class="list">${list.map((p) => `<button class="list-item" data-p="${p.id}">
       <span class="mono" style="width:64px;flex:none;font-weight:600">${esc(p.rack_code || '—')}</span>
-      <div class="grow"><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}</div></div>
+      <div class="grow"><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}${copyBtn(p.sku)}</div></div>
       <div class="right"><b style="font-size:18px" class="${p.stock <= 0 ? 'neg' : ''}">${p.stock}</b>${p.meja_qty > 0 ? `<div><span class="tag blue">+${p.meja_qty} WIN belum di rak</span></div>` : ''}${p.min_stock > 0 && p.stock <= p.min_stock ? '<div><span class="tag yellow">menipis</span></div>' : ''}</div></button>`).join('')}</div>`
-      : filter === 'rak' ? `${emptyState(search ? 'Barang ini tidak ada di rak (stok 0).' : 'Belum ada barang di rak.', 'box')}<div class="row" style="justify-content:center;padding:0 16px 16px"><button class="btn btn-sm" data-allp>Cari di semua barang</button></div>`
+      : filter === 'rak' ? `${emptyState(search ? 'Barang ini tidak ada di rak (stok 0).' : 'Belum ada barang di rak.', 'box')}<div class="row" style="justify-content:center;padding:0 16px 16px"><button class="btn btn-sm" data-allp>Cari di Master barang</button></div>`
       : emptyState('Tidak ada barang.', 'box');
   };
   box.querySelector('#q').addEventListener('input', debounce((e) => { search = e.target.value.trim().replace(/[,%()]/g, ''); load(); }, 300));
@@ -70,9 +70,10 @@ async function tabBarang(box) {
     const id = await rpc('find_product', { p_code: e.target.value.trim() }).catch(() => null);
     if (id) { e.target.value = ''; openProduct(id, load); }
   });
-  on(box, 'click', '[data-chips="f"] .chip', (e, b) => { filter = b.dataset.v; b.parentElement.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c === b)); load(); });
+  const toMaster = () => { location.hash = '#/barang' + (search ? '?q=' + encodeURIComponent(search) : ''); };
+  on(box, 'click', '[data-chips="f"] .chip', (e, b) => { if (b.dataset.v === 'all') return toMaster(); filter = b.dataset.v; b.parentElement.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c === b)); load(); });
   on(box, 'click', '[data-fwin]', () => { filter = 'win'; box.querySelectorAll('[data-chips="f"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === 'win')); load(); });
-  on(box, 'click', '[data-allp]', () => { filter = 'all'; box.querySelectorAll('[data-chips="f"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === 'all')); load(); });
+  on(box, 'click', '[data-allp]', toMaster);
   on(box, 'click', '[data-p]', (e, b) => openProduct(+b.dataset.p, () => { load(); kpi(); }));
   kpi(); load();
 }
@@ -86,25 +87,28 @@ export async function openProduct(id, after) {
   const r = await modal({
     title: p.name, wide: true,
     body: `<div class="stack">
-      <div class="grid gauto"><div class="stat gray"><b>${p.stock}</b><span>stok di rak</span></div><div class="stat gray"><b class="mono">${esc(p.rack_code || '—')}</b><span>lokasi rak</span></div>
+      <div class="grid gauto"><div class="stat gray"><b>${p.stock}</b><span>stok di rak</span></div>${p.meja_qty > 0 ? `<div class="stat blue"><b>${p.meja_qty}</b><span>barang WIN belum di rak</span></div>` : ''}<div class="stat gray"><b class="mono">${esc(p.rack_code || '—')}</b><span>lokasi rak</span></div>
         ${p.stock_karantina ? `<div class="stat red"><b>${p.stock_karantina}</b><span>karantina (rusak)</span></div>` : ''}${['owner', 'admin'].includes(store.role) ? `<div class="stat gray"><b>${rp(p.harga_beli)}</b><span>harga beli</span></div>` : ''}</div>
-      <div class="mono small muted">${esc(p.sku)}</div>
+      <div class="mono small muted">${esc(p.sku)}${copyBtn(p.sku)}</div>
       <h3 style="font-size:15px">Riwayat keluar-masuk</h3>
       ${mv.length ? `<div class="table-wrap"><table class="tbl small"><tbody>${mv.map((m) => `<tr><td class="nowrap">${fmtDateTime(m.created_at)}</td><td>${esc(MOV[m.type] || m.type)}${m.note ? `<div class="xs muted">${esc(m.note)}</div>` : ''}</td><td>${esc(nameOf(m.user_id))}</td>
         <td class="num ${m.qty < 0 ? 'neg' : m.qty > 0 ? 'pos' : ''}"><b>${m.qty > 0 ? '+' : ''}${m.qty || (m.qty_karantina ? 'K+' + m.qty_karantina : '0')}</b></td></tr>`).join('')}</tbody></table></div>` : '<div class="muted small">Belum ada pergerakan.</div>'}
     </div>`,
     actions: [
       { label: 'Cetak label', value: 'label' },
-      { label: 'Pindah rak', value: 'rack' },
+      ...(p.meja_qty > 0 && canAdj ? [{ label: 'Tambah ke rak', cls: 'btn-primary', value: 'torack' }] : [{ label: 'Pindah rak', value: 'rack' }]),
       ...(canAdj ? [{ label: p.stock === 0 && !mv.length ? 'Isi stok awal' : 'Sesuaikan stok', value: 'adj' }] : []),
-      { label: 'Tutup', cls: 'btn-primary', value: null }
+      { label: 'Tutup', cls: p.meja_qty > 0 && canAdj ? '' : 'btn-primary', value: null }
     ]
   });
   if (r === 'label') printLabels([p]);
   if (r === 'rack') {
-    const rack = await modal({ title: 'Pindah rak', body: `<p class="muted" style="margin-top:0">${esc(p.name)} — sekarang di rak <b>${esc(p.rack_code || '-')}</b></p><label class="field">Rak baru (ketik atau scan label rak)<input class="input mono" id="rk" placeholder="mis. A-05" autocapitalize="characters"></label>`,
-      actions: [{ label: 'Batal', value: null }, { label: 'Simpan', cls: 'btn-primary', onClick: (ov) => ov.querySelector('#rk').value.trim() || false }] });
-    if (rack) { try { await rpc('move_rack', { p_product: id, p_rack: rack }); toast('Dipindah ke rak ' + rack.toUpperCase(), 'ok'); } catch (e) { toastErr(e); } }
+    const k = await pickRack({ title: 'Pindah rak', product: p, okLabel: 'Pindahkan' });
+    if (k) { try { await rpc('move_rack', { p_product: id, p_rack: k.rack }); toast('Dipindah ke rak ' + k.rack, 'ok'); } catch (e) { toastErr(e); } }
+  }
+  if (r === 'torack') {
+    const k = await pickRack({ title: 'Tambah ke rak', product: p, qtyMax: p.meja_qty, okLabel: 'Tambah ke rak', note: p.rack_code ? `Pilih rak lain kalau barang ini mau dipindah. Lokasi barang ikut berubah.` : '' });
+    if (k) { try { const x = await rpc('meja_to_rack', { p_product: id, p_qty: k.qty, p_rack: k.rack }); toast(`${x.qty} pcs ditaruh di rak ${x.rack}`, 'ok'); } catch (e) { toastErr(e); } }
   }
   if (r === 'adj') {
     const initial = p.stock === 0 && !mv.length;
