@@ -3,6 +3,7 @@ import { allProductsCached } from '../products-cache.js';
 import { store, nameOf } from '../store.js';
 import { esc, rp, num, fmtDateTime, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, debounce, icon, loadScript, beep, skuMatch, normSku, codeOr, copyBtn } from '../ui.js';
 import { pickRack } from '../rak-pilih.js';
+import { bindProductSearch } from '../daftar-file.js';
 import { scanBox, bindScan } from '../scanner.js';
 
 const MOV = { initial: 'Stok awal', in_win: 'Masuk dari WIN', pick: 'Diambil picker', to_packing: 'Langsung ke packing', pack_no_pick: 'Dipacking tanpa pick', return_good: 'Retur baik kembali', return_damaged: 'Retur rusak → karantina', opname: 'Stok opname', adjust: 'Penyesuaian manual', move_rack: 'Pindah rak', cancel_back: 'Cancel, kembali ke rak', to_meja: 'Barang WIN masuk stok gudang', meja_back: 'Ditaruh di rak' };
@@ -126,8 +127,19 @@ export async function openProduct(id, after) {
   after && after();
 }
 
+// 2.37: Stok opname punya 2 cara — hitung ulang 1 rak (biasa) dan penataan ulang semua rak (pertama kali / tata ulang gudang)
 async function tabOpname(box) {
   if (!['owner', 'kepala_gudang', 'supervisor'].includes(store.role)) { box.innerHTML = `<div class="card">${emptyState('Stok opname dilakukan oleh kepala gudang.', 'clip')}</div>`; return; }
+  let st = { aktif: false };
+  try { st = await rpc('penataan_status'); } catch (_) { /* update-2.37 belum dijalankan */ st = { aktif: false, off: true }; }
+  let mode = st.aktif ? 'tata' : 'hitung';
+  box.innerHTML = `<div class="stack">${st.off ? '' : chips('om', [['hitung', 'Hitung ulang rak'], ['tata', st.aktif ? 'Penataan ulang · berjalan' : 'Penataan ulang rak']], mode)}<div id="ombody"></div></div>`;
+  const show = () => { const b = box.querySelector('#ombody'); mode === 'tata' ? tabPenataan(b) : opnameRak(b); };
+  on(box, 'click', '[data-chips="om"] .chip', (e, b) => { mode = b.dataset.v; b.parentElement.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c === b)); show(); });
+  show();
+}
+
+async function opnameRak(box) {
   const { data: racks } = await supa.from('racks').select('code').order('code');
   box.innerHTML = `<div class="stack"><div class="card stack">
       <div class="alert blue small">Hitung barang fisik di satu rak, isi jumlahnya, lalu simpan. Stok sistem sengaja tidak ditampilkan supaya hitungan jujur. Selisih kurang langsung dilaporkan ke owner beserta siapa yang terakhir memegang barang itu.</div>
@@ -199,4 +211,101 @@ async function tabKarantina(box) {
 export async function printLabels(items, kind = 'barang') {
   const { openLabelDialog } = await import('../labels.js');
   return openLabelDialog(items, kind);
+}
+
+// ---------- 2.37 penataan ulang rak ----------
+const draftKey = (id, rack) => `penataan:${id}:${rack}`;
+const draftGet = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } };
+const draftSet = (k, v) => { try { v ? localStorage.setItem(k, JSON.stringify(v)) : localStorage.removeItem(k); } catch (_) {} };
+
+async function tabPenataan(box) {
+  box.innerHTML = skeleton(3);
+  const st = await rpc('penataan_status').catch((e) => { toastErr(e); return null; });
+  if (!st) return;
+  if (!st.aktif) {
+    box.innerHTML = `<div class="card stack"><h2 class="sec-title" style="margin:0">Penataan ulang rak</h2>
+      <div class="small">Untuk stok opname pertama atau saat gudang ditata ulang. Barang boleh dipindah ke rak mana saja.</div>
+      <ol class="small steps-ol"><li>Pastikan semua rak sudah terdaftar di <b>Rak & label</b> (dan labelnya ditempel).</li>
+        <li>Pilih rak, lalu <b>scan setiap barang</b> yang ditaruh di rak itu (1 scan = 1 pcs). Simpan per rak.</li>
+        <li>Barang otomatis pindah ke rak itu dan stoknya mengikuti hitungan. Selisih tidak dicatat sebagai barang hilang.</li>
+        <li>Setelah semua rak selesai, tekan <b>Selesai penataan</b>.</li></ol>
+      <div class="alert yellow small">Sebelum mulai, taruh dulu barang WIN yang belum di rak lewat <b>Tambah ke rak</b>, supaya tidak terhitung dua kali.</div>
+      <button class="btn btn-primary btn-lg" id="pmulai">Mulai penataan ulang</button></div>`;
+    box.querySelector('#pmulai').onclick = async (e) => { e.target.disabled = true; try { await rpc('penataan_mulai'); tabPenataan(box); } catch (err) { toastErr(err); e.target.disabled = false; } };
+    return;
+  }
+  box.innerHTML = `<div class="stack">
+    <div class="hero"><div class="label">Penataan ulang berjalan</div><div class="big">${num(st.pcs)} <span style="font-size:18px;opacity:.75">pcs</span></div>
+      <div class="small" style="color:#C9CCC8">${st.racks.length} rak · ${num(st.jenis)} jenis barang · dimulai ${fmtDateTime(st.started_at)}${st.started_by ? ' oleh ' + esc(st.started_by) : ''}</div></div>
+    <button class="btn btn-primary btn-lg" id="prak">${icon('scan', 20)} Pilih rak & mulai scan</button>
+    <div class="card flush"><div class="card-h"><h2>Rak yang sudah ditata</h2></div>${st.racks.length ? `<div class="list no-page">${st.racks.map((r) => `<button class="list-item" data-prak="${esc(r.rack)}"><b class="mono" style="min-width:58px">${esc(r.rack)}</b><span class="grow small">${num(r.jenis)} jenis · ${num(r.pcs)} pcs<div class="xs muted">${fmtDateTime(r.at)}</div></span><span class="btn btn-sm">Ubah</span></button>`).join('')}</div>` : emptyState('Belum ada rak yang ditata.', 'box')}</div>
+    <div class="card stack"><div class="row between wrap"><span><b>Belum di-scan di rak mana pun</b><div class="small muted">${num(st.belum_jenis)} jenis · ${num(st.belum_pcs)} pcs menurut stok sistem</div></span>${st.belum_jenis ? '<button class="btn btn-sm btn-see" id="pbelum">Lihat</button>' : ''}</div><div id="pbelumlist"></div></div>
+    <button class="btn btn-lg" id="pselesai">${icon('check', 18)} Selesai penataan</button></div>`;
+  const openRack = (rack) => rackScan(box, st, rack);
+  box.querySelector('#prak').onclick = async () => { const k = await pickRack({ title: 'Pilih rak yang akan ditata', okLabel: 'Mulai scan' }); if (k) openRack(k.rack); };
+  on(box, 'click', '[data-prak]', (e, b) => openRack(b.dataset.prak));
+  box.querySelector('#pbelum')?.addEventListener('click', async (e) => {
+    e.target.disabled = true;
+    const list = await rpc('penataan_belum', { p_limit: 300 }).catch(() => []);
+    box.querySelector('#pbelumlist').innerHTML = `<div class="list no-page">${list.map((p) => `<div class="list-item" style="padding:8px 0"><span class="mono small" style="min-width:52px">${esc(p.rack_code || '–')}</span><div class="grow" style="min-width:0"><span class="small">${esc(p.name)}</span><div class="xs muted mono">${esc(p.sku)}${copyBtn(p.sku)}</div></div><b>${p.stock}</b></div>`).join('')}</div>${list.length >= 300 ? '<div class="xs muted">Menampilkan 300 barang pertama.</div>' : ''}`;
+  });
+  box.querySelector('#pselesai').onclick = async () => {
+    const r = await modal({ title: 'Selesai penataan?', body: `<p style="margin-top:0">${st.racks.length} rak sudah ditata (${num(st.pcs)} pcs).</p>
+      ${st.belum_jenis ? `<div class="alert yellow small"><b>${num(st.belum_jenis)} jenis barang (${num(st.belum_pcs)} pcs)</b> punya stok di sistem tapi tidak di-scan di rak mana pun. Kalau semua rak sudah selesai, barang itu memang tidak ada → pilih <b>Jadikan stok 0</b>.</div>` : '<div class="small muted">Semua barang yang punya stok sudah di-scan.</div>'}`,
+      actions: [{ label: 'Batal', value: null }, ...(st.belum_jenis ? [{ label: 'Biarkan stoknya', value: 'keep' }, { label: 'Jadikan stok 0', cls: 'btn-primary', value: 'zero' }] : [{ label: 'Selesai', cls: 'btn-primary', value: 'keep' }])] });
+    if (!r) return;
+    try { const x = await rpc('penataan_selesai', { p_nolkan: r === 'zero' }); toast(`Penataan selesai: ${x.rak} rak, ${x.pcs} pcs${x.dinolkan ? `, ${x.dinolkan} barang dijadikan 0` : ''}`, 'ok'); tabPenataan(box); } catch (err) { toastErr(err); }
+  };
+}
+
+async function rackScan(box, st, rack) {
+  const key = draftKey(st.id, rack);
+  let rows = draftGet(key);
+  if (!rows) {
+    const { data } = await supa.from('penataan_items').select('qty, products(id, sku, name)').eq('penataan_id', st.id).eq('rack_code', rack);
+    rows = (data || []).map((r) => ({ id: r.products.id, sku: r.products.sku, name: r.products.name, qty: r.qty }));
+  }
+  const products = await allProductsCached({ active: true }).catch(() => []);
+  box.innerHTML = `<div class="stack">
+    <div class="row between wrap"><button class="btn btn-ghost btn-sm" id="pback">${icon('back', 16)} Kembali</button><span class="row"><span class="small muted">Rak</span><b class="mono" style="font-size:22px">${esc(rack)}</b></span></div>
+    <div class="card stack">${scanBox('psb', 'Scan setiap barang yang ditaruh di rak ' + rack)}<div id="plast" aria-live="polite"></div>
+      <input class="input" id="pq" placeholder="atau cari nama / kode barang" autocomplete="off"></div>
+    <div class="card flush" id="prows"></div>
+    <button class="btn btn-primary btn-lg" id="psave">Simpan rak ${esc(rack)}</button></div>`;
+  const save = () => draftSet(key, rows);
+  const paint = () => {
+    const t = rows.reduce((a, r) => a + r.qty, 0);
+    box.querySelector('#prows').innerHTML = `<div class="card-h"><h2>Isi rak ${esc(rack)}</h2><span class="small"><b>${t}</b> pcs · ${rows.length} jenis</span></div>${rows.length ? `<div class="list no-page">${rows.map((r, i) => `<div class="list-item" style="padding:8px 14px"><div class="grow" style="min-width:0"><b class="small">${esc(r.name)}</b><div class="xs muted mono">${esc(r.sku)}</div></div>
+      <button class="btn btn-ghost btn-sm" data-pm="${i}" aria-label="Kurangi 1">−</button><input class="input sm num" style="width:64px" inputmode="numeric" data-pqty="${i}" value="${r.qty}" aria-label="Jumlah ${esc(r.name)}"><button class="btn btn-ghost btn-sm" data-pp="${i}" aria-label="Tambah 1">+</button></div>`).join('')}</div>` : `<div style="padding:14px">${emptyState('Belum ada barang. Scan barang pertama.', 'box')}</div>`}`;
+  };
+  const add = (p, n = 1) => {
+    const i = rows.findIndex((r) => r.id === p.id);
+    if (i >= 0) { rows[i].qty += n; const [x] = rows.splice(i, 1); rows.unshift(x); } else rows.unshift({ id: p.id, sku: p.sku, name: p.name, qty: n });
+    save(); paint(); return rows[0];
+  };
+  paint();
+  bindScan(box, 'psb', (code) => {
+    const p = products.find((x) => skuMatch(code, x.sku));
+    const last = box.querySelector('#plast');
+    if (!p) { beep(false); last.innerHTML = `<div class="alert red small">Kode ${esc(code)} tidak ada di master barang.</div>`; return { ok: false, title: 'Kode tidak dikenal', info: code }; }
+    const r = add(p); beep(true);
+    last.innerHTML = `<div class="alert green small"><b>${esc(p.name)}</b> × ${r.qty}${p.rack_code && p.rack_code !== rack ? ` · pindah dari rak ${esc(p.rack_code)}` : ''}</div>`;
+    return { ok: true, title: p.name, info: `× ${r.qty} di rak ${rack}` };
+  });
+  bindProductSearch(box.querySelector('#pq'), (p) => add(p));
+  on(box, 'click', '[data-pp]', (e, b) => { rows[+b.dataset.pp].qty++; save(); paint(); });
+  on(box, 'click', '[data-pm]', (e, b) => { const i = +b.dataset.pm; rows[i].qty--; if (rows[i].qty <= 0) rows.splice(i, 1); save(); paint(); });
+  on(box, 'change', '[data-pqty]', (e) => { const i = +e.target.dataset.pqty; rows[i].qty = Math.max(0, parseInt(e.target.value, 10) || 0); if (!rows[i].qty) rows.splice(i, 1); save(); paint(); });
+  box.querySelector('#pback').onclick = () => tabPenataan(box);
+  box.querySelector('#psave').onclick = async (e) => {
+    e.target.disabled = true;
+    try {
+      const r = await rpc('penataan_rak', { p: { rack, items: rows.map((x) => ({ product_id: x.id, qty: x.qty })) } });
+      draftSet(key, null);
+      toast(`Rak ${r.rack} tersimpan: ${r.jenis} jenis, ${r.pcs} pcs`, 'ok');
+      if (r.dobel?.length) await modal({ title: 'Barang ada di beberapa rak', body: `<p style="margin-top:0" class="small">Stoknya dijumlah, lokasinya dicatat di rak dengan jumlah terbanyak. Sebaiknya satukan di satu rak.</p><div class="list no-page">${r.dobel.map((d) => `<div class="list-item" style="padding:6px 0"><span class="grow small">${esc(d.name)}</span><span class="mono xs">${esc(d.racks)}</span></div>`).join('')}</div>`, actions: [{ label: 'Oke', cls: 'btn-primary', value: true }] });
+      import('../products-cache.js').then((m) => m.touchProducts());
+      tabPenataan(box);
+    } catch (err) { toastErr(err); e.target.disabled = false; }
+  };
 }

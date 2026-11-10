@@ -1801,3 +1801,5 @@ html[data-theme="hitam"] .cpy { color: #6B4A00; background: #FFF4D6; }
 .input-suffix { display: flex; align-items: center; gap: 8px; }
 .input-suffix .input { flex: 1; min-width: 0; }
 .input-suffix > span { color: var(--muted); font-size: 13px; }
+/* 2.37 — penataan ulang rak */
+.steps-ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
