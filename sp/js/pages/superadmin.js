@@ -3,7 +3,7 @@ import { apkInfo, uploadApk, removeApk, fmtSize } from '../install.js';
 import { SUPABASE_URL } from '../config.js';
 import { billRow } from '../billing.js';
 import { store } from '../store.js';
-import { esc, num, rp, toast, toastErr, icon, modal, on, parseNum, todayStr, addDays, confirmBox, promptBox, fmtDate } from '../ui.js';
+import { esc, num, rp, toast, toastErr, icon, modal, on, parseNum, todayStr, addDays, confirmBox, promptBox, fmtDate, skeleton } from '../ui.js';
 import { pushPermission, subscribePush, sendTestPush, pushSupported } from '../push.js';
 import { CURRENT, deviceLabel, fetchLatest } from '../version.js';
 import { loadModules, modStatus, modOn } from '../modules.js';
@@ -50,12 +50,63 @@ export function alatUI(el) {
       <section class="card stack" id="apkbox"><h2 class="sec-title">${icon('download', 18)} File APK (Pasang aplikasi di halaman login)</h2><div id="apkcur" class="small muted">Memuat…</div>
         <div class="grid g2"><label class="field">File APK<input class="input" id="apkf" type="file" accept=".apk,application/vnd.android.package-archive"></label><label class="field">Versi<input class="input" id="apkv" placeholder="mis. 1.0.0"></label></div>
         <div class="row wrap between"><button class="btn btn-ghost btn-sm hidden" id="apkdel" style="color:var(--red)">Hapus APK</button><button class="btn btn-primary" id="apkup">${icon('upload', 16)} Unggah APK</button></div></section>
+      <section class="card stack danger-zone" id="selbox"><h2 class="sec-title" style="color:var(--red)">${icon('alert', 18)} Hapus data pilihan</h2>
+        <div class="small">Pilih data yang mau dihapus, misalnya data contoh atau data coba-coba. Akun pegawai, jabatan, pengaturan toko dan daftar toko <b>tidak</b> ikut terhapus. <b>Tidak bisa dibatalkan.</b></div>
+        <div id="selopts" class="grid g2">${skeleton(2)}</div>
+        <div id="selkey"></div></section>
       <section class="card stack danger-zone"><h2 class="sec-title" style="color:var(--red)">${icon('alert', 18)} Hapus semua data</h2>
         <div class="small">Menghapus <b>semua</b> barang, harga, rak, stok, pesanan, upload, beli WIN, retur, opname, notifikasi, kecurangan, log, absen, gaji, biaya, dan pengumuman.<br>
           <b>Tetap ada:</b> akun pegawai &amp; jabatan, pengaturan toko, daftar toko, dan pendaftaran notifikasi HP. <b>Tidak bisa dibatalkan.</b></div>
         <div class="xs muted" id="cnt"></div>
         <div id="keybox"></div></section></div>`;
+    // 2.41: hapus data pilihan
+    const PARTS = [
+      ['contoh', 'Data contoh', 'Barang, pesanan, pegawai, kiriman WIN & faktur contoh (DEMO / “(contoh)”). Data asli tidak disentuh.'],
+      ['pesanan', 'Pesanan', 'Pesanan, resi, retur, komplain, QC, tugas ambil. Stok barang tidak dikembalikan.'],
+      ['beli', 'Beli & terima WIN + faktur', 'Daftar beli, hasil scan Terima barang WIN, faktur WIN.'],
+      ['stok', 'Stok & pergerakan', 'Riwayat stok, opname, penataan rak, pindah gudang. Stok semua barang jadi 0.'],
+      ['shopee', 'Data Shopee', 'Penghasilan Shopee, file Pesanan Saya, peta SKU.'],
+      ['barang', 'Master barang & harga', 'Semua barang & riwayat harga. Pesanan, beli WIN & stok ikut terhapus.'],
+      ['rak', 'Rak', 'Semua kode rak. Barang jadi tanpa rak.'],
+      ['keuangan', 'Absen, gaji & keuangan', 'Absen, gaji, biaya operasional, transaksi kas.'],
+      ['log', 'Log, notifikasi & masalah', 'Log aktivitas, notifikasi, Kecurangan & masalah, pengumuman.'],
+      ['upload', 'Riwayat upload file', 'Daftar file yang pernah diupload.']];
+    const paintSel = (cnt, hasKey) => {
+      el.querySelector('#selopts').innerHTML = PARTS.map(([k, t, d]) => `<label class="del-opt"><input type="checkbox" class="check" data-part="${k}">
+        <span><b>${t}</b> <span class="tag">${num(cnt?.[k] ?? 0)}</span><div class="xs muted">${d}</div></span></label>`).join('');
+      el.querySelector('#selkey').innerHTML = hasKey ? `<div class="grid g2"><label class="field">Kunci hapus<input class="input" id="sk" type="password" autocomplete="off"></label>
+          <label class="field">Ketik <b>HAPUS</b><input class="input" id="sc" autocomplete="off" placeholder="HAPUS"></label></div>
+        <div class="row" style="justify-content:flex-end"><button class="btn btn-dark" id="seldel" style="background:var(--red);border-color:var(--red)" disabled>Hapus data terpilih</button></div>`
+        : '<div class="alert blue small">Buat <b>kunci hapus</b> dulu di bagian bawah.</div>';
+      const sync = () => {
+        const on = new Set([...el.querySelectorAll('[data-part]:checked')].map((c) => c.dataset.part));
+        // master barang dipakai pesanan, beli & stok -> ikut terpilih
+        ['pesanan', 'beli', 'stok'].forEach((k) => { const c = el.querySelector(`[data-part="${k}"]`); if (on.has('barang')) { c.checked = true; c.disabled = true; } else c.disabled = false; c.closest('.del-opt').classList.toggle('locked', on.has('barang')); });
+        const b = el.querySelector('#seldel'); if (b) b.disabled = !el.querySelector('[data-part]:checked');
+      };
+      el.querySelector('#selopts').onchange = sync;
+      el.querySelector('#seldel')?.addEventListener('click', async (e) => {
+        const parts = [...el.querySelectorAll('[data-part]:checked')].map((c) => c.dataset.part);
+        const key = el.querySelector('#sk').value;
+        if (!key) return toast('Isi kunci hapus', 'err');
+        if (el.querySelector('#sc').value.trim().toUpperCase() !== 'HAPUS') return toast('Ketik HAPUS', 'err');
+        const names = parts.map((k) => PARTS.find((x) => x[0] === k)[1]);
+        const ok = await modal({ title: 'Hapus data ini?', body: `<p style="margin:0 0 8px">Data berikut dihapus permanen:</p><ul style="margin:0;padding-left:18px">${names.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>`,
+          actions: [{ label: 'Batal', value: false }, { label: 'Ya, hapus', cls: 'btn-dark', value: true }] });
+        if (!ok) return;
+        e.target.disabled = true;
+        try {
+          const r = await rpc('sa_hapus_data', { p_key: key, p_parts: parts });
+          const c = r.contoh;
+          toast(`Terhapus: ${names.join(', ')}${c ? ` (contoh: ${c.barang} barang, ${c.pesanan} pesanan, ${c.pegawai} pegawai)` : ''}`, 'ok');
+          try { (await import('../products-cache.js')).clearProductsCache(); } catch (_) {}
+          loadInfo();
+        } catch (err) { toastErr(err); e.target.disabled = false; }
+      });
+    };
     const loadInfo = async () => {
+      rpc('sa_status').then((s) => rpc('sa_data_counts').then((c) => paintSel(c, s.kunci_ada)))
+        .catch((e) => { el.querySelector('#selopts').innerHTML = `<div class="alert yellow small">Butuh update database 2.41 (${esc(e.message || e)})</div>`; });
       try { const s = await rpc('sa_status'); paintKey(s.kunci_ada); el.querySelector('#cnt').textContent = `${num(s.barang)} barang · ${num(s.pesanan)} pesanan · ${num(s.pergerakan_stok)} pergerakan stok`; }
       catch (e) { el.querySelector('#keybox').innerHTML = `<div class="alert yellow small">${esc(e.message)}</div>`; }
     };

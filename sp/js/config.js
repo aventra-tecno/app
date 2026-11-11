@@ -12,5 +12,5 @@ export const SUPABASE_ANON_KEY = 'sb_publishable_FnSdKP7-0YdzX5onpm49xg_NaljtdI7
 export const APP_NAME = 'Stok Gudang';
 // Versi diisi OTOMATIS oleh GitHub Actions setiap upload (.github/workflows/deploy.yml).
 // Ubah angka depan (mis. 1.7 -> 1.8) hanya kalau ada perubahan besar; angka terakhir = nomor build.
-export const APP_VERSION = '2.40.0';
+export const APP_VERSION = '2.41.0';
 export const APP_BUILD = 'dev';

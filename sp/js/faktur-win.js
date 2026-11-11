@@ -47,7 +47,7 @@ export function isFakturWin(rows) {
 
 // -> { customer, lines: [{ date, inv, ref, no, name, qty, harga, disc, net }] }
 export function parseFaktur(rows) {
-  const lines = []; let date = null, headDate = null, inv = null, ref = '', customer = '';
+  const lines = [], seq = {}; let date = null, headDate = null, inv = null, ref = '', customer = '';
   for (const r of rows) {
     const c = r.filter((x) => x !== '' && x !== null && x !== undefined);
     if (!c.length) continue;
@@ -69,7 +69,8 @@ export function parseFaktur(rows) {
       const net = c.length >= 7 ? NUM(c[6]) : NUM(c[c.length - 1]);
       const disc = c.length >= 7 ? String(c[5]).trim() : '';
       if (!qty) continue;
-      lines.push({ date: date || headDate, inv, ref, no: parseInt(s0, 10), name: normName(c[1]), qty, harga, disc, net, unit: Math.round(net / qty) });
+      seq[inv] = (seq[inv] || 0) + 1;   // 1 faktur bisa muncul di 2 kelompok (MIKA & PRODUCT IMPORT) -> nomor baris dibuat urut
+      lines.push({ date: date || headDate, inv, ref, no: seq[inv], name: normName(c[1]), qty, harga, disc, net, unit: Math.round(net / qty) });
     }
   }
   lines.forEach((l) => { if (!l.date) l.date = headDate; });

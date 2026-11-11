@@ -1,7 +1,7 @@
 import { supa, rpc } from '../supa.js';
 import { store } from '../store.js';
-import { esc, rp, num, fmtDate, fmtDateTime, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, icon, photoUrl, confirmBox, parseNum, copyBtn } from '../ui.js';
-import { listEditor, allProducts, pickProduct } from '../daftar-file.js';
+import { esc, rp, num, fmtDateTime, chips, on, modal, toast, toastErr, pageHead, emptyState, skeleton, icon, photoUrl, confirmBox, parseNum } from '../ui.js';
+import { listEditor } from '../daftar-file.js';
 
 const PO_ST = { draft: ['Draft', ''], ditugaskan: ['Ditugaskan', 'yellow'], berangkat: ['Sopir berangkat', 'yellow'], diambil: ['Sudah diambil', 'blue'], sampai: ['Sampai gudang', 'blue'], selesai: ['Selesai', 'green'], batal: ['Batal', 'red'] };
 export const poTag = (s) => `<span class="tag ${PO_ST[s]?.[1] || ''}">${PO_ST[s]?.[0] || s}</span>`;
@@ -29,24 +29,13 @@ export default {
 async function renderFile(box, afterCreate) {
   const { data: drivers } = await supa.from('profiles').select('id, full_name').eq('role', 'sopir').eq('active', true);
   box.innerHTML = `<div class="stack">
-    <section class="card stack"><h2 class="sec-title">Barang yang dipesan di WIN</h2>
-      <div class="small muted">Bisa juga upload <b>faktur WIN</b> (file .xls “Penjualan Harian per Faktur”), walaupun baru didapat besoknya. Barang dicocokkan dengan master barang dan dipisah per tanggal.</div>
-      <div id="le"></div></section>
-    <div id="fk"></div>
+    <section class="card stack"><h2 class="sec-title">Barang yang dipesan di WIN</h2><div id="le"></div></section>
     <section class="card stack" id="poform"><div class="grid gauto">
         <label class="field">No. order di aplikasi WIN<input class="input mono" id="win" placeholder="mis. WIN-88213450"></label>
         <label class="field">Tugaskan sopir<select class="input" id="drv"><option value="">— pilih nanti —</option>${(drivers || []).map((d) => `<option value="${d.id}">${esc(d.full_name)}</option>`).join('')}</select></label>
         <label class="field">Catatan<input class="input" id="note" placeholder="opsional"></label></div>
       <button class="btn btn-primary btn-lg" id="mk" disabled>Simpan & kirim tugas ke sopir</button></section></div>`;
-  const le = listEditor(box.querySelector('#le'), { price: true, emptyText: 'Upload screenshot / PDF / Excel pesanan dari aplikasi WIN, atau cari manual.', onChange: (st) => { box.querySelector('#mk').disabled = !st.rows.length; },
-    onFile: async (f) => {
-      if (!/\.(xlsx|xls)$/i.test(f.name)) return false;
-      const { readFakturRows } = await import('../faktur-win.js');
-      const rows = await readFakturRows(f);
-      if (!rows) return false;
-      await fakturPanel(box.querySelector('#fk'), rows, f.name, le, box);
-      return true;
-    } });
+  const le = listEditor(box.querySelector('#le'), { price: true, emptyText: 'Upload screenshot / PDF / Excel pesanan dari aplikasi WIN, atau cari manual.', onChange: (st) => { box.querySelector('#mk').disabled = !st.rows.length; } });
   box.querySelector('#mk').onclick = async (e) => {
     const rows = le.state.rows;
     const over = rows.filter((r) => Number(r.p.harga_beli) > 0 && r.price > Number(r.p.harga_beli));
@@ -59,83 +48,6 @@ async function renderFile(box, afterCreate) {
       afterCreate();
     } catch (err) { toastErr(err); e.target.disabled = false; }
   };
-}
-
-// ---------- 2.40 faktur WIN: rincian per tanggal & per status cocok ----------
-const FST = {
-  persis: ['Nama persis', 'green', 'Nama sama persis dengan master barang, harga sama.'],
-  mirip: ['Nama mirip, harga sama', 'blue', 'Penulisan nama sedikit beda (mis. “VARIO 150 15” vs “VARIO 150”), dipastikan dari harga yang sama. Cek sekilas.'],
-  harga: ['Harga beda', 'yellow', 'Barang ketemu, tapi harga di faktur beda dengan harga pricelist di master barang.'],
-  manual: ['Dipilih manual', 'blue', 'Barang dipilih sendiri.'],
-  tidak: ['Tidak ada di master barang', 'red', 'Tekan Cari untuk memilih barangnya, atau tambahkan dulu di Master barang.']
-};
-async function fakturPanel(fk, rows, fname, le, box) {
-  fk.innerHTML = `<div class="card">${skeleton(2)}</div>`;
-  const { parseFaktur, matchFaktur } = await import('../faktur-win.js');
-  const fx = parseFaktur(rows);
-  if (!fx.lines.length) { fk.innerHTML = '<div class="alert yellow">File faktur terbaca, tapi tidak ada baris barang.</div>'; return; }
-  let lines = matchFaktur(fx.lines, await allProducts());
-  const dates = [...new Set(lines.map((l) => l.date || ''))].sort().reverse();
-  const open = new Set([dates[0]]);
-  const paint = () => {
-    const sum = (ls, f) => ls.reduce((a, l) => a + Number(l[f] || 0), 0);
-    fk.innerHTML = `<section class="card stack">
-      <div class="row between wrap"><div><h2 class="sec-title" style="margin:0">Faktur WIN${fx.customer ? ' · ' + esc(fx.customer) : ''}</h2>
-        <div class="xs muted">${esc(fname)} · ${dates.length} tanggal · ${num(lines.length)} baris · net ${rp(sum(lines, 'net'))}</div></div>
-        <button class="btn btn-ghost btn-sm" data-fk-close>Tutup</button></div>
-      ${dates.map((d) => {
-        const L = lines.filter((l) => (l.date || '') === d);
-        const invs = [...new Set(L.map((l) => l.inv))];
-        const cnt = (st) => L.filter((l) => l.st === st).length;
-        const ok = L.filter((l) => l.p).length;
-        return `<details class="win-po fk-day" data-day="${esc(d)}" ${open.has(d) ? 'open' : ''}><summary><span class="grow" style="min-width:0">
-            <b>${d ? esc(fmtDate(d, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })) : 'Tanpa tanggal'}</b>
-            <div class="xs muted">${invs.length} faktur · ${num(L.length)} baris · ${num(sum(L, 'qty'))} pcs · cocok ${ok}/${L.length}</div>
-            <div class="row wrap" style="gap:4px;margin-top:4px">${Object.keys(FST).filter((k) => cnt(k)).map((k) => `<span class="tag ${FST[k][1]}">${cnt(k)} ${FST[k][0].toLowerCase()}</span>`).join('')}</div></span>
-            <b style="white-space:nowrap">${rp(sum(L, 'net'))}</b></summary>
-          <div class="stack s8" style="padding:8px 0 4px">
-            ${Object.keys(FST).filter((k) => cnt(k)).map((k) => {
-              const R = L.filter((l) => l.st === k);
-              return `<details class="fk-grp" ${k === 'tidak' || k === 'harga' ? 'open' : ''}><summary><span class="tag ${FST[k][1]}">${FST[k][0]}</span> <b>${R.length} baris</b> <span class="xs muted">· ${num(sum(R, 'qty'))} pcs · ${rp(sum(R, 'net'))}</span></summary>
-                <div class="xs muted" style="margin:6px 0">${FST[k][2]}</div>
-                <div class="list no-page">${R.map((l) => {
-                  const i = lines.indexOf(l), mac = Number(l.p?.macallan) || 0;
-                  return `<div class="list-item fk-row" style="padding:8px 0;align-items:flex-start;flex-wrap:wrap">
-                    <div class="grow" style="min-width:0">
-                      <div class="small"><b>${esc(l.name)}</b></div>
-                      ${l.p ? `<div class="xs" style="margin-top:2px">→ <span class="mono">${esc(l.p.sku)}</span>${copyBtn(l.p.sku)} ${l.st !== 'persis' ? esc(l.p.name) : ''}${l.st === 'mirip' || (l.st === 'harga' && l.sim < 100) ? ` <span class="muted">(${l.sim}% mirip)</span>` : ''}</div>`
-                        : `${(l.cands || []).length ? `<div class="chips" style="margin-top:4px">${l.cands.map((p) => `<button class="chip" data-fk-pick="${i}:${p.id}" title="${esc(p.name)}"><span class="mono">${esc(p.sku)}</span> ${esc(String(p.name).slice(0, 34))}</button>`).join('')}</div>` : ''}`}
-                      <div class="xs muted" style="margin-top:2px">${esc(l.inv)}${l.ref ? ' · ' + esc(l.ref) : ''}</div></div>
-                    <div class="right" style="min-width:120px"><b>×${num(l.qty)}</b><div class="xs">${rp(l.harga)}${l.disc ? ` <span class="muted">−${esc(l.disc.replace('.00', ''))}</span>` : ''}</div>
-                      <div class="xs muted">net ${rp(l.unit)}/pcs</div>
-                      ${l.p && mac && mac !== l.harga ? `<div class="xs ${l.harga > mac ? 'neg' : ''}">pricelist master ${rp(mac)}</div>` : ''}
-                      ${!l.p ? `<button class="btn btn-sm btn-see" data-fk-find="${i}" style="margin-top:4px">Cari</button>` : `<button class="btn btn-ghost btn-sm" data-fk-find="${i}" style="padding:0 6px">Ganti</button>`}</div></div>`;
-                }).join('')}</div></details>`;
-            }).join('')}
-            <details class="fk-grp"><summary><b>Daftar faktur (${invs.length})</b></summary><div class="list no-page">${invs.map((v) => { const I = L.filter((l) => l.inv === v); return `<div class="list-item" style="padding:6px 0"><span class="grow small"><b class="mono">${esc(v)}</b>${copyBtn(v)}<div class="xs muted">${esc(I[0].ref || '')} · ${I.length} baris · ${num(sum(I, 'qty'))} pcs</div></span><b class="small">${rp(sum(I, 'net'))}</b></div>`; }).join('')}</div></details>
-            <button class="btn btn-primary" data-fk-use="${esc(d)}" ${ok ? '' : 'disabled'}>${icon('plus', 16)} Masukkan ${ok} baris ke daftar beli${ok < L.length ? ` (${L.length - ok} belum cocok)` : ''}</button>
-          </div></details>`;
-      }).join('')}</section>`;
-  };
-  const setP = (i, p) => { const nm = lines[i].name; lines = lines.map((l) => (l.name === nm ? { ...l, p, st: 'manual', sim: 100 } : l)); paint(); };
-  fk.onclick = async (e) => {
-    const b = e.target.closest('[data-fk-pick],[data-fk-find],[data-fk-use],[data-fk-close]'); if (!b) return;
-    if (b.dataset.fkClose !== undefined) { fk.innerHTML = ''; return; }
-    if (b.dataset.fkPick) { const [i, pid] = b.dataset.fkPick.split(':').map(Number); const p = lines[i].cands.find((c) => c.id === pid); if (p) setP(i, p); return; }
-    if (b.dataset.fkFind !== undefined) { const i = +b.dataset.fkFind; const p = await pickProduct('Barang untuk baris faktur ini', lines[i].name); if (p) setP(i, p); return; }
-    if (b.dataset.fkUse !== undefined) {
-      const d = b.dataset.fkUse, L = lines.filter((l) => (l.date || '') === d && l.p);
-      const agg = new Map();
-      L.forEach((l) => { const a = agg.get(l.p.id) || { p: l.p, qty: 0, net: 0 }; a.qty += l.qty; a.net += l.net; agg.set(l.p.id, a); });
-      agg.forEach((a) => le.add(a.p, a.qty, Math.round(a.net / a.qty), 'faktur'));
-      le.state.file = `${fname} (${d})`;
-      const note = box.querySelector('#note'); if (note && !note.value) note.value = `Faktur WIN ${d ? fmtDate(d) : ''} · ${[...new Set(L.map((l) => l.inv))].length} faktur`;
-      toast(`${agg.size} macam barang masuk daftar beli`, 'ok');
-      box.querySelector('#le').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
-  fk.addEventListener('toggle', (e) => { const d = e.target.closest?.('.fk-day'); if (d && e.target === d) d.open ? open.add(d.dataset.day) : open.delete(d.dataset.day); }, true);
-  paint();
 }
 
 async function renderNeed(box, afterCreate) {

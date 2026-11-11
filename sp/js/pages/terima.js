@@ -27,7 +27,8 @@ export default {
       <section class="card stack" id="lap"><div class="row between wrap"><h2 class="sec-title" style="margin:0">Laporan barang WIN</h2><button class="btn btn-sm" id="xls">${icon('download', 16)} Unduh Excel</button></div>
         ${chips('d', [['today', 'Hari ini'], ['yday', 'Kemarin'], ['pick', 'Pilih tanggal']], 'today')}
         <div class="grid g2 hidden" id="range"><label class="field">Dari<input type="date" class="input" id="d1" value="${todayStr()}"></label><label class="field">Sampai<input type="date" class="input" id="d2" value="${todayStr()}"></label></div>
-        <div id="laplist">${skeleton(2)}</div></section>` : ''}
+        <div id="laplist">${skeleton(2)}</div></section>
+      <section class="card stack" id="fak"></section>` : ''}
       ${data.length || !canDirect ? `<h2 class="sec-title">Barang WIN dari daftar beli</h2>` : ''}
       ${data.length ? `<div class="card flush"><div class="list">${data.map((p) => `<a class="list-item" href="#/terima?po=${p.id}"><div class="grow"><div class="row wrap"><b class="mono">${esc(p.code)}</b>${poTag(p.status)}</div>
         <div class="small muted">${p.po_items.reduce((a, i) => a + i.qty, 0)} item · sopir ${esc(store.profilesById[p.driver_id]?.full_name || '–')}${p.arrived_at ? ' · sampai ' + fmtDateTime(p.arrived_at) : ''}</div></div>
@@ -135,7 +136,16 @@ async function scanDirect(el, id, p, load) {
 
 // 2.35: laporan barang WIN diterima per tanggal (hari ini / kemarin / rentang), buka-tutup per nomor WIN, unduh Excel
 function report(el) {
-  let mode = 'today', last = { pos: [], dates: [] };
+  let mode = 'today', last = { pos: [], dates: [] }, fak = null;
+  // 2.41 faktur WIN: ikut tanggal yang dipilih; setelah disimpan, tampilkan tanggal fakturnya
+  import('../faktur-view.js').then(({ fakturSection }) => {
+    fak = fakturSection(el.querySelector('#fak'), { onSaved: (a, b) => {
+      mode = 'pick'; el.querySelector('#d1').value = a; el.querySelector('#d2').value = b;
+      el.querySelectorAll('[data-chips="d"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === 'pick'));
+      el.querySelector('#range').classList.remove('hidden'); load();
+    } });
+    const [a, b] = range(); fak.load(a, b);
+  });
   const money = ['owner', 'admin'].includes(store.role);
   const range = () => {
     const t = todayStr();
@@ -150,6 +160,7 @@ function report(el) {
   const load = async () => {
     const box = el.querySelector('#laplist'); box.innerHTML = skeleton(2);
     const [a, b] = range();
+    fak && fak.load(a, b);
     const { data, error } = await supa.from('purchase_orders').select('id, code, direct, finished_at, created_at, win_order_no, po_items(received_qty, unit_cost, products(sku, name))')
       .eq('status', 'selesai').gte('finished_at', a + 'T00:00:00+07:00').lt('finished_at', addDays(b, 1) + 'T00:00:00+07:00').order('finished_at', { ascending: false });
     if (error) { box.innerHTML = `<div class="alert red small">${esc(error.message)}</div>`; return; }

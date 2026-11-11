@@ -1809,3 +1809,8 @@ html[data-theme="hitam"] .cpy { color: #6B4A00; background: #FFF4D6; }
 .fk-grp > summary::before { content: '▸'; color: var(--muted); transition: transform .15s; }
 .fk-grp[open] > summary::before { transform: rotate(90deg); }
 .fk-row + .fk-row { border-top: 1px solid var(--line); }
+.fk-h { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+.del-opt { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+.del-opt:has(input:checked) { border-color: var(--red); background: rgba(220, 38, 38, .05); }
+.del-opt input { margin-top: 3px; }
+.del-opt.locked { opacity: .75; }
