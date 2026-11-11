@@ -69,6 +69,16 @@ export default {
           const k = kindOf(book.sheets);
           if (k === 'income' || (k && k.startsWith('orders:') && store.settings.alur_kg !== false)) { parsed = null; return shopeeUpload(file, box, book, k); }
         }
+        // 2.42: PDF "Daftar Perubahan Pricelist WIN" (tanpa kode barang di bagian harga & produk baru)
+        if (['owner', 'admin'].includes(store.role) && /\.pdf$/i.test(file.name)) {
+          const { readChangePdf } = await import('../pl-perubahan.js');
+          const ch = await readChangePdf(file);
+          if (ch && ch.harga.length + ch.baru.length + ch.nama.length) {
+            parsed = null; type = 'pricelist'; el.querySelectorAll('[data-type]').forEach((c) => c.classList.toggle('on', c.dataset.type === type));
+            const { changePanel } = await import('../pl-perubahan-view.js');
+            return changePanel(box, ch, file);
+          }
+        }
         const rows = await readSheet(file);
         if (!rows.length) throw new Error('File kosong');
         const d = detect(rows);
