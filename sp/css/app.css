@@ -1801,3 +1801,11 @@ html[data-theme="hitam"] .cpy { color: #6B4A00; background: #FFF4D6; }
 .input-suffix > span { color: var(--muted); font-size: 13px; }
 /* 2.37 — penataan ulang rak */
 .steps-ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+/* ===== 2.40: faktur WIN per tanggal ===== */
+.fk-grp { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; background: var(--card, #fff); }
+.fk-grp > summary { cursor: pointer; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; list-style: none; }
+.fk-grp > summary::-webkit-details-marker { display: none; }
+.fk-grp > summary::before { content: '▸'; color: var(--muted); transition: transform .15s; }
+.fk-grp[open] > summary::before { transform: rotate(90deg); }
+.fk-row + .fk-row { border-top: 1px solid var(--line); }

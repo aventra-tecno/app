@@ -166,7 +166,7 @@ export async function pickProduct(title, hint = '') {
 }
 
 // ---------- editor daftar barang (tabel jumlah / harga + tombol upload file + cari manual) ----------
-// opts: { price: true|false, title, emptyText, onChange }
+// opts: { price: true|false, title, emptyText, onChange, onFile(file) -> true kalau sudah ditangani }
 export function listEditor(box, opts = {}) {
   const st = { rows: [], unknown: [], file: '' };
   const fmt = (n) => Number(n || 0).toLocaleString('id-ID');
@@ -215,6 +215,8 @@ export function listEditor(box, opts = {}) {
   };
   box.querySelector('[data-le-file]').addEventListener('change', async (e) => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    // file khusus (mis. faktur WIN) ditangani halaman pemanggil
+    if (opts.onFile) { try { if (await opts.onFile(f)) { msg(''); return; } } catch (err) { msg(esc(err.message || String(err)), 'red'); return; } }
     try { const lines = await readListFile(f, (t) => msg(esc(t))); await load(lines, f.name); }
     catch (err) { msg(esc(err.message || String(err)), 'red'); }
   });
