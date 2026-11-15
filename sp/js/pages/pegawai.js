@@ -1,6 +1,6 @@
-import { supa, tempClient, errMsg } from '../supa.js';
+import { supa, rpc, tempClient, errMsg } from '../supa.js';
 import { store, loadProfiles } from '../store.js';
-import { esc, rp, num, on, modal, toast, toastErr, pageHead, emptyState, skeleton, icon, ROLE_LABEL, parseNum, confirmBox, ago } from '../ui.js';
+import { esc, rp, num, on, modal, toast, toastErr, pageHead, emptyState, skeleton, icon, ROLE_LABEL, parseNum, confirmBox, ago, copyBtn } from '../ui.js';
 import { fetchLatest, isOutdated } from '../version.js';
 import { ROLE_MOD, modOn } from '../modules.js';
 
@@ -89,7 +89,7 @@ export default {
       if (!p || p.role === 'owner') return;
       const r = await modal({
         title: 'Ubah ' + p.full_name, body: form(p),
-        actions: [{ label: 'Reset panduan', value: 'tour' }, { label: 'Batal', value: null }, { label: 'Simpan', cls: 'btn-primary', onClick: async (ov) => {
+        actions: [{ label: 'Reset panduan', value: 'tour' }, ...(store.role === 'owner' ? [{ label: '🔑 Ganti password', value: 'pass' }] : []), { label: 'Batal', value: null }, { label: 'Simpan', cls: 'btn-primary', onClick: async (ov) => {
           const v = (id) => ov.querySelector('#' + id).value.trim();
           const { error } = await supa.from('profiles').update({ full_name: v('f-n'), role: v('f-r'), base_salary: parseNum(v('f-s')), meal_allowance: parseNum(v('f-m')), phone: v('f-h') || null, active: ov.querySelector('#f-a').checked }).eq('id', p.id);
           if (error) throw error; return 'ok';
@@ -101,7 +101,37 @@ export default {
         toast('Panduan direset', 'ok');
       }
       if (r === 'ok') { toast('Tersimpan', 'ok'); await loadProfiles(); load(); }
+      if (r === 'pass') gantiPassword(p);
     });
     load();
   }
 };
+
+// 2.48: owner mengganti password pegawai yang lupa. Password baru langsung berlaku, pegawai keluar dari semua HP.
+async function gantiPassword(p) {
+  const acak = () => { const c = 'abcdefghjkmnpqrstuvwxyz23456789'; let x = ''; const r = crypto.getRandomValues(new Uint32Array(8)); r.forEach((n) => { x += c[n % c.length]; }); return x; };
+  const res = await modal({
+    title: 'Ganti password ' + p.full_name,
+    body: `<div class="stack">
+      <div class="small muted">Untuk pegawai yang lupa password. Password lama tidak bisa dilihat — buatkan yang baru, lalu berikan ke pegawai.</div>
+      <label class="field">Password baru (min. 6 karakter)<div class="row" style="gap:6px"><input class="input mono grow" id="np" value="${acak()}" autocomplete="new-password" spellcheck="false"><button type="button" class="btn btn-sm" id="gen">Acak</button></div></label>
+      <div class="alert yellow small">Setelah diganti, <b>${esc(p.full_name)}</b> otomatis keluar dari semua HP dan harus login lagi dengan password baru.</div></div>`,
+    onOpen: (ov) => { ov.querySelector('#gen').onclick = () => { ov.querySelector('#np').value = acak(); }; },
+    actions: [{ label: 'Batal', value: null }, { label: 'Ganti password', cls: 'btn-primary', onClick: async (ov) => {
+      const pw = ov.querySelector('#np').value;
+      if (pw.length < 6) { toast('Password minimal 6 karakter', 'err'); return false; }
+      if (/^\s|\s$/.test(pw)) { toast('Hapus spasi di awal / akhir password', 'err'); return false; }
+      try { await rpc('owner_set_password', { p_user: p.id, p_password: pw }); }
+      catch (e) { if (/owner_set_password|function/i.test(e.message || '')) throw new Error('Butuh update database: jalankan supabase/update-2.48.sql'); throw e; }
+      return pw;
+    } }]
+  });
+  if (!res) return;
+  const login = location.origin + location.pathname;
+  const msg = `Halo ${p.full_name}, password aplikasi Stok Gudang kamu sudah diganti.\nAlamat: ${login}\nEmail: ${p.email || '-'}\nPassword baru: ${res}\nSilakan login, lalu ganti password sendiri di menu Akun saya.`;
+  const hp = String(p.phone || '').replace(/\D/g, '').replace(/^0/, '62');
+  await modal({ title: 'Password diganti', body: `<p style="margin-top:0">Berikan data login ini ke <b>${esc(p.full_name)}</b>:</p>
+    <div class="card" style="background:var(--paper)"><div class="line-row"><span>Alamat</span><b>${esc(login)}</b></div><div class="line-row"><span>Email</span><b>${esc(p.email || '-')}${copyBtn(p.email || '')}</b></div><div class="line-row"><span>Password baru</span><b class="mono">${esc(res)}${copyBtn(res)}</b></div></div>
+    <p class="small muted">Sarankan pegawai mengganti password sendiri setelah login (menu Akun saya).</p>
+    ${hp.length >= 9 ? `<a class="btn btn-primary" style="width:100%" target="_blank" rel="noopener" href="https://wa.me/${hp}?text=${encodeURIComponent(msg)}">Kirim lewat WhatsApp</a>` : ''}` });
+}
