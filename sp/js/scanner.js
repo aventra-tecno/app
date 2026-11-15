@@ -161,7 +161,8 @@ export function showScanResult({ ok, code, title, info }) {
   popTimer = setTimeout(() => popEl.classList.remove('show'), ok ? 1800 : 2800);
 }
 
-const FORMATS = ['code_128', 'ean_13', 'ean_8', 'code_39', 'code_93', 'upc_a', 'upc_e', 'itf', 'codabar', 'qr_code', 'data_matrix'];
+// semua jenis: barcode garis (1D) & kotak (2D: QR — termasuk yang ada logo di tengah —, Data Matrix, Aztec, PDF417)
+const FORMATS = ['code_128', 'ean_13', 'ean_8', 'code_39', 'code_93', 'upc_a', 'upc_e', 'itf', 'codabar', 'qr_code', 'data_matrix', 'aztec', 'pdf417'];
 
 // Kamera HP. Dibuat lebih tahan untuk barcode panjang (Code128 13+ karakter):
 // resolusi tinggi, fokus otomatis terus-menerus, zoom, area tengah diperbesar,
@@ -172,7 +173,7 @@ export async function openCamera(onCode, { continuous = true, title = 'Arahkan k
   wrap.className = 'camera';
   wrap.innerHTML = `<video playsinline muted></video><div class="frame"></div>
     <div class="cam-top"><span>${esc(title)}</span><button class="btn btn-sm" data-close>Tutup</button></div>
-    <div class="cam-bar"><div class="cam-tip">Isi kotak kuning dengan barcode (jarak ±10–20 cm). Dari layar laptop, miringkan HP sedikit supaya tidak ada garis-garis.</div>
+    <div class="cam-bar"><div class="cam-tip">Isi kotak kuning dengan barcode garis atau kotak/QR (jarak ±10–20 cm). Dari layar laptop, miringkan HP sedikit supaya tidak ada garis-garis.</div>
       <div class="cam-last" aria-live="polite"></div>
       <label class="cam-keep"><input type="checkbox" data-keep> Scan terus (kamera tidak menutup setelah berhasil)</label>
       <div class="row"><button class="btn grow" data-torch style="display:none">Senter</button><button class="btn grow" data-zoom style="display:none">Zoom 2×</button><button class="btn btn-primary grow" data-close>Selesai</button></div></div>`;
@@ -244,6 +245,19 @@ export async function openCamera(onCode, { continuous = true, title = 'Arahkan k
     return canvas;
   };
 
+  // potongan persegi di tengah untuk barcode kotak (QR / Data Matrix), tidak terpotong atas-bawah
+  const sq = document.createElement('canvas');
+  const sqx = sq.getContext('2d', { willReadFrequently: true });
+  const cropSq = () => {
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw || !vh) return null;
+    const side = Math.round(Math.min(vw, vh) * 0.8), out = Math.min(1100, Math.max(side, 640));
+    sq.width = sq.height = out;
+    sqx.imageSmoothingEnabled = side < out;
+    sqx.drawImage(video, (vw - side) / 2, (vh - side) / 2, side, side, 0, 0, out, out);
+    return sq;
+  };
+
   let detector = null;
   if ('BarcodeDetector' in window) {
     try {
@@ -259,15 +273,24 @@ export async function openCamera(onCode, { continuous = true, title = 'Arahkan k
       const lib = await import('https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/+esm');
       const hints = new Map();
       hints.set(lib.DecodeHintType.TRY_HARDER, true);
-      hints.set(lib.DecodeHintType.POSSIBLE_FORMATS, [lib.BarcodeFormat.CODE_128, lib.BarcodeFormat.EAN_13, lib.BarcodeFormat.EAN_8, lib.BarcodeFormat.CODE_39, lib.BarcodeFormat.UPC_A, lib.BarcodeFormat.ITF, lib.BarcodeFormat.QR_CODE]);
+      const B = lib.BarcodeFormat;
+      hints.set(lib.DecodeHintType.POSSIBLE_FORMATS, [B.CODE_128, B.EAN_13, B.EAN_8, B.CODE_39, B.CODE_93, B.UPC_A, B.UPC_E, B.ITF, B.CODABAR, B.RSS_14, B.RSS_EXPANDED,
+        B.QR_CODE, B.DATA_MATRIX, B.AZTEC, B.PDF_417].filter((x) => x !== undefined));
       const reader = new lib.MultiFormatReader(); reader.setHints(hints);
+      // 2 cara membaca gambar bergantian: Hybrid (bagus untuk QR berlogo / cahaya tidak rata) & Global (garis tipis)
+      let alt = 0;
       zx = (c) => {
         const { width: w, height: h } = c;
-        const px = cx.getImageData(0, 0, w, h).data;
+        const px = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
         const lum = new Uint8ClampedArray(w * h);
         for (let i = 0, j = 0; i < lum.length; i++, j += 4) lum[i] = (px[j] * 299 + px[j + 1] * 587 + px[j + 2] * 114) / 1000;
-        try { return reader.decode(new lib.BinaryBitmap(new lib.HybridBinarizer(new lib.RGBLuminanceSource(lum, w, h)))).getText(); }
-        catch (_) { return null; }
+        const src = new lib.RGBLuminanceSource(lum, w, h);
+        const tries = alt++ % 2 ? [lib.GlobalHistogramBinarizer, lib.HybridBinarizer] : [lib.HybridBinarizer, lib.GlobalHistogramBinarizer];
+        for (const Bin of tries) {
+          try { return reader.decode(new lib.BinaryBitmap(new Bin(src))).getText(); } catch (_) { reader.reset?.(); }
+        }
+        // barcode putih di latar gelap
+        try { return reader.decode(new lib.BinaryBitmap(new lib.HybridBinarizer(src.invert()))).getText(); } catch (_) { return null; }
       };
     } catch (e) { console.error(e); if (!detector) toast('Pembaca barcode gagal dimuat. Ketik kodenya atau pakai scanner.', 'err'); }
   };
@@ -281,12 +304,12 @@ export async function openCamera(onCode, { continuous = true, title = 'Arahkan k
         tick++;
         let code = null;
         if (detector) {
-          const src = tick % 2 ? crop() : video;      // bergantian: area tengah diperbesar & gambar penuh
+          const k = tick % 3, src = k === 0 ? video : k === 1 ? crop() : cropSq();   // bergantian: gambar penuh, pita tengah diperbesar (garis), persegi tengah (kotak/QR)
           const r = src ? await detector.detect(src) : [];
           if (r.length) code = r[0].rawValue;
           if (!code && Date.now() - started > 2500) loadZx();   // belum terbaca -> bantu dengan ZXing
         }
-        if (!code && zx && (!detector || tick % 3 === 0)) { const c = crop(); if (c) code = zx(c); }
+        if (!code && zx && (!detector || tick % 3 === 0)) { const c = (tick >> 1) % 2 ? cropSq() : crop(); if (c) code = zx(c); }
         if (code) await handle(code);
       }
     } catch (_) {}

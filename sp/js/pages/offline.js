@@ -1,6 +1,6 @@
 import { supa, rpc } from '../supa.js';
 import { store } from '../store.js';
-import { esc, rp, num, fmtDateTime, on, modal, toast, toastErr, pageHead, emptyState, skeleton, icon, beep, confirmBox, parseNum, statusTag } from '../ui.js';
+import { esc, rp, num, fmtDateTime, on, modal, toast, toastErr, pageHead, emptyState, skeleton, icon, beep, confirmBox, parseNum, statusTag, ROLE_LABEL } from '../ui.js';
 import { scanBox, bindScan } from '../scanner.js';
 import { bindProductSearch } from '../daftar-file.js';
 import { MiniPDF } from '../pdf-mini.js';
@@ -118,7 +118,8 @@ export async function printNota(id) {
   try {
     const { data: o, error } = await supa.from('orders').select('*, order_items(name, sku, qty, price, ready_qty, source)').eq('id', id).single();
     if (error) throw error;
-    const doc = await notaPdf(o, store.settings?.nama_toko || 'Toko Sparepart');
+    // nama di nota: Pengaturan › Nama toko di nota (bawaan Boy Win Boy); footer: waktu cetak & jabatan yang mencetak
+    const doc = await notaPdf(o, store.settings?.nama_nota || 'Boy Win Boy', ROLE_LABEL[store.role] || store.role || '');
     const url = URL.createObjectURL(doc.output('blob'));
     const r = await modal({ title: 'Nota ' + o.order_no, body: `<iframe src="${url}" title="Nota" style="width:100%;height:60vh;border:1px solid var(--line);border-radius:8px;background:#fff"></iframe>`,
       actions: [{ label: 'Tutup', value: null }, { label: 'Unduh PDF', value: 'dl' }, { label: 'Cetak', cls: 'btn-primary', value: 'print' }] });
@@ -128,13 +129,13 @@ export async function printNota(id) {
   } catch (e) { toastErr(e); }
 }
 
-export async function notaPdf(o, shop) {
+export async function notaPdf(o, shop, printedBy = '') {
   const doc = new MiniPDF({ format: 'a6' });
   const W = 105, M = 7, R = W - M;
   const money = (n) => 'Rp' + Number(n || 0).toLocaleString('id-ID');
   const dt = new Date(o.created_at || Date.now()).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
   let y = 12;
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.text(String(shop).toUpperCase(), W / 2, y, { align: 'center' });
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.text(String(shop), W / 2, y, { align: 'center' });
   y += 5; doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.text('NOTA PENJUALAN', W / 2, y, { align: 'center' });
   y += 4; doc.setDrawColor(150); doc.line(M, y, R, y);
   y += 5; doc.setFontSize(8.5);
@@ -147,20 +148,28 @@ export async function notaPdf(o, shop) {
   const win = o.order_items.filter((i) => i.source === 'win' && i.ready_qty < i.qty).reduce((a, i) => a + i.qty - i.ready_qty, 0);
   for (const i of o.order_items) {
     const lines = doc.splitTextToSize(String(i.name), 52);
-    if (y + lines.length * 3.6 + 6 > 140) { doc.addPage(); y = 12; }
+    if (y + lines.length * 3.6 + 6 > 130) { doc.addPage(); y = 12; }
     doc.setFontSize(8); doc.text(lines, M, y);
     doc.text(String(i.qty), 66, y, { align: 'right' }); doc.text(money(i.qty * i.price), R, y, { align: 'right' });
     y += lines.length * 3.6;
     doc.setFontSize(6.8); doc.setTextColor(110); doc.text(`${i.sku || ''}  @ ${money(i.price)}${i.source === 'win' && i.ready_qty < i.qty ? '  (menyusul)' : ''}`, M, y); doc.setTextColor(0);
     y += 4.2;
   }
-  if (y > 122) { doc.addPage(); y = 12; }
+  if (y > 112) { doc.addPage(); y = 12; }
   doc.line(M, y, R, y); y += 5.5;
   doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('TOTAL', M, y); doc.text(money(o.total_jual), R, y, { align: 'right' });
   y += 5; doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
   doc.text(`Pembayaran: ${o.pay_method || '-'}${o.status === 'cancel' ? '  ·  DIBATALKAN' : ''}`, M, y);
   if (win) { y += 4.4; doc.setFont('helvetica', 'bold'); doc.text(`${win} barang menyusul (dipesan dulu ke supplier)`, M, y); doc.setFont('helvetica', 'normal'); }
   if (o.note) { y += 4.4; doc.text(doc.splitTextToSize('Catatan: ' + o.note, R - M), M, y); }
-  doc.setFontSize(8); doc.text('Terima kasih atas kunjungan Anda', W / 2, 141, { align: 'center' });
+  // footer tengah: terima kasih + waktu & tanggal cetak + jabatan yang mencetak (di setiap halaman)
+  const printed = new Date().toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }).replace(/\./g, ':');
+  const foot = `Dicetak ${printed} WIB${printedBy ? ' - oleh ' + printedBy : ''}`;
+  for (let pg = 1; pg <= doc.getNumberOfPages(); pg++) {
+    doc.setPage(pg);
+    doc.setDrawColor(200); doc.line(M, 134, R, 134);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(0); doc.setFontSize(8); doc.text('Terima kasih atas kunjungan Anda', W / 2, 138.5, { align: 'center' });
+    doc.setFontSize(6.5); doc.setTextColor(110); doc.text(foot, W / 2, 142.5, { align: 'center' }); doc.setTextColor(0);
+  }
   return doc;
 }

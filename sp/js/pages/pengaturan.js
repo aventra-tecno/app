@@ -9,7 +9,8 @@ export default {
     el.innerHTML = `${pageHead('Pengaturan', 'Berlaku untuk semua pegawai.')}
       <form class="stack" id="f">
         <section class="card stack"><h2 class="sec-title">Toko</h2>
-          <label class="field">Nama toko (tampil di menu)<input class="input" name="nama_toko" value="${esc(s.nama_toko || '')}"></label></section>
+          <label class="field">Nama toko (tampil di menu)<input class="input" name="nama_toko" value="${esc(s.nama_toko || '')}"></label>
+          ${'nama_nota' in s ? `<label class="field">Nama toko di nota toko offline<input class="input" name="nama_nota" value="${esc(s.nama_nota || 'Boy Win Boy')}"></label>` : ''}</section>
         <section class="card stack"><h2 class="sec-title">Kombinasi warna</h2>
           <div class="theme-pick">${[['biru', 'Biru', 'Navy seperti tampilan HP'], ['hitam', 'Hitam', 'Hitam + kuning seperti desktop lama']].map(([v, l, d]) => `<label class="theme-opt">
             <input type="radio" name="ui_theme" value="${v}" ${(s.ui_theme || 'biru') === v ? 'checked' : ''}>
@@ -56,7 +57,7 @@ export default {
       const upd = {
         nama_toko: fd.get('nama_toko').trim() || 'Stok Gudang', packing_cost: parseNum(fd.get('packing_cost')) || 0, hari_kerja: +fd.get('hari_kerja') || 26,
         shopee_fee_pct: +fd.get('shopee_fee_pct') || 0, jam_mulai: fd.get('jam_mulai'), jam_selesai: fd.get('jam_selesai'),
-        ui_theme: fd.get('ui_theme') || 'biru', retur_grace_days: +fd.get('retur_grace_days') || 2, wajib_foto_packing: fd.get('wajib_foto_packing') === 'on', upload_pesanan: fd.get('upload_pesanan') === 'on', ...('alur_kg' in s ? { alur_kg: fd.get('alur_kg') === 'on' } : {}), updated_at: new Date().toISOString()
+        ui_theme: fd.get('ui_theme') || 'biru', retur_grace_days: +fd.get('retur_grace_days') || 2, wajib_foto_packing: fd.get('wajib_foto_packing') === 'on', upload_pesanan: fd.get('upload_pesanan') === 'on', ...('alur_kg' in s ? { alur_kg: fd.get('alur_kg') === 'on' } : {}), ...('nama_nota' in s ? { nama_nota: (fd.get('nama_nota') || '').trim() || 'Boy Win Boy' } : {}), updated_at: new Date().toISOString()
       };
       if ('foto_simpan_hari' in s) {
         const lim = (k, a, b, d) => Math.min(b, Math.max(a, parseInt(fd.get(k), 10) || d));

@@ -16,6 +16,8 @@ export class MiniPDF {
     this.addPage();
   }
   addPage() { this.cur = []; this.pages.push(this.cur); return this; }
+  getNumberOfPages() { return this.pages.length; }
+  setPage(n) { this.cur = this.pages[Math.max(1, Math.min(n, this.pages.length)) - 1]; return this; }
   setFont(_name, style = 'normal') { this.font = style === 'bold' ? 'F2' : 'F1'; return this; }
   setFontSize(s) { this.size = s; return this; }
   setTextColor(g) { this.gray = Math.max(0, Math.min(255, g)) / 255; return this; }
