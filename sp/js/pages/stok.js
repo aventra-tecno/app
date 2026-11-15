@@ -30,10 +30,23 @@ export default {
 
 async function tabBarang(box) {
   const seeValue = ['owner', 'admin'].includes(store.role);
+  const canAdj = ['owner', 'kepala_gudang'].includes(store.role);
   // tampilan awal: barang yang ada di rak (stok > 0), bukan semua barang pricelist
-  let filter = 'rak', search = '';
+  let filter = 'rak', search = '', rak = '', sort = 'rak', days = 30, laku = null, ganda = null;
+  const SORTS = [['rak', 'Rak (A → Z)'], ['banyak', 'Stok terbanyak'], ['sedikit', 'Stok tersedikit'], ['fast', 'Paling laku (fast moving)'], ['slow', 'Jarang laku (slow moving)']];
+  const { data: racks } = await supa.from('racks').select('code').order('code');
   box.innerHTML = `<div class="stack"><div class="grid gauto" id="kpi"></div>
-    <div class="row wrap"><input class="input grow" id="q" placeholder="Cari nama / kode / rak, atau scan barcode" aria-label="Cari barang" style="min-width:220px">${chips('f', [['rak', 'Ada di rak'], ['win', 'Barang WIN (belum di rak)'], ['low', 'Stok menipis'], ['zero', 'Habis'], ['all', 'Semua barang ›']], filter)}</div>
+    <section class="card stack s8 sf-box">
+      <input class="input" id="q" placeholder="Cari nama / kode / rak, atau scan barcode" aria-label="Cari barang">
+      <div class="sf-chips">${chips('f', [['rak', 'Ada di rak'], ['win', 'Barang WIN (belum di rak)'], ['ganda', 'Di beberapa rak'], ['low', 'Stok menipis'], ['zero', 'Habis'], ['all', 'Semua barang ›']], filter)}</div>
+      <div class="sf-row" id="sfrow">
+        <label class="sf-sel"><span>Rak</span><select class="input sm" id="fr"><option value="">Semua rak</option><option value="-">Tanpa rak</option>${(racks || []).map((r) => `<option>${esc(r.code)}</option>`).join('')}</select></label>
+        <label class="sf-sel"><span>Urutkan</span><select class="input sm" id="so">${SORTS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label>
+        <label class="sf-sel hidden" id="ddw"><span>Laku dalam</span><select class="input sm" id="dd"><option value="7">7 hari</option><option value="30" selected>30 hari</option><option value="90">90 hari</option></select></label>
+      </div>
+      <div class="row between xs muted" id="sfinfo"></div>
+    </section>
+    <div id="winbar"></div>
     <div class="card flush" id="list">${skeleton()}</div></div>`;
   const kpi = async () => {
     const data = await allProductsCached({ force: true, active: true }).catch(() => []);
@@ -46,25 +59,73 @@ async function tabBarang(box) {
       ${seeValue ? `<div class="card kpi"><div class="label">Nilai stok (modal)</div><div class="value">${rp(val)}</div></div>` : ''}
       <div class="card kpi" style="${low ? 'border:1.5px solid var(--accent)' : ''}"><div class="label">Stok menipis</div><div class="value">${low}</div></div>`;
   };
+  const setChip = (v) => box.querySelectorAll('[data-chips="f"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === v));
+  const lakuTag = (p) => (sort === 'fast' || sort === 'slow') ? `<div><span class="tag ${laku[p.id] ? 'green' : ''}">laku ${num(laku[p.id] || 0)} / ${days} hr</span></div>` : '';
+
+  // ---- barang yang ketemu di beberapa rak (hasil penataan ulang) ----
+  const loadGanda = async () => {
+    box.querySelector('#sfrow').classList.add('hidden'); box.querySelector('#winbar').innerHTML = '';
+    try { ganda = await rpc('rak_ganda'); } catch (e) { box.querySelector('#list').innerHTML = `<div style="padding:16px" class="alert yellow small">Butuh update database. Jalankan <b>supabase/update-2.47.sql</b>.</div>`; return; }
+    const q = search.toLowerCase(), nq = normSku(search);
+    const list = ganda.filter((g) => !q || g.name.toLowerCase().includes(q) || normSku(g.sku).includes(nq) || g.racks.some((r) => r.rack.toLowerCase().includes(q)))
+      .filter((g) => !rak || (rak === '-' ? !g.rack_code : g.racks.some((r) => r.rack === rak)));
+    box.querySelector('#sfinfo').innerHTML = `<span>${num(list.length)} barang ketemu di lebih dari 1 rak${ganda[0] ? ` · dari penataan ulang ${ganda[0].status === 'aktif' ? 'yang sedang berjalan' : 'terakhir'}` : ''}</span>`;
+    box.querySelector('#list').innerHTML = list.length ? `<div class="alert blue small" style="margin:12px 12px 0">Barang yang sama ditemukan di beberapa rak (salah taruh / lupa saat penataan). Pindahkan fisiknya ke 1 rak, lalu tekan <b>Satukan ke …</b> supaya lokasi di aplikasi juga 1 rak.</div>
+      <div class="list">${list.map((g) => `<div class="list-item rg-item" style="align-items:flex-start;flex-wrap:wrap">
+        <button class="grow rg-name" data-p="${g.product_id}" style="min-width:0;text-align:left;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer"><b>${esc(g.name)}</b><div class="xs muted mono">${esc(g.sku)}${copyBtn(g.sku)} · lokasi di aplikasi: <b>${esc(g.rack_code || '—')}</b> · stok ${num(g.stock)}</div></button>
+        <div class="rg-racks">${g.racks.map((r) => `<div class="rg-rack ${r.rack === g.rack_code ? 'main' : ''}"><span class="mono"><b>${esc(r.rack)}</b></span><span>${num(r.qty)} pcs</span>
+          ${canAdj ? `<button class="btn btn-sm ${r.qty === g.racks[0].qty ? 'btn-primary' : ''}" data-satu="${g.product_id}:${esc(r.rack)}">Satukan ke ${esc(r.rack)}</button>` : ''}</div>`).join('')}
+          <div class="xs muted" style="text-align:right">total dihitung ${num(g.total)} pcs</div></div></div>`).join('')}</div>`
+      : `<div style="padding:16px">${emptyState(ganda.length ? 'Tidak ada yang cocok dengan pencarian.' : 'Tidak ada barang yang tercecer di beberapa rak. 👍', 'check')}</div>`;
+  };
+
+  // ---- barang WIN belum di rak: pindahkan semua ke rak masing-masing ----
+  const winBar = (list) => {
+    const withRack = list.filter((p) => p.rack_code), none = list.length - withRack.length;
+    box.querySelector('#winbar').innerHTML = list.length && canAdj ? `<div class="card stack s8 win-move">
+      <div class="row between wrap"><div><b>Taruh barang WIN ke rak</b><div class="xs muted">Barang otomatis masuk ke rak masing-masing (rak di stok). Barang yang belum punya rak dipilih satu per satu.</div></div>
+        ${withRack.length ? `<button class="btn btn-primary" id="mvall">${icon('box', 16)} Pindahkan ${num(withRack.length)} barang ke rak (${num(withRack.reduce((a, p) => a + p.meja_qty, 0))} pcs)</button>` : ''}</div>
+      ${none ? `<div class="small"><span class="tag yellow">${num(none)} barang belum punya rak</span> <span class="xs muted">tekan <b>Pilih rak</b> di daftar bawah</span></div>` : ''}</div>` : '';
+    box.querySelector('#mvall')?.addEventListener('click', async (e) => {
+      if (!(await modal({ title: 'Pindahkan ke rak?', body: `<p style="margin:0">${num(withRack.length)} barang WIN ditaruh ke raknya masing-masing:</p><div class="list no-page" style="max-height:40vh;overflow:auto;margin-top:8px">${withRack.map((p) => `<div class="list-item" style="padding:6px 0"><span class="mono" style="width:60px;flex:none"><b>${esc(p.rack_code)}</b></span><span class="grow small">${esc(p.name)}</span><b>${num(p.meja_qty)}</b></div>`).join('')}</div>`,
+        actions: [{ label: 'Batal', value: false }, { label: 'Ya, pindahkan', cls: 'btn-primary', value: true }] }))) return;
+      e.target.disabled = true;
+      try { const x = await rpc('meja_semua_ke_rak'); toast(`${x.barang} barang (${x.pcs} pcs) ditaruh di rak${x.tanpa_rak ? ` · ${x.tanpa_rak} belum punya rak` : ''}`, 'ok'); load(); kpi(); }
+      catch (err) { toastErr(err); e.target.disabled = false; }
+    });
+  };
+
   const load = async () => {
+    if (filter === 'ganda') return loadGanda();
+    box.querySelector('#sfrow').classList.remove('hidden');
+    box.querySelector('#ddw').classList.toggle('hidden', !(sort === 'fast' || sort === 'slow'));
     let data;
     try {
-      data = await fetchAll(() => {
+      [data] = await Promise.all([fetchAll(() => {
         let qy = supa.from('products').select('id, sku, name, rack_code, stock, meja_qty, stock_karantina, min_stock, harga_beli').eq('active', true).order('rack_code', { nullsFirst: false }).order('name').order('id');
         { const f = codeOr(search, ['rack_code']); if (f) qy = qy.or(f); } // kode dengan / tanpa strip sama
+        if (rak === '-') qy = qy.is('rack_code', null); else if (rak) qy = qy.eq('rack_code', rak);
         if (filter === 'rak') qy = qy.gt('stock', 0);
         if (filter === 'win') qy = qy.gt('meja_qty', 0);
         if (filter === 'zero') qy = qy.lte('stock', 0);
         return qy;
-      });
+      }), (sort === 'fast' || sort === 'slow') && !laku ? rpc('stok_laku', { p_days: days }).then((x) => { laku = x || {}; }).catch(() => { laku = {}; }) : null]);
     } catch (error) { return toastErr(error); }
-    const list = filter === 'low' ? data.filter((p) => p.min_stock > 0 && p.stock <= p.min_stock) : data;
-    box.querySelector('#list').innerHTML = list.length ? `<div class="list">${list.map((p) => `<button class="list-item" data-p="${p.id}">
+    let list = filter === 'low' ? data.filter((p) => p.min_stock > 0 && p.stock <= p.min_stock) : data;
+    const qty = (p) => (filter === 'win' ? p.meja_qty : p.stock);
+    if (sort === 'banyak') list = list.slice().sort((a, b) => qty(b) - qty(a) || a.name.localeCompare(b.name));
+    if (sort === 'sedikit') list = list.slice().sort((a, b) => qty(a) - qty(b) || a.name.localeCompare(b.name));
+    if (sort === 'fast') list = list.slice().sort((a, b) => (laku[b.id] || 0) - (laku[a.id] || 0) || qty(b) - qty(a));
+    if (sort === 'slow') list = list.slice().sort((a, b) => (laku[a.id] || 0) - (laku[b.id] || 0) || qty(b) - qty(a));
+    box.querySelector('#sfinfo').innerHTML = `<span>${num(list.length)} barang · ${num(list.reduce((a, p) => a + Math.max(0, qty(p)), 0))} pcs${rak ? ` · rak ${rak === '-' ? 'kosong' : esc(rak)}` : ''}</span>${rak || sort !== 'rak' || search ? '<button class="btn btn-ghost btn-sm" data-reset style="padding:0 8px">Atur ulang filter</button>' : ''}`;
+    if (filter === 'win') winBar(list); else box.querySelector('#winbar').innerHTML = '';
+    box.querySelector('#list').innerHTML = list.length ? `<div class="list">${list.slice(0, 1500).map((p) => `<button class="list-item" data-p="${p.id}">
       <span class="mono" style="width:64px;flex:none;font-weight:600">${esc(p.rack_code || '—')}</span>
       <div class="grow"><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}${copyBtn(p.sku)}</div></div>
-      <div class="right"><b style="font-size:18px" class="${p.stock <= 0 ? 'neg' : ''}">${p.stock}</b>${p.meja_qty > 0 ? `<div><span class="tag blue">+${p.meja_qty} WIN belum di rak</span></div>` : ''}${p.min_stock > 0 && p.stock <= p.min_stock ? '<div><span class="tag yellow">menipis</span></div>' : ''}</div></button>`).join('')}</div>`
-      : filter === 'rak' ? `${emptyState(search ? 'Barang ini tidak ada di rak (stok 0).' : 'Belum ada barang di rak.', 'box')}<div class="row" style="justify-content:center;padding:0 16px 16px"><button class="btn btn-sm" data-allp>Cari di Master barang</button></div>`
-      : emptyState('Tidak ada barang.', 'box');
+      <div class="right"><b style="font-size:18px" class="${p.stock <= 0 ? 'neg' : ''}">${p.stock}</b>${p.meja_qty > 0 ? `<div><span class="tag blue">+${p.meja_qty} WIN belum di rak</span></div>` : ''}${p.min_stock > 0 && p.stock <= p.min_stock ? '<div><span class="tag yellow">menipis</span></div>' : ''}${lakuTag(p)}
+        ${filter === 'win' && canAdj ? `<div style="margin-top:4px"><span class="btn btn-sm ${p.rack_code ? '' : 'btn-primary'}" data-torack="${p.id}">${p.rack_code ? 'Rak lain' : 'Pilih rak'}</span></div>` : ''}</div></button>`).join('')}</div>${list.length > 1500 ? '<div class="xs muted" style="padding:8px 16px">Menampilkan 1.500 barang pertama. Persempit dengan pencarian / rak.</div>' : ''}`
+      : filter === 'rak' ? `${emptyState(search || rak ? 'Tidak ada barang di rak dengan filter ini.' : 'Belum ada barang di rak.', 'box')}<div class="row" style="justify-content:center;padding:0 16px 16px"><button class="btn btn-sm" data-allp>Cari di Master barang</button></div>`
+      : emptyState(filter === 'win' ? 'Semua barang WIN sudah di rak. 👍' : 'Tidak ada barang.', 'box');
   };
   box.querySelector('#q').addEventListener('input', debounce((e) => { search = e.target.value.trim().replace(/[,%()]/g, ''); load(); }, 300));
   box.querySelector('#q').addEventListener('keydown', async (e) => {
@@ -72,11 +133,29 @@ async function tabBarang(box) {
     const id = await rpc('find_product', { p_code: e.target.value.trim() }).catch(() => null);
     if (id) { e.target.value = ''; openProduct(id, load); }
   });
+  box.querySelector('#fr').onchange = (e) => { rak = e.target.value; load(); };
+  box.querySelector('#so').onchange = (e) => { sort = e.target.value; load(); };
+  box.querySelector('#dd').onchange = (e) => { days = +e.target.value; laku = null; load(); };
   const toMaster = () => { location.hash = '#/barang' + (search ? '?q=' + encodeURIComponent(search) : ''); };
-  on(box, 'click', '[data-chips="f"] .chip', (e, b) => { if (b.dataset.v === 'all') return toMaster(); filter = b.dataset.v; b.parentElement.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c === b)); load(); });
-  on(box, 'click', '[data-fwin]', () => { filter = 'win'; box.querySelectorAll('[data-chips="f"] .chip').forEach((c) => c.classList.toggle('on', c.dataset.v === 'win')); load(); });
+  on(box, 'click', '[data-chips="f"] .chip', (e, b) => { if (b.dataset.v === 'all') return toMaster(); filter = b.dataset.v; setChip(filter); load(); });
+  on(box, 'click', '[data-fwin]', () => { filter = 'win'; setChip('win'); load(); });
   on(box, 'click', '[data-allp]', toMaster);
-  on(box, 'click', '[data-p]', (e, b) => openProduct(+b.dataset.p, () => { load(); kpi(); }));
+  on(box, 'click', '[data-reset]', () => { rak = ''; sort = 'rak'; search = ''; box.querySelector('#fr').value = ''; box.querySelector('#so').value = 'rak'; box.querySelector('#q').value = ''; load(); });
+  on(box, 'click', '[data-torack]', async (e, b) => {
+    e.stopPropagation(); e.preventDefault();
+    const { data: p } = await supa.from('products').select('*').eq('id', +b.dataset.torack).single();
+    const k = await pickRack({ title: 'Taruh di rak', product: p, qtyMax: p.meja_qty, okLabel: 'Taruh di rak', note: p.rack_code ? 'Pilih rak lain kalau barang ini mau dipindah. Lokasi barang ikut berubah.' : 'Barang ini belum punya rak. Pilih raknya.' });
+    if (k) { try { const x = await rpc('meja_to_rack', { p_product: p.id, p_qty: k.qty, p_rack: k.rack }); toast(`${x.qty} pcs ditaruh di rak ${x.rack}`, 'ok'); load(); kpi(); } catch (err) { toastErr(err); } }
+  });
+  on(box, 'click', '[data-satu]', async (e, b) => {
+    e.stopPropagation();
+    const [pid, r] = [+b.dataset.satu.split(':')[0], b.dataset.satu.split(':').slice(1).join(':')];
+    const g = ganda.find((x) => x.product_id === pid);
+    if (!(await modal({ title: `Satukan ke rak ${r}?`, body: `<p style="margin:0">${esc(g.name)}: pindahkan dulu fisik barang dari ${g.racks.filter((x) => x.rack !== r).map((x) => `<b>${esc(x.rack)}</b> (${x.qty} pcs)`).join(', ')} ke rak <b>${esc(r)}</b>. Lokasi barang di aplikasi menjadi <b>${esc(r)}</b>.</p>`,
+      actions: [{ label: 'Batal', value: false }, { label: 'Sudah, satukan', cls: 'btn-primary', value: true }] }))) return;
+    try { const x = await rpc('rak_satukan', { p_product: pid, p_rack: r }); toast(`Disatukan di rak ${x.rack}`, 'ok'); loadGanda(); } catch (err) { toastErr(err); }
+  });
+  on(box, 'click', '[data-p]', (e, b) => { if (e.target.closest('[data-torack],.copy-btn,[data-copy]')) return; openProduct(+b.dataset.p, () => { load(); kpi(); }); });
   kpi(); load();
 }
 

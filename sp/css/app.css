@@ -1814,3 +1814,38 @@ html[data-theme="hitam"] .cpy { color: #6B4A00; background: #FFF4D6; }
 .del-opt:has(input:checked) { border-color: var(--red); background: rgba(220, 38, 38, .05); }
 .del-opt input { margin-top: 3px; }
 .del-opt.locked { opacity: .75; }
+
+/* ===== 2.47: filter Barang & lokasi ===== */
+.sf-box { padding: 12px; }
+.sf-chips .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.sf-chips .chips::-webkit-scrollbar { display: none; }
+.sf-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.sf-sel { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.sf-sel .input { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--text, inherit); }
+#sfinfo { align-items: center; min-height: 22px; }
+.win-move { border: 1.5px solid var(--blue, #2563eb); background: rgba(37, 99, 235, .04); }
+.rg-item { gap: 10px; }
+.rg-racks { display: flex; flex-direction: column; gap: 6px; min-width: 240px; }
+.rg-rack { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; }
+.rg-rack.main { border-color: var(--green, #16a34a); background: rgba(22, 163, 74, .06); }
+@media (max-width: 600px) { .rg-racks { min-width: 0; width: 100%; } }
+
+/* ===== 2.47: pop up tagihan (owner) ===== */
+.bill-pop { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 20px; background: rgba(10, 16, 40, .78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; transition: opacity .25s; }
+.bill-pop.on { opacity: 1; }
+.bp-card { width: min(420px, 100%); background: var(--card, #fff); color: var(--text, #111); border-radius: 24px; padding: 28px 22px 18px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 30px 80px rgba(0, 0, 0, .35); transform: translateY(16px) scale(.97); transition: transform .3s; }
+.bill-pop.on .bp-card { transform: none; }
+.bp-ic { width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center; background: #fef3c7; color: #b45309; margin-bottom: 4px; }
+.bill-pop.late .bp-ic { background: #fee2e2; color: #b91c1c; }
+.bp-k { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #b45309; }
+.bill-pop.late .bp-k { color: #b91c1c; }
+.bp-card h2 { margin: 0; font-size: 20px; }
+.bp-amt { font-size: 34px; font-weight: 800; letter-spacing: -.5px; margin: 4px 0; }
+.bp-sub { font-size: 14px; color: var(--muted); line-height: 1.5; }
+.bp-n { font-size: 12px; color: var(--muted); }
+.bp-card .btn-lg { width: 100%; margin-top: 10px; }
+.bp-cd { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.bp-bar { width: 100%; height: 4px; border-radius: 4px; background: var(--line, #e5e7eb); overflow: hidden; }
+.bp-bar i { display: block; height: 100%; width: 100%; background: var(--accent, #f59e0b); transform-origin: left; }
+.bill-pop.on .bp-bar i { animation: bpbar 5s linear forwards; }
+@keyframes bpbar { to { transform: scaleX(0); } }

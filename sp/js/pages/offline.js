@@ -8,7 +8,9 @@ import { MiniPDF } from '../pdf-mini.js';
 // 2.33 Toko offline: pembeli datang langsung. Dibuka kepala gudang.
 // Barang diambil dari rak (atau meja) langsung, atau dibeli dulu di WIN lalu diserahkan. Nota A6 bisa dicetak.
 const PAY = ['Tunai', 'Transfer', 'QRIS'];
-const P_COLS = 'id, sku, name, rack_code, stock, meja_qty, harga_beli, harga_shopee';
+// toko offline memakai harga Macallan (bukan harga Shopee)
+const P_COLS = 'id, sku, name, rack_code, stock, meja_qty, harga_beli, macallan';
+const PRICE = (p) => Number(p.macallan) || 0;
 
 export default {
   tour: [
@@ -35,7 +37,7 @@ export default {
     const avail = (p) => Number(p.stock || 0) + Number(p.meja_qty || 0);
     const add = (p) => {
       const cur = items.find((i) => i.p.id === p.id);
-      if (cur) cur.qty++; else items.push({ p, qty: 1, price: Number(p.harga_shopee) || 0, source: avail(p) > 0 ? 'rak' : 'win' });
+      if (cur) cur.qty++; else items.push({ p, qty: 1, price: PRICE(p), source: avail(p) > 0 ? 'rak' : 'win' });
       const it = items.find((i) => i.p.id === p.id);
       if (it.source === 'rak' && it.qty > avail(p)) it.source = 'win';
       paint();
@@ -52,14 +54,14 @@ export default {
         : '<div class="small muted">Belum ada barang. Scan atau cari barangnya.</div>';
       el.querySelector('#save').disabled = !items.length;
     };
-    bindProductSearch(el.querySelector('#oq'), (p) => add(p), { extraInfo: (p) => `stok ${avail(p)} · ${rp(p.harga_shopee)}` });
+    bindProductSearch(el.querySelector('#oq'), (p) => add(p), { extraInfo: (p) => `stok ${avail(p)} · ${rp(PRICE(p))}` });
     bindScan(el, 'sbo', async (code) => {
       try {
         const r = await rpc('lookup_code', { p_code: code });
         if (r.type !== 'barang') { beep(false); return { ok: false, title: 'Kode barang tidak dikenal', info: code }; }
         const { data: p } = await supa.from('products').select(P_COLS).eq('id', r.id).single();
         add(p); beep(true);
-        return { ok: true, title: p.name, info: `stok ${avail(p)} · ${rp(p.harga_shopee)}` };
+        return { ok: true, title: p.name, info: `stok ${avail(p)} · ${rp(PRICE(p))}` };
       } catch (e) { beep(false); toastErr(e); return false; }
     });
     on(el, 'input', '[data-q]', (e) => { const i = items[+e.target.dataset.q]; i.qty = Math.max(1, parseInt(e.target.value, 10) || 1); });

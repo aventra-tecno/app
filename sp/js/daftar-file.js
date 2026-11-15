@@ -134,7 +134,7 @@ export function bindProductSearch(input, onPick, { extraInfo } = {}) {
   const run = debounce(async () => {
     const q = input.value.trim(); const my = ++seq;
     if (q.length < 2) { wrap.innerHTML = ''; return; }
-    const { data } = await supa.from('products').select('id, sku, name, rack_code, stock, meja_qty, harga_beli, harga_shopee').eq('active', true).or(codeOr(q)).order('name').limit(8);
+    const { data } = await supa.from('products').select('id, sku, name, rack_code, stock, meja_qty, harga_beli, harga_shopee, macallan').eq('active', true).or(codeOr(q)).order('name').limit(8);
     if (my !== seq) return;
     wrap._data = data || [];
     wrap.innerHTML = (data || []).length ? data.map((p, i) => `<button type="button" class="ps-item" data-ps="${i}"><span class="grow"><b>${esc(p.name)}</b><span class="xs muted mono"> ${esc(p.sku)}</span></span><span class="xs muted">${extraInfo ? extraInfo(p) : `rak ${esc(p.rack_code || '–')} · stok ${p.stock}${p.meja_qty ? ' · meja ' + p.meja_qty : ''}`}</span></button>`).join('')

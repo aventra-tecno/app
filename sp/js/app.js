@@ -393,6 +393,7 @@ async function billBar() {
     document.querySelector('.tb-bill')?.classList.toggle('has-bill', !!billUnpaid);
     const badge = document.querySelector('[data-bill-badge]');
     if (badge) { badge.classList.toggle('hidden', !data?.length); badge.textContent = data?.length > 1 ? data.length : ''; }
+    if (!error && data?.length) billPopup(data);
     if (error || !data?.length || data[0].due_date > addDays(todayStr(), 7)) return;
     const late = data[0].due_date < todayStr();
     const bar = document.createElement('a');
@@ -403,11 +404,43 @@ async function billBar() {
   } catch (_) {}
 }
 
+// 2.47: pop up tagihan menutup layar (owner) saat tagihan belum dibayar sudah dekat jatuh tempo (≤ 3 hari) / terlambat.
+// Muncul setiap kali aplikasi dibuka, tertutup otomatis setelah 5 detik. Tidak muncul di halaman Tagihan.
+let billPopDone = false;
+async function billPopup(bills) {
+  if (billPopDone || store.role !== 'owner' || location.hash.startsWith('#/tagihan')) return;
+  const due = bills.filter((b) => b.due_date <= addDays(todayStr(), 3));
+  if (!due.length) return;
+  billPopDone = true;
+  const first = due[0].due_date, late = first < todayStr();
+  const days = Math.round((new Date(first) - new Date(todayStr())) / 864e5);
+  const total = due.reduce((a, b) => a + Number(b.amount), 0);
+  const ov = document.createElement('div');
+  ov.className = 'bill-pop' + (late ? ' late' : '');
+  ov.setAttribute('role', 'alertdialog'); ov.setAttribute('aria-modal', 'true');
+  ov.innerHTML = `<div class="bp-card">
+    <div class="bp-ic">${icon('receipt', 30)}</div>
+    <div class="bp-k">${late ? 'Tagihan terlambat' : days === 0 ? 'Jatuh tempo hari ini' : `Jatuh tempo ${days} hari lagi`}</div>
+    <h2>Tagihan aplikasi belum dibayar</h2>
+    <div class="bp-amt">${rp(total)}</div>
+    <div class="bp-sub">${late ? 'Seharusnya dibayar' : 'Bayar sebelum'} <b>${fmtDate(first, { day: 'numeric', month: 'long', year: 'numeric' })}</b> supaya aplikasi tetap bisa dipakai.</div>
+    ${due.length > 1 ? `<div class="bp-n">${due.length} tagihan</div>` : ''}
+    <a class="btn btn-primary btn-lg" href="#/tagihan" data-bp-pay>Bayar sekarang</a>
+    <div class="bp-cd">Tertutup otomatis dalam <b data-bp-n>5</b> detik</div>
+    <div class="bp-bar"><i></i></div></div>`;
+  document.body.appendChild(ov);
+  requestAnimationFrame(() => ov.classList.add('on'));
+  let n = 5;
+  const close = () => { clearInterval(t); ov.classList.remove('on'); setTimeout(() => ov.remove(), 250); };
+  const t = setInterval(() => { n--; const b = ov.querySelector('[data-bp-n]'); if (b) b.textContent = n; if (n <= 0) close(); }, 1000);
+  ov.querySelector('[data-bp-pay]').addEventListener('click', close);
+}
+
 // bar atas HP: garis tipis muncul saat halaman digulir
 addEventListener('scroll', () => { if (document.documentElement.classList.contains('no-scroll')) return; document.querySelector('.topbar')?.classList.toggle('scrolled', scrollY > 4); }, { passive: true });
 
 // 2.25: saat pop up apa pun terbuka (modal, notifikasi lonceng, menu akun) halaman di belakangnya dikunci, tidak ikut tergeser
-const POPUP_SEL = '.overlay, #bell-panel, #me-panel';
+const POPUP_SEL = '.overlay, #bell-panel, #me-panel, .bill-pop';
 const popupScrollLock = () => document.documentElement.classList.toggle('no-scroll', !!document.querySelector(POPUP_SEL) && !document.querySelector('.tour-block'));
 new MutationObserver(popupScrollLock).observe(document.body, { childList: true, subtree: true });
 // HP (iPhone juga): geseran jari di luar bagian pop up yang bisa digulir diabaikan
