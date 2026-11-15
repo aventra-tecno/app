@@ -225,10 +225,24 @@ export async function openCamera(onCode, { continuous = true, title = 'Arahkan k
     let on = false;
     tb.addEventListener('click', () => { on = !on; apply({ torch: on }); tb.textContent = on ? 'Senter mati' : 'Senter'; });
   }
+  // zoom: pakai zoom kamera kalau ada (Android). Kalau tidak ada (iPhone / Safari) -> zoom digital:
+  // gambar diperbesar & bagian tengah yang dibaca, jadi HP bisa dijauhkan ±20–30 cm supaya tetap fokus.
+  // iPhone tidak bisa fokus terlalu dekat, jadi di iPhone zoom digital 2× langsung aktif.
+  const iOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let dz = 1;
+  const zb = wrap.querySelector('[data-zoom]');
   if (caps.zoom && caps.zoom.max >= 1.5) {
-    const zb = wrap.querySelector('[data-zoom]'); zb.style.display = '';
+    zb.style.display = '';
     let z = 1;
     zb.addEventListener('click', () => { z = z === 1 ? Math.min(2, caps.zoom.max) : 1; apply({ zoom: z }); zb.textContent = z === 1 ? 'Zoom 2×' : 'Zoom 1×'; });
+  } else {
+    zb.style.display = '';
+    const setDz = (z) => { dz = z; video.style.transform = z > 1 ? `scale(${z})` : ''; zb.textContent = z > 1 ? 'Zoom 1×' : 'Zoom 2×'; };
+    zb.addEventListener('click', () => setDz(dz > 1 ? 1 : 2));
+    if (iOS) {
+      setDz(2);
+      wrap.querySelector('.cam-tip').textContent = 'iPhone: jauhkan HP ±20–30 cm sampai barcode tajam & pas di kotak kuning (zoom 2× sudah aktif). Barcode panjang: boleh miringkan HP ke samping (landscape).';
+    }
   }
 
   // potongan tengah gambar (sesuai kotak kuning), diperbesar supaya garis tipis terbaca
@@ -237,8 +251,8 @@ export async function openCamera(onCode, { continuous = true, title = 'Arahkan k
   const crop = () => {
     const vw = video.videoWidth, vh = video.videoHeight;
     if (!vw || !vh) return null;
-    const w = Math.round(vw * 0.9), h = Math.round(vh * 0.45);
-    const scale = Math.min(2, 1600 / w);
+    const w = Math.round((vw * 0.9) / dz), h = Math.round((vh * 0.45) / dz);
+    const scale = Math.min(3, 1600 / w);
     canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
     cx.imageSmoothingEnabled = false;
     cx.drawImage(video, (vw - w) / 2, (vh - h) / 2, w, h, 0, 0, canvas.width, canvas.height);
@@ -251,7 +265,7 @@ export async function openCamera(onCode, { continuous = true, title = 'Arahkan k
   const cropSq = () => {
     const vw = video.videoWidth, vh = video.videoHeight;
     if (!vw || !vh) return null;
-    const side = Math.round(Math.min(vw, vh) * 0.8), out = Math.min(1100, Math.max(side, 640));
+    const side = Math.round((Math.min(vw, vh) * 0.8) / dz), out = Math.min(1100, Math.max(side, 640));
     sq.width = sq.height = out;
     sqx.imageSmoothingEnabled = side < out;
     sqx.drawImage(video, (vw - side) / 2, (vh - side) / 2, side, side, 0, 0, out, out);
@@ -313,7 +327,7 @@ export async function openCamera(onCode, { continuous = true, title = 'Arahkan k
         if (code) await handle(code);
       }
     } catch (_) {}
-    setTimeout(loop, detector ? 90 : 160);
+    setTimeout(loop, detector ? 90 : iOS ? 110 : 160);
   };
   loop();
 }

@@ -365,8 +365,8 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 @keyframes flash { 0% { box-shadow: 0 0 0 4px var(--green); } 100% { box-shadow: none; } }
 .scan-flash.bad { animation: flashbad .6s; }
 @keyframes flashbad { 0%, 60% { box-shadow: 0 0 0 4px var(--red); } 100% { box-shadow: none; } }
-.camera { position: fixed; inset: 0; background: #000; z-index: 70; display: flex; flex-direction: column; }
-.camera video { flex: 1; width: 100%; object-fit: cover; min-height: 0; }
+.camera { position: fixed; inset: 0; background: #000; z-index: 70; display: flex; flex-direction: column; overflow: hidden; }
+.camera video { flex: 1; width: 100%; object-fit: cover; min-height: 0; transform-origin: 50% 50%; transition: transform .2s; }
 .camera .frame { position: absolute; left: 50%; top: 42%; width: 90vw; max-width: 560px; height: 40vh; max-height: 300px; transform: translate(-50%, -50%); border: 3px solid var(--accent); border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,.35); }
 .camera .frame::after { content: ''; position: absolute; left: 12px; right: 12px; top: 50%; height: 2px; background: var(--accent); animation: scanline 1.6s ease-in-out infinite; }
 @keyframes scanline { 50% { transform: translateY(40px); } 0%, 100% { transform: translateY(-40px); } }
