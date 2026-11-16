@@ -125,6 +125,8 @@ export default {
     el.querySelector('#q').addEventListener('input', debounce((e) => { search = e.target.value.trim(); applySearch(); }, 200));
     on(el, 'click', '#more', () => { shown += 300; paint(); });
     el.querySelector('#add')?.addEventListener('click', () => edit(null));
+    // 2.49: dari scan kode yang belum dikenal -> langsung form tambah barang dengan kode itu
+    if (params.baru && canEdit) setTimeout(() => edit(null, { sku: params.baru }), 50);
     on(el, 'click', '[data-edit]', (e, b) => edit(el._data.find((x) => x.id === +b.dataset.edit)));
     on(el, 'click', '[data-hist]', (e, b) => openProduct(+b.dataset.hist, load));
     on(el, 'change', '[data-sel]', (e, c) => { c.checked ? sel.add(+c.dataset.sel) : sel.delete(+c.dataset.sel); });

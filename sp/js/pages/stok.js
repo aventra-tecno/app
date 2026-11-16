@@ -6,7 +6,7 @@ import { pickRack } from '../rak-pilih.js';
 import { bindProductSearch } from '../daftar-file.js';
 import { scanBox, bindScan } from '../scanner.js';
 
-const MOV = { initial: 'Stok awal', in_win: 'Masuk dari WIN', pick: 'Diambil picker', to_packing: 'Langsung ke packing', pack_no_pick: 'Dipacking tanpa pick', return_good: 'Retur baik kembali', return_damaged: 'Retur rusak → karantina', opname: 'Stok opname', adjust: 'Penyesuaian manual', move_rack: 'Pindah rak', cancel_back: 'Cancel, kembali ke rak', to_meja: 'Barang WIN masuk stok gudang', meja_back: 'Ditaruh di rak' };
+const MOV = { initial: 'Stok awal', in_win: 'Masuk dari WIN', pick: 'Diambil picker', to_packing: 'Langsung ke packing', pack_no_pick: 'Dipacking tanpa pick', return_good: 'Retur baik kembali', return_damaged: 'Retur rusak → karantina', opname: 'Stok opname', adjust: 'Penyesuaian manual', move_rack: 'Pindah rak', cancel_back: 'Cancel, kembali ke rak', to_meja: 'Barang WIN masuk stok gudang', meja_back: 'Ditaruh di rak', karantina_bagus: 'Karantina dicek: bagus, kembali ke rak', karantina_jelek: 'Karantina dicek: jelek', rusak_masuk: 'Barang jelek dari rak', tukar_win: 'Barang jelek ditukar WIN' };
 
 export default {
   tour: [
@@ -193,11 +193,26 @@ export async function openProduct(id, after) {
   }
   if (r === 'adj') {
     const initial = p.stock === 0 && !mv.length;
-    const res = await modal({ title: initial ? 'Isi stok awal' : 'Sesuaikan stok', body: `<div class="stack"><label class="field">${initial ? 'Jumlah stok sekarang' : 'Tambah / kurangi (pakai minus untuk mengurangi)'}<input class="input num" id="aq" inputmode="numeric" placeholder="${initial ? 'mis. 12' : 'mis. -2'}"></label>
+    // 2.49: keyboard angka di HP tidak punya tanda minus -> pilih Tambah / Kurangi + tombol − / +
+    const res = await modal({ title: initial ? 'Isi stok awal' : 'Sesuaikan stok', body: `<div class="stack">
+      ${initial ? '' : `<div class="adj-seg" role="group" aria-label="Tambah atau kurangi"><button type="button" class="seg-b on" data-sign="1">+ Tambah stok</button><button type="button" class="seg-b" data-sign="-1">− Kurangi stok</button></div>`}
+      <div class="field"><span>${initial ? 'Jumlah stok sekarang' : 'Jumlah'}</span>
+        <div class="adj-step"><button type="button" class="btn" data-st="-1" aria-label="Kurangi">−</button><input class="input num" id="aq" type="number" inputmode="numeric" min="0" value="${initial ? '' : 1}" placeholder="${initial ? 'mis. 12' : ''}"><button type="button" class="btn" data-st="1" aria-label="Tambah">+</button></div></div>
+      <div class="small" id="aprev"></div>
       <label class="field">Alasan (wajib)<input class="input" id="ar" value="${initial ? 'Stok awal' : ''}" placeholder="mis. salah hitung"></label>
       ${initial ? '' : '<div class="alert yellow small">Untuk menghitung ulang seluruh rak, lebih baik pakai Stok opname. Perubahan manual di luar jam kerja dilaporkan ke owner.</div>'}</div>`,
+      onOpen: (ov) => {
+        let sign = 1;
+        const q = ov.querySelector('#aq');
+        const prev = () => { const n = Math.abs(parseInt(q.value, 10) || 0); ov.querySelector('#aprev').innerHTML = initial ? '' : n ? `Stok <b>${p.stock}</b> → <b class="${sign < 0 ? 'neg' : 'pos'}">${p.stock + sign * n}</b> (${sign < 0 ? '−' : '+'}${n})` : ''; };
+        ov.querySelectorAll('[data-sign]').forEach((b) => b.onclick = () => { sign = +b.dataset.sign; ov.querySelectorAll('[data-sign]').forEach((x) => x.classList.toggle('on', x === b)); ov._sign = sign; prev(); });
+        ov.querySelectorAll('[data-st]').forEach((b) => b.onclick = () => { q.value = Math.max(0, (parseInt(q.value, 10) || 0) + +b.dataset.st); prev(); });
+        q.addEventListener('input', () => { q.value = q.value.replace(/[^0-9]/g, ''); prev(); });
+        ov._sign = 1; prev();
+      },
       actions: [{ label: 'Batal', value: null }, { label: 'Simpan', cls: 'btn-primary', onClick: async (ov) => {
-        const qv = parseInt(ov.querySelector('#aq').value, 10), reason = ov.querySelector('#ar').value.trim();
+        const n = Math.abs(parseInt(ov.querySelector('#aq').value, 10) || 0), reason = ov.querySelector('#ar').value.trim();
+        const qv = initial ? n : (ov._sign || 1) * n;
         if (!qv || !reason) { toast('Isi jumlah dan alasan', 'err'); return false; }
         await rpc('adjust_stock', { p_product: id, p_qty: qv, p_reason: reason, p_initial: initial }); return true;
       } }] });
@@ -282,9 +297,83 @@ async function tabRak(box) {
   });
 }
 
+// 2.49 Karantina: barang retur rusak & barang jelek.
+//   Menunggu dicek -> Bagus (kembali ke rak, rugi berkurang) / Jelek (tunggu tukar ke WIN)
+//   Barang jelek -> Tukar WIN (pengganti datang, masuk rak, rugi berkurang)
+//   Barang jelek ketahuan di rak -> scan -> masuk barang jelek
 async function tabKarantina(box) {
-  const { data } = await supa.from('products').select('id, sku, name, stock_karantina, harga_beli').gt('stock_karantina', 0).order('name');
-  box.innerHTML = `<div class="card flush">${data?.length ? `<div class="card-h"><h2>Barang rusak (karantina)</h2><span class="small muted">tidak dihitung sebagai stok jual</span></div><div class="list">${data.map((p) => `<div class="list-item"><div class="grow"><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}</div></div><b>${p.stock_karantina}</b>${['owner', 'admin'].includes(store.role) ? `<span class="small muted">${rp(p.stock_karantina * p.harga_beli)}</span>` : ''}</div>`).join('')}</div>` : emptyState('Tidak ada barang di karantina.', 'box')}</div>`;
+  const canAdj = ['owner', 'kepala_gudang', 'supervisor'].includes(store.role);
+  const seeValue = ['owner', 'admin'].includes(store.role);
+  const COLS = 'id, sku, name, rack_code, stock, stock_karantina, stock_jelek, harga_beli';
+  box.innerHTML = `<div class="stack">
+    <div class="alert blue small">Karantina = barang retur rusak & barang jelek. Cek satu per satu: <b>Bagus</b> → kembali ke rak, <b>Jelek</b> → tunggu ditukar WIN. Saat barang pengganti dari WIN datang, tekan <b>Tukar WIN</b>: barang masuk rak dan rugi berkurang.</div>
+    ${canAdj ? `<section class="card stack"><h2 class="sec-title" style="margin:0">Scan barang</h2>${scanBox('skr', 'Scan barang karantina / barang jelek')}
+      <div class="row wrap"><button class="btn btn-sm" id="kjelek">${icon('plus', 16)} Barang jelek dari rak</button></div></section>` : ''}
+    <section class="card flush" id="kwait"></section>
+    <section class="card flush" id="kjel"></section></div>`;
+  const val = (n, p) => (seeValue ? `<div class="xs muted">${rp(n * p.harga_beli)}</div>` : '');
+  const load = async () => {
+    const { data, error } = await supa.from('products').select(COLS).or('stock_karantina.gt.0,stock_jelek.gt.0').order('name');
+    if (error) { box.querySelector('#kwait').innerHTML = `<div style="padding:16px" class="alert yellow small">Butuh update database. Jalankan <b>supabase/update-2.49.sql</b>. (${esc(error.message)})</div>`; return; }
+    const wait = data.filter((p) => p.stock_karantina > 0), jel = data.filter((p) => p.stock_jelek > 0);
+    const sum = (l, f) => l.reduce((a, p) => a + p[f], 0);
+    box.querySelector('#kwait').innerHTML = `<div class="card-h"><h2>Menunggu dicek</h2><span class="small muted">${num(sum(wait, 'stock_karantina'))} pcs${seeValue ? ' · ' + rp(wait.reduce((a, p) => a + p.stock_karantina * p.harga_beli, 0)) : ''}</span></div>
+      ${wait.length ? `<div class="list">${wait.map((p) => `<div class="list-item kr-row"><div class="grow" style="min-width:0"><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}${copyBtn(p.sku)} · rak ${esc(p.rack_code || '–')}</div></div>
+        <div class="right"><b style="font-size:18px">${p.stock_karantina}</b>${val(p.stock_karantina, p)}</div>
+        ${canAdj ? `<div class="kr-act"><button class="btn btn-sm kr-ok" data-kact="bagus:${p.id}">Bagus</button><button class="btn btn-sm kr-bad" data-kact="jelek:${p.id}">Jelek</button></div>` : ''}</div>`).join('')}</div>`
+        : `<div style="padding:16px">${emptyState('Tidak ada barang yang menunggu dicek.', 'check')}</div>`}`;
+    box.querySelector('#kjel').innerHTML = `<div class="card-h"><h2>Barang jelek · tunggu tukar WIN</h2><span class="small muted">${num(sum(jel, 'stock_jelek'))} pcs${seeValue ? ' · ' + rp(jel.reduce((a, p) => a + p.stock_jelek * p.harga_beli, 0)) : ''}</span></div>
+      ${jel.length ? `<div class="list">${jel.map((p) => `<div class="list-item kr-row"><div class="grow" style="min-width:0"><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}${copyBtn(p.sku)} · rak ${esc(p.rack_code || '–')}</div></div>
+        <div class="right"><b style="font-size:18px">${p.stock_jelek}</b>${val(p.stock_jelek, p)}</div>
+        ${canAdj ? `<div class="kr-act"><button class="btn btn-sm btn-primary" data-kact="tukar:${p.id}">Tukar WIN</button></div>` : ''}</div>`).join('')}</div>`
+        : `<div style="padding:16px">${emptyState('Tidak ada barang jelek.', 'check')}</div>`}`;
+    box._list = data;
+  };
+  const ACT = {
+    bagus: ['Bagus → kembali ke rak', 'stock_karantina', 'kr-ok'],
+    jelek: ['Jelek → tunggu tukar WIN', 'stock_karantina', 'kr-bad'],
+    tukar: ['Tukar WIN → pengganti masuk rak', 'stock_jelek', 'btn-primary'],
+    rusak: ['Barang jelek dari rak', 'stock', 'kr-bad']
+  };
+  // pilih jumlah & aksi untuk 1 barang
+  const act = async (p, only) => {
+    const acts = only ? [only] : Object.keys(ACT).filter((k) => p[ACT[k][1]] > 0);
+    if (!acts.length) { toast(`${p.name}: tidak ada di karantina & stok rak 0`, 'err'); return; }
+    const r = await modal({ title: p.name, body: `<div class="stack">
+        <div class="xs muted mono">${esc(p.sku)} · rak ${esc(p.rack_code || '–')} · stok rak ${p.stock} · karantina ${p.stock_karantina} · jelek ${p.stock_jelek}</div>
+        <div class="field"><span>Jumlah</span><div class="adj-step"><button type="button" class="btn" data-st="-1">−</button><input class="input num" id="kq" type="number" inputmode="numeric" min="1" value="1"><button type="button" class="btn" data-st="1">+</button></div></div>
+        ${acts.includes('rusak') ? '<label class="field">Catatan (opsional)<input class="input" id="kn" placeholder="mis. retak, baret"></label>' : ''}</div>`,
+      onOpen: (ov) => { const q = ov.querySelector('#kq'); ov.querySelectorAll('[data-st]').forEach((b) => b.onclick = () => { q.value = Math.max(1, (parseInt(q.value, 10) || 1) + +b.dataset.st); }); },
+      actions: [{ label: 'Batal', value: null }, ...acts.map((k) => ({ label: ACT[k][0], cls: ACT[k][2], onClick: (ov) => {
+        const n = parseInt(ov.querySelector('#kq').value, 10) || 0;
+        if (n < 1) { toast('Isi jumlah', 'err'); return false; }
+        if (n > p[ACT[k][1]]) { toast(`Maksimal ${p[ACT[k][1]]}`, 'err'); return false; }
+        return { k, n, note: ov.querySelector('#kn')?.value || null };
+      } }))] });
+    if (!r) return;
+    try {
+      if (r.k === 'bagus' || r.k === 'jelek') await rpc('karantina_putus', { p_product: p.id, p_qty: r.n, p_hasil: r.k });
+      if (r.k === 'tukar') await rpc('tukar_win', { p_product: p.id, p_qty: r.n });
+      if (r.k === 'rusak') await rpc('rusak_masuk', { p_product: p.id, p_qty: r.n, p_note: r.note });
+      toast({ bagus: `${r.n} pcs kembali ke rak ${p.rack_code || ''}`, jelek: `${r.n} pcs masuk barang jelek`, tukar: `${r.n} pcs pengganti WIN masuk rak ${p.rack_code || ''}`, rusak: `${r.n} pcs masuk barang jelek` }[r.k], 'ok');
+      load();
+    } catch (e) { toastErr(e); }
+  };
+  const byId = async (id) => (await supa.from('products').select(COLS).eq('id', id).single()).data;
+  on(box, 'click', '[data-kact]', async (e, b) => { const [k, id] = b.dataset.kact.split(':'); const p = await byId(+id); if (p) act(p, k); });
+  box.querySelector('#kjelek')?.addEventListener('click', async () => {
+    const { pickProduct } = await import('../daftar-file.js');
+    const x = await pickProduct('Barang jelek dari rak', ''); if (!x) return;
+    const p = await byId(x.id); if (p) act(p, 'rusak');
+  });
+  if (canAdj) bindScan(box, 'skr', async (code) => {
+    const id = await rpc('find_product', { p_code: code }).catch(() => null);
+    if (!id) { beep(false); return { ok: false, unknown: true, title: 'Kode barang tidak dikenal', info: code }; }
+    const p = await byId(id); beep(true);
+    act(p, p.stock_karantina > 0 || p.stock_jelek > 0 ? null : 'rusak');
+    return { ok: true, title: p.name, info: `karantina ${p.stock_karantina} · jelek ${p.stock_jelek} · rak ${p.stock}` };
+  });
+  load();
 }
 
 export async function printLabels(items, kind = 'barang') {

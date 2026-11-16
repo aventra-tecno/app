@@ -27,6 +27,7 @@ export default {
           ${scanBox('sbo', 'Scan barang')}
           <input class="input" id="oq" placeholder="atau cari nama / kode barang" autocomplete="off">
           <div id="items"></div>
+          <div class="grid g2"><label class="field">Diskon (%)<input class="input num" id="dp" type="number" inputmode="decimal" min="0" max="100" step="0.5" value="0" placeholder="0"></label><div></div></div>
           <div class="grid g2"><label class="field">Pembayaran<select class="input" id="pay">${PAY.map((p) => `<option>${p}</option>`).join('')}</select></label>
             <label class="field">Catatan<input class="input" id="nt" placeholder="opsional"></label></div>
           <button class="btn btn-primary btn-lg" id="save" disabled>${icon('print', 18)} Simpan & cetak nota</button>
@@ -42,6 +43,7 @@ export default {
       if (it.source === 'rak' && it.qty > avail(p)) it.source = 'win';
       paint();
     };
+    const disc = () => Math.min(100, Math.max(0, parseFloat(String(el.querySelector('#dp')?.value || '0').replace(',', '.')) || 0));
     const paint = () => {
       const tot = items.reduce((a, i) => a + i.qty * i.price, 0);
       el.querySelector('#items').innerHTML = items.length ? `<div class="list no-page">${items.map((i, k) => `<div class="list-item ofl-row">
@@ -50,7 +52,8 @@ export default {
           <div class="le-in"><label class="xs muted">Jumlah<input class="input sm num" data-q="${k}" value="${i.qty}" inputmode="numeric"></label>
             <label class="xs muted">Harga<input class="input sm num" data-pr="${k}" data-money value="${num(i.price)}" inputmode="numeric"></label>
             <button type="button" class="btn btn-ghost btn-sm" data-del="${k}" aria-label="Hapus" style="color:var(--red)">✕</button></div></div>`).join('')}</div>
-        <div class="line-row total"><span>${items.reduce((a, i) => a + i.qty, 0)} barang${items.some((i) => i.source === 'win') ? ' · ada yang beli WIN' : ''}</span><span>${rp(tot)}</span></div>`
+        ${disc() ? `<div class="line-row"><span>Subtotal</span><span>${rp(tot)}</span></div><div class="line-row"><span>Diskon ${disc()}%</span><span class="neg">−${rp(Math.round(tot * disc() / 100))}</span></div>` : ''}
+        <div class="line-row total"><span>${items.reduce((a, i) => a + i.qty, 0)} barang${items.some((i) => i.source === 'win') ? ' · ada yang beli WIN' : ''}</span><span>${rp(tot - Math.round(tot * disc() / 100))}</span></div>`
         : '<div class="small muted">Belum ada barang. Scan atau cari barangnya.</div>';
       el.querySelector('#save').disabled = !items.length;
     };
@@ -69,13 +72,14 @@ export default {
     on(el, 'change', '[data-q], [data-pr]', () => { items.forEach((i) => { if (i.source === 'rak' && i.qty > avail(i.p)) i.source = 'win'; }); paint(); });
     on(el, 'click', '[data-src]', (e, b) => { const [k, s] = b.dataset.src.split(':'); items[+k].source = s; paint(); });
     on(el, 'click', '[data-del]', (e, b) => { items.splice(+b.dataset.del, 1); paint(); });
+    el.querySelector('#dp').addEventListener('input', () => paint());
     el.querySelector('#save').onclick = async (e) => {
       e.target.disabled = true;
       try {
-        const r = await rpc('offline_order_save', { p: { name: el.querySelector('#cn').value, phone: el.querySelector('#cp').value, pay_method: el.querySelector('#pay').value, note: el.querySelector('#nt').value,
+        const r = await rpc('offline_order_save', { p: { name: el.querySelector('#cn').value, phone: el.querySelector('#cp').value, pay_method: el.querySelector('#pay').value, note: el.querySelector('#nt').value, diskon_pct: disc(),
           items: items.map((i) => ({ product_id: i.p.id, qty: i.qty, price: i.price, source: i.source })) } });
         toast(`Tersimpan ${r.order_no}${r.win ? ` · ${r.win} pcs beli di WIN` : ''}`, 'ok');
-        items = []; ['#cn', '#cp', '#nt'].forEach((s) => (el.querySelector(s).value = '')); paint(); loadHist();
+        items = []; ['#cn', '#cp', '#nt'].forEach((s) => (el.querySelector(s).value = '')); el.querySelector('#dp').value = '0'; paint(); loadHist();
         printNota(r.id);
       } catch (err) { toastErr(err); e.target.disabled = false; }
     };
@@ -96,6 +100,7 @@ export default {
         body: `<div class="stack s8"><div class="row wrap">${o.status === 'menunggu_win' ? '<span class="tag yellow">Tunggu barang WIN</span>' : statusTag(o.status)}<span class="small muted">${fmtDateTime(o.created_at)} · ${esc(o.pay_method || '')}</span></div>
           <div><b>${esc(o.customer_name || 'Pembeli')}</b> <span class="small muted">${esc(o.customer_phone || '')}</span></div>
           <div class="list no-page">${o.order_items.map((i) => `<div class="list-item" style="padding:6px 0"><div class="grow" style="min-width:0">${esc(i.name)}<div class="xs muted">${i.qty} × ${rp(i.price)}${i.source === 'win' ? (i.ready_qty >= i.qty ? ' · WIN sudah diserahkan' : ' · <span class="neg">beli WIN, belum diserahkan</span>') : ' · dari rak'}</div></div><b>${rp(i.qty * i.price)}</b></div>`).join('')}</div>
+          ${Number(o.diskon) ? `<div class="line-row"><span>Subtotal</span><span>${rp(Number(o.total_jual) + Number(o.diskon))}</span></div><div class="line-row"><span>Diskon ${Number(o.diskon_pct)}%</span><span class="neg">−${rp(o.diskon)}</span></div>` : ''}
           <div class="line-row total"><span>Total</span><span>${rp(o.total_jual)}</span></div></div>`,
         actions: [
           ...(o.status !== 'cancel' ? [{ label: 'Batalkan', cls: 'btn-danger', value: 'cancel' }] : []),
@@ -159,6 +164,11 @@ export async function notaPdf(o, shop, printedBy = '') {
   }
   if (y > 112) { doc.addPage(); y = 12; }
   doc.line(M, y, R, y); y += 5.5;
+  if (Number(o.diskon)) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+    doc.text('Subtotal', M, y); doc.text(money(Number(o.total_jual) + Number(o.diskon)), R, y, { align: 'right' }); y += 4.4;
+    doc.text(`Diskon ${Number(o.diskon_pct)}%`, M, y); doc.text('-' + money(o.diskon), R, y, { align: 'right' }); y += 5.2;
+  }
   doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text('TOTAL', M, y); doc.text(money(o.total_jual), R, y, { align: 'right' });
   y += 5; doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
   doc.text(`Pembayaran: ${o.pay_method || '-'}${o.status === 'cancel' ? '  ·  DIBATALKAN' : ''}`, M, y);

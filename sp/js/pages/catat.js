@@ -46,6 +46,8 @@ export default {
     </div>`;
 
     const storeName = () => stores.find((s) => s.id === storeId)?.name || '';
+    // 2.49: resi dari scan yang belum dipacking (atau sudah cancel) bisa dihapus, barang kembali ke stok
+    const canDel = (o) => o && ['owner', 'admin'].includes(store.role) && o.entry === 'scan' && !o.packed_at && ['baru', 'menunggu_win', 'siap_packing', 'cancel'].includes(o.status);
     const longDate = (d) => fmtDate(d, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     // penanda besar: sedang mencatat untuk toko & tanggal apa (resi baru selalu tercatat hari ini)
     const paintCtx = () => {
@@ -80,20 +82,27 @@ export default {
             <div class="grow" style="min-width:0"><b>${esc(i.name)}</b><div class="xs muted mono">${esc(i.sku || '')}</div>
               <div class="xs" style="margin-top:3px">${newFlow ? `${i.meja_qty ? `<span class="tag green">${i.meja_qty} barang WIN</span> ` : ''}${i.rack_qty ? `<span class="tag blue">${i.rack_qty} dari rak ${esc(i.products?.rack_code || '')}</span>` : ''}`
                 : `${i.rack_qty ? `<span class="tag green">${i.rack_qty} diambil dari rak ${esc(i.products?.rack_code || '')}</span> ` : ''}${i.qty > i.rack_qty ? `<span class="tag yellow">${i.qty - i.rack_qty} tunggu WIN</span> ` : ''}${i.po_id ? '<span class="tag blue">sudah di daftar beli</span>' : '<span class="tag">belum dibeli</span>'}`}</div></div>
-            <div class="right"><b style="font-size:18px">×${i.qty}</b><div class="xs muted">${rp(i.price)}</div>${editable && !i.po_id ? `<button class="btn btn-ghost btn-sm" data-undo="${i.id}" style="color:var(--red);padding:0 6px">−1</button>` : ''}</div></div>`).join('')}</div>
+            <div class="right">${editable && !i.po_id ? `<div class="qty-step"><button class="btn btn-ghost btn-sm" data-undo="${i.id}" aria-label="Kurangi 1 (kembali ke stok)">−</button><span class="qs-n">${i.qty}</span><button class="btn btn-ghost btn-sm" data-plus="${esc(i.sku || '')}" aria-label="Tambah 1">+</button></div>` : `<b style="font-size:18px">×${i.qty}</b>`}<div class="xs muted">${rp(i.price)}</div></div></div>`).join('')}</div>
           <div class="line-row total"><span>${items.reduce((a, i) => a + i.qty, 0)} barang</span><span>${rp(total)}</span></div>` : '<div class="muted small" style="margin-top:8px">Belum ada barang. Scan kode barang sekarang.</div>'}
-        ${editable ? `<div class="row wrap" style="margin-top:8px"><button class="btn btn-ghost btn-sm" id="cancelord" style="color:var(--red)">Batalkan pesanan ini</button></div>` : ''}
+        ${editable || canDel(order) ? `<div class="row wrap" style="margin-top:8px">${editable ? '<button class="btn btn-ghost btn-sm" id="cancelord" style="color:var(--red)">Batalkan pesanan ini</button>' : ''}${canDel(order) ? `<button class="btn btn-ghost btn-sm" id="delord" style="color:var(--red)">${icon('x', 15)} Hapus resi</button>` : ''}</div>` : ''}
+        ${editable && order.status === 'baru' ? '<div class="xs muted" style="margin-top:6px">Tekan <b>Enter</b> di kolom scan (kosong) untuk menyelesaikan resi ini.</div>' : ''}
         ${kg && order.entry === 'scan' && order.status === 'siap_packing' && !order.packed_at ? `<div class="row wrap" style="margin-top:8px"><button class="btn btn-sm" id="reopen">Buka lagi untuk diperbaiki</button></div>` : ''}
       </div>`;
     };
 
-    let listDate = todayStr(), listAll = false;
+    let listDate = todayStr(), listAll = false, rq = '';
     const loadToday = async () => {
       const box = el.querySelector('#today');
-      if (!storeId && !listAll) { box.innerHTML = ''; return; }
+      if (!storeId && !listAll && !rq) { box.innerHTML = ''; return; }
       const { data } = await (() => {
-        let q = supa.from('orders').select('id, resi, order_no, status, total_jual, created_at, store_id, stores(name), order_items(qty, rack_qty)')
-          .gte('created_at', listDate + 'T00:00:00+07:00').lt('created_at', addDays(listDate, 1) + 'T00:00:00+07:00').order('created_at', { ascending: false }).limit(1000);
+        let q = supa.from('orders').select('id, resi, order_no, status, total_jual, created_at, store_id, stores(name), order_items(qty, rack_qty)');
+        if (rq) {
+          // 2.49 cari resi: semua tanggal & semua toko
+          const k = rq.replace(/[,%()*]/g, '');
+          q = q.or(`resi.ilike.%${k}%,order_no.ilike.%${k}%`).order('created_at', { ascending: false }).limit(50);
+          return q;
+        }
+        q = q.gte('created_at', listDate + 'T00:00:00+07:00').lt('created_at', addDays(listDate, 1) + 'T00:00:00+07:00').order('created_at', { ascending: false }).limit(1000);
         if (!listAll) q = q.eq('store_id', storeId);
         return q;
       })();
@@ -104,11 +113,17 @@ export default {
           ${isToday ? '' : '<div class="ctx-warn small">Melihat tanggal lain. Resi yang di-scan sekarang tetap masuk hari ini.</div>'}
           <div class="small muted">${list.length} resi · ${kg ? n('baru') + ' sedang di-scan' : n('menunggu_win') + ' tunggu WIN'} · ${n('siap_packing')} siap packing · ${n('dikirim') + n('selesai')} dikirim · ${n('cancel')} cancel</div></div>
           <div class="row wrap"><button class="btn btn-sm" data-dshift="-1" aria-label="Hari sebelumnya">${icon('back', 16)}</button><input type="date" class="input sm" id="ld" value="${listDate}" max="${todayStr()}" style="max-width:160px"><button class="btn btn-sm" data-dshift="1" aria-label="Hari berikutnya" ${isToday ? 'disabled' : ''}>${icon('chev', 16)}</button>
-          <label class="check small"><input type="checkbox" id="lall" ${listAll ? 'checked' : ''}> Semua toko</label></div></div>
-        ${list.length ? `<div class="list">${list.map((o) => `<button class="list-item" data-open="${o.id}"><span class="xs muted" style="width:40px">${fmtTime(o.created_at)}</span>
-          <div class="grow" style="min-width:0"><b class="mono">${esc(o.resi || o.order_no)}</b>${listAll && o.stores?.name ? ` <span class="tag">${esc(o.stores.name)}</span>` : ''}<div class="xs muted">${o.order_items.reduce((a, i) => a + i.qty, 0)} barang · ${o.order_items.reduce((a, i) => a + (i.rack_qty || 0), 0)} dari rak · ${rp(o.total_jual)}</div></div>${statusTag(o.status)}</button>`).join('')}</div>`
-          : emptyState('Belum ada resi di tanggal ini' + (listAll ? '.' : ' untuk toko ini.'), 'bag')}`;
+          <label class="check small"><input type="checkbox" id="lall" ${listAll ? 'checked' : ''}> Semua toko</label></div>
+          <div class="row" style="margin-top:8px"><input class="input sm grow" id="rq" placeholder="🔍 Cari no. resi / no. pesanan (semua tanggal)" value="${esc(rq)}" autocomplete="off" spellcheck="false"></div></div>
+        ${rq ? `<div class="alert blue small" style="margin:8px 12px 0">Hasil cari “${esc(rq)}” · ${list.length} resi (semua tanggal & toko)</div>` : ''}
+        ${list.length ? `<div class="list">${list.map((o) => `<button class="list-item" data-open="${o.id}"><span class="xs muted" style="width:${rq ? 64 : 40}px">${rq ? fmtDate(o.created_at, { day: 'numeric', month: 'short' }) + '<br>' : ''}${fmtTime(o.created_at)}</span>
+          <div class="grow" style="min-width:0"><b class="mono">${esc(o.resi || o.order_no)}</b>${(listAll || rq) && o.stores?.name ? ` <span class="tag">${esc(o.stores.name)}</span>` : ''}<div class="xs muted">${o.order_items.reduce((a, i) => a + i.qty, 0)} barang · ${o.order_items.reduce((a, i) => a + (i.rack_qty || 0), 0)} dari rak · ${rp(o.total_jual)}</div></div>${statusTag(o.status)}</button>`).join('')}</div>`
+          : emptyState(rq ? 'Resi tidak ditemukan.' : 'Belum ada resi di tanggal ini' + (listAll ? '.' : ' untuk toko ini.'), 'bag')}`;
+      const ri = box.querySelector('#rq');
+      if (ri && document.activeElement !== ri && box._rqFocus) { ri.focus(); ri.setSelectionRange(ri.value.length, ri.value.length); }
     };
+    let rqTimer = null;
+    on(el, 'input', '#rq', (e) => { clearTimeout(rqTimer); rqTimer = setTimeout(() => { rq = e.target.value.trim(); el.querySelector('#today')._rqFocus = true; loadToday(); }, 350); });
     on(el, 'change', '#ld', (e) => { listDate = e.target.value || todayStr(); loadToday(); });
     on(el, 'change', '#lall', (e) => { listAll = e.target.checked; loadToday(); });
     on(el, 'click', '[data-dshift]', (e, b) => { const d = addDays(listDate, +b.dataset.dshift); if (d > todayStr()) return; listDate = d; loadToday(); });
@@ -128,6 +143,10 @@ export default {
     const openResi = async (code) => {
       await finishCur();
       const r = await rpc('scan_order_start', { p_store: storeId, p_resi: code });
+      if (r.entry === undefined || r.packed_at === undefined) {
+        const { data: x } = await supa.from('orders').select('entry, packed_at').eq('id', r.id).maybeSingle();
+        if (x) Object.assign(r, x);
+      }
       order = r;
       if (r.other_store) toast(`Resi ini sudah tercatat di toko ${r.store}`, 'err');
       setMode(isOpen(r.status) ? 'barang' : 'resi');
@@ -174,6 +193,22 @@ export default {
     });
     el.querySelector('#next').onclick = async () => { await finishCur(); order = null; setMode('resi'); paintCur(); loadToday(); el.querySelector('#sb input').focus(); };
     on(el, 'click', '[data-undo]', async (e, b) => { try { await rpc('scan_order_undo', { p_item: +b.dataset.undo }); paintCur(); loadToday(); paintMeja(); } catch (err) { toastErr(err); } });
+    on(el, 'click', '[data-plus]', async (e, b) => {
+      if (!b.dataset.plus) return;
+      try { const r = await rpc('scan_order_item', { p_order: order.id, p_code: b.dataset.plus }); if (!r.ok) { toast(r.msg || 'Stok tidak cukup', 'err'); return; } paintCur(); loadToday(); paintMeja(); } catch (err) { toastErr(err); }
+    });
+    on(el, 'click', '#delord', async () => {
+      if (!(await confirmBox('Hapus resi ' + order.resi + '?', order.status === 'cancel' ? 'Resi yang sudah cancel dihapus dari daftar.' : 'Semua barang di resi ini dikembalikan ke stok (stok gudang / rak), lalu resinya dihapus.', 'Hapus resi', true))) return;
+      try {
+        const r = await rpc('scan_order_delete', { p_order: order.id });
+        toast(`Resi ${r.resi} dihapus${r.kembali_ke_rak || r.kembali_ke_meja ? ` · ${(r.kembali_ke_rak || 0) + (r.kembali_ke_meja || 0)} barang kembali ke stok` : ''}`, 'ok');
+        order = null; setMode('resi'); paintCur(); loadToday(); paintMeja();
+      } catch (err) { toastErr(/scan_order_delete|function/i.test(err.message || '') ? new Error('Butuh update database: jalankan supabase/update-2.49.sql') : err); }
+    });
+    // 2.49: Enter di kolom scan yang kosong = selesai resi ini, lanjut resi berikutnya
+    el.querySelector('#sb input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.target.value.trim() && mode === 'barang' && order) { e.preventDefault(); el.querySelector('#next').click(); }
+    });
     on(el, 'click', '#reopen', async () => {
       try { await rpc('scan_order_reopen', { p_order: order.id }); order.status = 'baru'; setMode('barang'); paintCur(); loadToday(); toast('Resi dibuka lagi. Scan / hapus barang lalu tekan Selesai.', 'ok'); } catch (err) { toastErr(err); }
     });

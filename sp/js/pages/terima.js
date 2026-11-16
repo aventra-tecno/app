@@ -1,6 +1,6 @@
 import { supa, rpc } from '../supa.js';
 import { store } from '../store.js';
-import { esc, on, toast, toastErr, emptyState, skeleton, icon, beep, confirmBox, fmtDateTime, chips, todayStr, addDays, copyBtn, rp } from '../ui.js';
+import { esc, on, toast, toastErr, emptyState, skeleton, icon, beep, confirmBox, fmtDateTime, chips, todayStr, addDays, copyBtn, rp, modal } from '../ui.js';
 import { scanBox, bindScan } from '../scanner.js';
 import { poTag } from './beli.js';
 
@@ -96,32 +96,42 @@ async function scanDirect(el, id, p, load) {
   const open = p.status === 'sampai';
   el.innerHTML = `<div class="stack">
     <div class="row between wrap"><a href="#/terima" class="btn btn-ghost btn-sm">${icon('back', 16)} Kembali</a><div class="row"><b class="mono">${esc(p.code)}</b>${open ? '<span class="tag yellow">Sedang di-scan</span>' : poTag(p.status)}</div></div>
-    ${open ? `<div class="card stack" id="scan">${scanBox('sb', 'Scan barang WIN yang datang')}<div id="last" aria-live="polite"></div></div>` : ''}
+    ${open ? `<div class="row terima-act"><button class="btn btn-danger" id="cancel">Batalkan</button><button class="btn btn-primary btn-lg grow" id="done">${icon('check', 18)} Selesai terima <span id="donen"></span></button></div>
+      <div class="card stack" id="scan">${scanBox('sb', 'Scan barang WIN yang datang')}<div class="xs muted">Angka di belakang kode = isi kolian: <span class="mono">…AA1</span> / <span class="mono">…AA</span> = 1 pcs, <span class="mono">…AA9</span> = 9 pcs.</div><div id="last" aria-live="polite"></div></div>` : ''}
     <div class="card stack" id="items"></div>
-    ${open ? `<div class="row"><button class="btn btn-danger grow" id="cancel">Batalkan</button><button class="btn btn-primary btn-lg grow" id="done">${icon('check', 18)} Selesai terima</button></div>` : ''}
   </div>`;
   const paint = () => {
     const items = [...p.po_items].sort((a, b) => b.id - a.id);
     const t = items.reduce((a, i) => a + i.received_qty, 0);
     el.querySelector('#items').innerHTML = `<div class="row between"><b>${open ? 'Sudah di-scan' : 'Diterima'}</b><span style="font-size:22px;font-weight:700">${t} <span class="small muted">barang · ${items.length} macam</span></span></div>
       ${items.length ? items.map((i) => `<div class="row" style="padding:10px 0;border-top:1px solid var(--line)"><div class="grow" style="min-width:0"><b>${esc(i.products.name)}</b><div class="xs muted mono">${esc(i.products.sku)}${i.products.rack_code ? ' · rak ' + esc(i.products.rack_code) : ''}</div></div>
-        <b style="font-size:18px">${i.received_qty}</b>${open ? `<button class="btn btn-ghost btn-sm" data-undo="${i.id}" aria-label="Kurangi 1" style="color:var(--red)">−1</button>` : ''}</div>`).join('')
+        ${open ? `<div class="qty-step"><button class="btn btn-ghost btn-sm" data-undo="${i.id}" aria-label="Kurangi 1">−</button><button class="qs-n" data-setq="${i.id}" aria-label="Ubah jumlah">${i.received_qty}</button><button class="btn btn-ghost btn-sm" data-plus="${i.id}" aria-label="Tambah 1">+</button></div>` : `<b style="font-size:18px">${i.received_qty}</b>`}</div>`).join('')
         : '<div class="small muted">Belum ada barang. Scan barang pertama.</div>'}`;
   };
-  paint();
+  const paintN = () => { const n = el.querySelector('#donen'); if (n) { const t = p.po_items.reduce((a, i) => a + i.received_qty, 0); n.textContent = t ? `(${t})` : ''; } };
+  paint(); paintN();
   if (!open) return;
-  const reload = async () => { ({ data: p } = await load()); paint(); };
+  const reload = async () => { ({ data: p } = await load()); paint(); paintN(); };
+  const setQ = async (itemId, q) => { try { await rpc('win_direct_set', { p_item: itemId, p_qty: q }); await reload(); } catch (err) { toastErr(err); } };
   bindScan(el, 'sb', async (code) => {
     try {
       const r = await rpc('win_direct_scan', { p_po: id, p_code: code });
       const last = el.querySelector('#last');
       if (!r.ok) { beep(false); last.innerHTML = `<div class="alert red">${esc(r.msg)}</div>`; return { ok: false, title: r.msg }; }
-      beep(true); last.innerHTML = `<div class="alert green"><b>${esc(r.name)}</b> × ${r.qty} · total ${r.total} barang</div>`;
+      beep(true); last.innerHTML = `<div class="alert green"><b>${esc(r.name)}</b> ${r.add > 1 ? `<span class="tag blue">+${r.add} (kolian)</span>` : '+1'} · jadi ${r.qty} · total ${r.total} barang</div>`;
       await reload();
-      return { ok: true, title: r.name, info: `× ${r.qty} · total ${r.total} barang` };
+      return { ok: true, title: r.name, info: `${r.add > 1 ? '+' + r.add + ' kolian · ' : ''}jadi ${r.qty} · total ${r.total} barang` };
     } catch (e) { toastErr(e); return false; }
   });
   on(el, 'click', '[data-undo]', async (e, b) => { try { await rpc('win_direct_undo', { p_item: +b.dataset.undo }); await reload(); } catch (err) { toastErr(err); } });
+  on(el, 'click', '[data-plus]', (e, b) => { const it = p.po_items.find((i) => i.id === +b.dataset.plus); if (it) setQ(it.id, it.received_qty + 1); });
+  on(el, 'click', '[data-setq]', async (e, b) => {
+    const it = p.po_items.find((i) => i.id === +b.dataset.setq); if (!it) return;
+    const v = await modal({ title: it.products.name, body: `<label class="field">Jumlah diterima (0 = hapus)<input class="input num" id="qv" type="number" inputmode="numeric" min="0" value="${it.received_qty}"></label>`,
+      onOpen: (ov) => { const i = ov.querySelector('#qv'); i.focus(); i.select(); },
+      actions: [{ label: 'Batal', value: null }, { label: 'Simpan', cls: 'btn-primary', onClick: (ov) => { const n = parseInt(ov.querySelector('#qv').value, 10); if (!(n >= 0)) { toast('Isi angka', 'err'); return false; } return { n }; } }] });
+    if (v) setQ(it.id, v.n);
+  });
   el.querySelector('#done').onclick = async () => {
     const t = p.po_items.reduce((a, i) => a + i.received_qty, 0);
     if (!t) return toast('Belum ada barang yang di-scan', 'err');

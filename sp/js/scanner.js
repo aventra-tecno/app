@@ -1,4 +1,5 @@
 import { esc, icon, toast, beep, modal } from './ui.js';
+import { store } from './store.js';
 
 // Kolom scan untuk 3 cara:
 // 1) Scanner Bluetooth / USB (langsung bekerja di kolom isian) (langsung atau lewat OTG converter): alat bekerja seperti keyboard,
@@ -52,8 +53,37 @@ export function bindScan(root, id, onScan, { autofocus = true } = {}) {
       form.classList.remove('scan-flash', 'bad'); void form.offsetWidth;
       form.classList.add('scan-flash'); if (!r.ok) form.classList.add('bad');
       showScanResult({ code, ...r });
+      offerLink(code, r);
       return r;
     } finally { busy = false; }
+  };
+  // 2.49: kode yang belum dikenal (mis. barcode merek STRONG) bisa dihubungkan ke barang di master.
+  // Setelah dihubungkan, kode itu dikenali di semua menu scan.
+  const hint = () => wrap?.querySelector('[data-hint]');
+  const offerLink = (code, r) => {
+    const h = hint(); if (!h) return;
+    h.querySelector('.link-offer')?.remove();
+    const txt = [r.title, r.info, r.msg].filter(Boolean).join(' ');
+    const unknown = !r.ok && (r.unknown || /tidak dikenal|tidak dikenali|tidak ada di pricelist|tidak ada di master|belum terdaftar/i.test(txt));
+    if (!unknown || !['owner', 'admin', 'kepala_gudang', 'supervisor'].includes(store.role) || code.length < 4) return;
+    const box = document.createElement('div');
+    box.className = 'link-offer';
+    box.innerHTML = `<span>Kode <b class="mono">${esc(code)}</b> belum dikenal.</span><span class="row" style="gap:6px"><button type="button" class="btn btn-sm btn-primary" data-lk>${icon('link', 14)} Hubungkan ke barang</button><a class="btn btn-sm" href="#/barang?baru=${encodeURIComponent(code)}">${icon('plus', 14)} Barang baru</a></span>`;
+    h.prepend(box);
+    box.querySelector('[data-lk]').onclick = async () => {
+      const { pickProduct } = await import('./daftar-file.js');
+      const p = await pickProduct(`Kode ${code} milik barang apa?`, '');
+      if (!p) return;
+      try {
+        const { rpc } = await import('./supa.js');
+        await rpc('product_code_add', { p_code: code, p_product: p.id });
+        toast(`Kode ${code} dihubungkan ke ${p.name}`, 'ok');
+        box.remove();
+        fire(code, { source: 'ketik' });            // langsung dipakai lagi
+      } catch (e) {
+        toast(/product_code_add|function/i.test(e.message || '') ? 'Butuh update database 2.49' : (e.message || String(e)), 'err');
+      }
+    };
   };
   const speed = () => { const n = times.length; return n >= 4 ? (times[n - 1] - times[0]) / (n - 1) : null; };
   const submit = (suffix) => {
