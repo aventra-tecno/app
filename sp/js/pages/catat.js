@@ -1,6 +1,6 @@
 import { supa, rpc } from '../supa.js';
 import { store } from '../store.js';
-import { esc, rp, num, fmtTime, fmtDate, todayStr, addDays, on, toast, toastErr, icon, emptyState, confirmBox, promptBox, statusTag, beep } from '../ui.js';
+import { esc, rp, num, fmtTime, fmtDate, todayStr, addDays, on, toast, toastErr, icon, emptyState, confirmBox, promptBox, statusTag, beep, copyBtn } from '../ui.js';
 import { scanBox, bindScan } from '../scanner.js';
 
 // Catat pesanan tanpa SKU marketplace:
@@ -46,6 +46,14 @@ export default {
     </div>`;
 
     const storeName = () => stores.find((s) => s.id === storeId)?.name || '';
+    // 2.50: setelah scan, halaman kembali ke kotak scan (tidak perlu geser ke atas lagi)
+    const keepTop = () => requestAnimationFrame(() => {
+      const t = el.querySelector('#scanwrap'); if (!t) return;
+      const bar = document.querySelector('.topbar');
+      const off = bar && getComputedStyle(bar).position !== 'static' ? bar.offsetHeight : 0;
+      const top = t.getBoundingClientRect().top + scrollY - off - 8;
+      if (Math.abs(scrollY - top) > 4) window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    });
     // 2.49: resi dari scan yang belum dipacking (atau sudah cancel) bisa dihapus, barang kembali ke stok
     const canDel = (o) => o && ['owner', 'admin'].includes(store.role) && o.entry === 'scan' && !o.packed_at && ['baru', 'menunggu_win', 'siap_packing', 'cancel'].includes(o.status);
     const longDate = (d) => fmtDate(d, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -74,7 +82,7 @@ export default {
       const editable = isOpen(order.status);
       const newFlow = order.status === 'baru' || (kg && order.status !== 'menunggu_win');
       box.innerHTML = `<div class="cur-order">
-        <div class="row between wrap"><div><div class="xs muted">Resi · ${esc(order.store || storeName())}</div><b class="mono" style="font-size:18px">${esc(order.resi)}</b></div>${statusTag(order.status)}</div>
+        <div class="row between wrap"><div><div class="xs muted">Resi · ${esc(order.store || storeName())}</div><b class="mono" style="font-size:18px">${esc(order.resi)}</b>${copyBtn(order.resi)}</div>${statusTag(order.status)}</div>
         <label class="field small" style="margin-top:6px">No. pesanan (opsional, supaya file Penghasilan bisa dicocokkan)
           <div class="row" style="flex-wrap:nowrap"><input class="input mono grow" id="ono" value="${esc(order.order_no === order.resi ? '' : order.order_no)}" placeholder="ketik / scan no. pesanan" ${editable ? '' : 'disabled'}>${editable ? '<button class="btn btn-sm" id="savno">Simpan</button>' : ''}</div></label>
         ${order.shopee?.length ? `<div class="alert blue small" style="margin-top:8px"><b>Isi pesanan di Shopee:</b>${order.shopee.map((l) => `<div>×${l.qty} ${esc(l.name)}${l.var ? ` <span class="muted">(${esc(l.var)})</span>` : ''}</div>`).join('')}</div>` : ''}
@@ -117,7 +125,7 @@ export default {
           <div class="row" style="margin-top:8px"><input class="input sm grow" id="rq" placeholder="🔍 Cari no. resi / no. pesanan (semua tanggal)" value="${esc(rq)}" autocomplete="off" spellcheck="false"></div></div>
         ${rq ? `<div class="alert blue small" style="margin:8px 12px 0">Hasil cari “${esc(rq)}” · ${list.length} resi (semua tanggal & toko)</div>` : ''}
         ${list.length ? `<div class="list">${list.map((o) => `<button class="list-item" data-open="${o.id}"><span class="xs muted" style="width:${rq ? 64 : 40}px">${rq ? fmtDate(o.created_at, { day: 'numeric', month: 'short' }) + '<br>' : ''}${fmtTime(o.created_at)}</span>
-          <div class="grow" style="min-width:0"><b class="mono">${esc(o.resi || o.order_no)}</b>${(listAll || rq) && o.stores?.name ? ` <span class="tag">${esc(o.stores.name)}</span>` : ''}<div class="xs muted">${o.order_items.reduce((a, i) => a + i.qty, 0)} barang · ${o.order_items.reduce((a, i) => a + (i.rack_qty || 0), 0)} dari rak · ${rp(o.total_jual)}</div></div>${statusTag(o.status)}</button>`).join('')}</div>`
+          <div class="grow" style="min-width:0"><b class="mono">${esc(o.resi || o.order_no)}</b>${copyBtn(o.resi || o.order_no)}${(listAll || rq) && o.stores?.name ? ` <span class="tag">${esc(o.stores.name)}</span>` : ''}<div class="xs muted">${o.order_items.reduce((a, i) => a + i.qty, 0)} barang · ${o.order_items.reduce((a, i) => a + (i.rack_qty || 0), 0)} dari rak · ${rp(o.total_jual)}</div></div>${statusTag(o.status)}</button>`).join('')}</div>`
           : emptyState(rq ? 'Resi tidak ditemukan.' : 'Belum ada resi di tanggal ini' + (listAll ? '.' : ' untuk toko ini.'), 'bag')}`;
       const ri = box.querySelector('#rq');
       if (ri && document.activeElement !== ri && box._rqFocus) { ri.focus(); ri.setSelectionRange(ri.value.length, ri.value.length); }
@@ -155,6 +163,9 @@ export default {
     };
 
     bindScan(el, 'sb', async (code) => {
+      try { return await onScan(code); } finally { keepTop(); }
+    });
+    async function onScan(code) {
       if (!storeId) { beep(false); return { ok: false, title: 'Pilih toko dulu', info: 'Ketuk nama toko di atas' }; }
       try {
         if (mode === 'resi') {
@@ -178,7 +189,7 @@ export default {
         if (r.alur_kg) { paintMeja(); return { ok: true, title: r.name, info: r.from_meja ? `Stok barang WIN · sisa ${r.meja_left}` : `Dari rak ${r.rack || '-'} · sisa stok rak ${r.stock_left}` }; }
         return { ok: true, title: r.name, info: r.from_rack ? `Ambil dari rak ${r.rack || '-'} · sisa stok ${r.stock_left} · tetap dibeli di WIN` : 'Stok rak kosong · tunggu barang WIN' };
       } catch (e) { beep(false); toastErr(e); return { ok: false, title: e.message || 'Gagal' }; }
-    });
+    }
 
     on(el, 'click', '[data-store]', (e, b) => {
       storeId = +b.dataset.store; try { localStorage.setItem(KEY, String(storeId)); } catch (_) {}
@@ -191,7 +202,7 @@ export default {
       }
       paintCur(); loadToday();
     });
-    el.querySelector('#next').onclick = async () => { await finishCur(); order = null; setMode('resi'); paintCur(); loadToday(); el.querySelector('#sb input').focus(); };
+    el.querySelector('#next').onclick = async () => { await finishCur(); order = null; setMode('resi'); paintCur(); loadToday(); keepTop(); el.querySelector('#sb input').focus({ preventScroll: true }); };
     on(el, 'click', '[data-undo]', async (e, b) => { try { await rpc('scan_order_undo', { p_item: +b.dataset.undo }); paintCur(); loadToday(); paintMeja(); } catch (err) { toastErr(err); } });
     on(el, 'click', '[data-plus]', async (e, b) => {
       if (!b.dataset.plus) return;
@@ -226,7 +237,7 @@ export default {
       const { data: o } = await supa.from('orders').select('id, resi, order_no, status, store_id, entry, packed_at, stores(name)').eq('id', +b.dataset.open).single();
       order = { ...o, store: o.stores?.name };
       setMode(isOpen(o.status) && o.entry === 'scan' ? 'barang' : 'resi');
-      paintCur(); window.scrollTo({ top: 0, behavior: 'smooth' });
+      paintCur(); keepTop();
     });
 
     setMode('resi'); paintCtx(); paintCur(); loadToday(); paintMeja();
