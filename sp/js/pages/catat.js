@@ -55,7 +55,7 @@ export default {
       if (Math.abs(scrollY - top) > 4) window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
     });
     // 2.49: resi dari scan yang belum dipacking (atau sudah cancel) bisa dihapus, barang kembali ke stok
-    const canDel = (o) => o && ['owner', 'admin'].includes(store.role) && o.entry === 'scan' && !o.packed_at && ['baru', 'menunggu_win', 'siap_packing', 'cancel'].includes(o.status);
+    const canDel = (o) => o && ['owner', 'admin'].includes(store.role) && o.entry === 'scan' && !o.packed_at && (['baru', 'menunggu_win', 'siap_packing', 'cancel'].includes(o.status) || (o.status === 'dikirim' && o.auto_kirim));
     const longDate = (d) => fmtDate(d, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     // penanda besar: sedang mencatat untuk toko & tanggal apa (resi baru selalu tercatat hari ini)
     const paintCtx = () => {
@@ -94,7 +94,8 @@ export default {
           <div class="line-row total"><span>${items.reduce((a, i) => a + i.qty, 0)} barang</span><span>${rp(total)}</span></div>` : '<div class="muted small" style="margin-top:8px">Belum ada barang. Scan kode barang sekarang.</div>'}
         ${editable || canDel(order) ? `<div class="row wrap" style="margin-top:8px">${editable ? '<button class="btn btn-ghost btn-sm" id="cancelord" style="color:var(--red)">Batalkan pesanan ini</button>' : ''}${canDel(order) ? `<button class="btn btn-ghost btn-sm" id="delord" style="color:var(--red)">${icon('x', 15)} Hapus resi</button>` : ''}</div>` : ''}
         ${editable && order.status === 'baru' ? '<div class="xs muted" style="margin-top:6px">Tekan <b>Enter</b> di kolom scan (kosong) untuk menyelesaikan resi ini.</div>' : ''}
-        ${kg && order.entry === 'scan' && order.status === 'siap_packing' && !order.packed_at ? `<div class="row wrap" style="margin-top:8px"><button class="btn btn-sm" id="reopen">Buka lagi untuk diperbaiki</button></div>` : ''}
+        ${order.auto_kirim && order.status === 'dikirim' ? '<div class="xs muted" style="margin-top:6px">Langsung terkirim (packing dilewati). Masih bisa dibuka lagi / dihapus kalau salah.</div>' : ''}
+        ${kg && order.entry === 'scan' && (order.status === 'siap_packing' || (order.status === 'dikirim' && order.auto_kirim)) && !order.packed_at ? `<div class="row wrap" style="margin-top:8px"><button class="btn btn-sm" id="reopen">Buka lagi untuk diperbaiki</button></div>` : ''}
       </div>`;
     };
 
@@ -139,7 +140,7 @@ export default {
     // resi yang sedang di-scan (alur kepala gudang) ditandai selesai -> siap packing
     const finishCur = async () => {
       if (!order || order.status !== 'baru') return;
-      try { const r = await rpc('scan_order_done', { p_order: order.id }); if (r.ok && r.status === 'siap_packing') toast(`Resi ${order.resi} siap packing`, 'ok'); } catch (e) { toastErr(e); }
+      try { const r = await rpc('scan_order_done', { p_order: order.id }); if (r.ok && r.status === 'siap_packing') toast(`Resi ${order.resi} siap packing`, 'ok'); else if (r.ok && r.status === 'dikirim') toast(`Resi ${order.resi} terkirim`, 'ok'); } catch (e) { toastErr(e); }
     };
     const paintMeja = async () => {
       const box = el.querySelector('#meja'); if (!box) return;
@@ -152,7 +153,7 @@ export default {
       await finishCur();
       const r = await rpc('scan_order_start', { p_store: storeId, p_resi: code });
       if (r.entry === undefined || r.packed_at === undefined) {
-        const { data: x } = await supa.from('orders').select('entry, packed_at').eq('id', r.id).maybeSingle();
+        const { data: x } = await supa.from('orders').select('entry, packed_at, auto_kirim').eq('id', r.id).maybeSingle();
         if (x) Object.assign(r, x);
       }
       order = r;
@@ -221,7 +222,7 @@ export default {
       if (e.key === 'Enter' && !e.target.value.trim() && mode === 'barang' && order) { e.preventDefault(); el.querySelector('#next').click(); }
     });
     on(el, 'click', '#reopen', async () => {
-      try { await rpc('scan_order_reopen', { p_order: order.id }); order.status = 'baru'; setMode('barang'); paintCur(); loadToday(); toast('Resi dibuka lagi. Scan / hapus barang lalu tekan Selesai.', 'ok'); } catch (err) { toastErr(err); }
+      try { await rpc('scan_order_reopen', { p_order: order.id }); order.status = 'baru'; order.auto_kirim = false; setMode('barang'); paintCur(); loadToday(); toast('Resi dibuka lagi. Scan / hapus barang lalu tekan Selesai.', 'ok'); } catch (err) { toastErr(err); }
     });
     on(el, 'click', '#savno', async () => {
       const v = el.querySelector('#ono').value.trim();
@@ -234,7 +235,7 @@ export default {
     });
     on(el, 'click', '[data-open]', async (e, b) => {
       await finishCur();
-      const { data: o } = await supa.from('orders').select('id, resi, order_no, status, store_id, entry, packed_at, stores(name)').eq('id', +b.dataset.open).single();
+      const { data: o } = await supa.from('orders').select('id, resi, order_no, status, store_id, entry, packed_at, auto_kirim, stores(name)').eq('id', +b.dataset.open).single();
       order = { ...o, store: o.stores?.name };
       setMode(isOpen(o.status) && o.entry === 'scan' ? 'barang' : 'resi');
       paintCur(); keepTop();

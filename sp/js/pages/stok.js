@@ -6,7 +6,7 @@ import { pickRack } from '../rak-pilih.js';
 import { bindProductSearch } from '../daftar-file.js';
 import { scanBox, bindScan } from '../scanner.js';
 
-const MOV = { initial: 'Stok awal', in_win: 'Masuk dari WIN', pick: 'Diambil picker', to_packing: 'Langsung ke packing', pack_no_pick: 'Dipacking tanpa pick', return_good: 'Retur baik kembali', return_damaged: 'Retur rusak → karantina', opname: 'Stok opname', adjust: 'Penyesuaian manual', move_rack: 'Pindah rak', cancel_back: 'Cancel, kembali ke rak', to_meja: 'Barang WIN masuk stok gudang', meja_back: 'Ditaruh di rak', karantina_bagus: 'Karantina dicek: bagus, kembali ke rak', karantina_jelek: 'Karantina dicek: jelek', rusak_masuk: 'Barang jelek dari rak', tukar_win: 'Barang jelek ditukar WIN' };
+const MOV = { initial: 'Stok awal', in_win: 'Masuk dari WIN', pick: 'Keluar untuk pesanan', to_packing: 'Langsung ke packing', pack_no_pick: 'Dipacking tanpa pick', return_good: 'Retur baik kembali', return_damaged: 'Retur rusak → karantina', opname: 'Stok opname', adjust: 'Penyesuaian manual', move_rack: 'Pindah rak', cancel_back: 'Cancel, kembali ke rak', to_meja: 'Belum ditaruh di rak', meja_back: 'Ditaruh di rak', karantina_bagus: 'Karantina dicek: bagus, kembali ke rak', karantina_jelek: 'Karantina dicek: jelek', rusak_masuk: 'Barang jelek dari rak', tukar_win: 'Barang jelek ditukar WIN' };
 
 export default {
   tour: [
@@ -159,10 +159,19 @@ async function tabBarang(box) {
   kpi(); load();
 }
 
+// 2.54 efek tiap baris ke stok total (rak + barang WIN belum di rak): pindah ke/dari meja = 0
+function movCell(m) {
+  if (m.type === 'to_meja') return `<td class="num xs muted nowrap">${Math.abs(m.qty)} belum di rak</td>`;
+  if (m.type === 'meja_back') return `<td class="num xs muted nowrap">${Math.abs(m.qty)} → rak</td>`;
+  const e = (m.qty || 0) + (m.qty_meja || 0);
+  if (!e) return `<td class="num"><b>${m.qty_karantina ? 'K' + (m.qty_karantina > 0 ? '+' : '') + m.qty_karantina : '0'}</b></td>`;
+  return `<td class="num ${e < 0 ? 'neg' : 'pos'}"><b>${e > 0 ? '+' : ''}${e}</b>${m.qty_meja ? '<div class="xs muted">barang WIN</div>' : ''}</td>`;
+}
+
 export async function openProduct(id, after) {
   const [{ data: p }, { data: mv }] = await Promise.all([
     supa.from('products').select('*').eq('id', id).single(),
-    supa.from('stock_movements').select('*').eq('product_id', id).order('created_at', { ascending: false }).limit(30)
+    supa.from('stock_movements').select('*').eq('product_id', id).order('created_at', { ascending: false }).limit(60)
   ]);
   const canAdj = ['owner', 'kepala_gudang', 'supervisor'].includes(store.role);
   const r = await modal({
@@ -172,8 +181,9 @@ export async function openProduct(id, after) {
         ${p.stock_karantina ? `<div class="stat red"><b>${p.stock_karantina}</b><span>karantina (rusak)</span></div>` : ''}${['owner', 'admin'].includes(store.role) ? `<div class="stat gray"><b>${rp(p.harga_beli)}</b><span>harga beli</span></div>` : ''}</div>
       <div class="mono small muted">${esc(p.sku)}${copyBtn(p.sku)}</div>
       <h3 style="font-size:15px">Riwayat keluar-masuk</h3>
+      <div class="xs muted" style="margin-top:-6px">Angka = perubahan <b>stok total</b> (rak + barang WIN belum di rak). Barang WIN dihitung sekali saat <b>Masuk dari WIN</b>; <b>Ditaruh di rak</b> hanya memindah, tidak menambah.</div>
       ${mv.length ? `<div class="table-wrap"><table class="tbl small"><tbody>${mv.map((m) => `<tr><td class="nowrap">${fmtDateTime(m.created_at)}</td><td>${esc(MOV[m.type] || m.type)}${m.note ? `<div class="xs muted">${esc(m.note)}</div>` : ''}</td><td>${esc(nameOf(m.user_id))}</td>
-        <td class="num ${m.qty < 0 ? 'neg' : m.qty > 0 ? 'pos' : ''}"><b>${m.qty > 0 ? '+' : ''}${m.qty || (m.qty_karantina ? 'K+' + m.qty_karantina : '0')}</b></td></tr>`).join('')}</tbody></table></div>` : '<div class="muted small">Belum ada pergerakan.</div>'}
+        ${movCell(m)}</tr>`).join('')}</tbody></table></div>` : '<div class="muted small">Belum ada pergerakan.</div>'}
     </div>`,
     actions: [
       { label: 'Cetak label', value: 'label' },

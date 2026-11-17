@@ -22,7 +22,11 @@ export default {
             <label class="switch"><input type="checkbox" name="upload_pesanan" ${s.upload_pesanan !== false ? 'checked' : ''} aria-label="Upload file pesanan"><span></span></label></div>
           <div class="list-item" style="padding:12px 0 0;border:0;border-top:1px solid var(--line)"><div class="grow"><b>Alur kepala gudang dulu</b>
             <div class="small muted">Kepala gudang beli langsung di WIN & scan barangnya di Terima barang WIN (masuk stok gudang). Admin scan resi & barang di <b>Catat pesanan</b>: stok barang WIN dipakai dulu, kalau habis dari rak. Matikan untuk alur lama.</div></div>
-            <label class="switch"><input type="checkbox" name="alur_kg" ${s.alur_kg !== false ? 'checked' : ''} aria-label="Alur kepala gudang dulu"><span></span></label></div></section>
+            <label class="switch"><input type="checkbox" name="alur_kg" ${s.alur_kg !== false ? 'checked' : ''} aria-label="Alur kepala gudang dulu"><span></span></label></div>
+          ${'admin_langsung_kirim' in s ? `<div class="list-item" style="padding:12px 0 0;border:0;border-top:1px solid var(--line)"><div class="grow"><b>Scan admin = langsung terkirim</b>
+            <div class="small muted">Untuk sementara tanpa packing: resi yang selesai di-scan admin di <b>Catat pesanan</b> langsung berstatus <b>dikirim</b> (tidak perlu scan & foto di menu Packing). Resi masih bisa dibuka lagi / dihapus admin kalau salah. Matikan lagi kalau packer sudah aktif.</div>
+            <div id="siapkirim"></div></div>
+            <label class="switch"><input type="checkbox" name="admin_langsung_kirim" ${s.admin_langsung_kirim ? 'checked' : ''} aria-label="Scan admin langsung terkirim"><span></span></label></div>` : ''}</section>
         <section class="card stack" id="stores"><div class="row between wrap"><h2 class="sec-title">Toko / marketplace</h2><button type="button" class="btn btn-sm" id="addstore">${icon('plus', 16)} Tambah toko</button></div>
           <div class="small muted">Dipilih kepala gudang saat scan resi. Rekap harian bisa dilihat per toko.</div><div id="storelist"></div></section>
         <section class="card stack"><h2 class="sec-title">Biaya & laba</h2><div class="grid gauto">
@@ -51,13 +55,25 @@ export default {
       <div class="xs muted" style="margin-top:12px">Versi aplikasi ${APP_VERSION}</div>`;
     // pratinjau langsung saat dipilih; tersimpan setelah tekan Simpan pengaturan
     el.querySelectorAll('[name="ui_theme"]').forEach((r) => r.addEventListener('change', () => applyTheme(r.value)));
+    // 2.54 resi yang masih "siap packing" bisa ditandai terkirim sekaligus saat scan admin = langsung terkirim
+    const siapKirim = async () => {
+      const box = el.querySelector('#siapkirim'); if (!box) return;
+      const { count } = await supa.from('orders').select('id', { count: 'exact', head: true }).eq('entry', 'scan').eq('status', 'siap_packing').is('packed_at', null);
+      box.innerHTML = s.admin_langsung_kirim && count ? `<div class="alert yellow small" style="margin-top:8px"><b>${count}</b> resi masih menunggu packing (di-scan sebelum pengaturan ini nyala). <button type="button" class="btn btn-sm" id="kirimsemua" style="margin-left:6px">Tandai terkirim semua</button></div>` : '';
+    };
+    siapKirim();
+    on(el, 'click', '#kirimsemua', async (e, b) => {
+      if (!(await confirmBox('Tandai semua terkirim?', 'Resi yang menunggu packing langsung berstatus dikirim (packing dilewati). Stok tidak berubah lagi karena barang sudah dikurangi saat admin scan.', 'Tandai terkirim'))) return;
+      b.disabled = true;
+      try { const r = await rpc('kirim_semua_siap_packing'); toast(`${r.n} resi ditandai terkirim`, 'ok'); siapKirim(); } catch (err) { toastErr(err); b.disabled = false; }
+    });
     el.querySelector('#f').addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
       const upd = {
         nama_toko: fd.get('nama_toko').trim() || 'Stok Gudang', packing_cost: parseNum(fd.get('packing_cost')) || 0, hari_kerja: +fd.get('hari_kerja') || 26,
         shopee_fee_pct: +fd.get('shopee_fee_pct') || 0, jam_mulai: fd.get('jam_mulai'), jam_selesai: fd.get('jam_selesai'),
-        ui_theme: fd.get('ui_theme') || 'biru', retur_grace_days: +fd.get('retur_grace_days') || 2, wajib_foto_packing: fd.get('wajib_foto_packing') === 'on', upload_pesanan: fd.get('upload_pesanan') === 'on', ...('alur_kg' in s ? { alur_kg: fd.get('alur_kg') === 'on' } : {}), ...('nama_nota' in s ? { nama_nota: (fd.get('nama_nota') || '').trim() || 'Boy Win Boy' } : {}), updated_at: new Date().toISOString()
+        ui_theme: fd.get('ui_theme') || 'biru', retur_grace_days: +fd.get('retur_grace_days') || 2, wajib_foto_packing: fd.get('wajib_foto_packing') === 'on', upload_pesanan: fd.get('upload_pesanan') === 'on', ...('alur_kg' in s ? { alur_kg: fd.get('alur_kg') === 'on' } : {}), ...('admin_langsung_kirim' in s ? { admin_langsung_kirim: fd.get('admin_langsung_kirim') === 'on' } : {}), ...('nama_nota' in s ? { nama_nota: (fd.get('nama_nota') || '').trim() || 'Boy Win Boy' } : {}), updated_at: new Date().toISOString()
       };
       if ('foto_simpan_hari' in s) {
         const lim = (k, a, b, d) => Math.min(b, Math.max(a, parseInt(fd.get(k), 10) || d));
