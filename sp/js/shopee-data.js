@@ -132,7 +132,10 @@ export function parseIncome(sheets) {
 const OE = { order_no: 'No. Pesanan', resi: 'No. Resi', status: 'Status Pesanan', cancel_status: 'Status Pembatalan/ Pengembalian', product_name: 'Nama Produk',
   variation: 'Nama Variasi', qty: 'Jumlah', price: 'Harga Setelah Diskon', subtotal: 'Subtotal Pesanan', voucher_penjual: 'Voucher Ditanggung Penjual',
   total_bayar: 'Total Pembayaran', ongkir_est: 'Perkiraan Ongkos Kirim', buyer: 'Username (Pembeli)', created: 'Waktu Pesanan Dibuat', finished: 'Waktu Pesanan Selesai',
-  sku_induk: 'SKU Induk', sku_ref: 'Nomor Referensi SKU' };
+  sku_induk: 'SKU Induk', sku_ref: 'Nomor Referensi SKU',
+  // 2.52 untuk laporan upload pesanan
+  cancel_reason: 'Alasan Pembatalan', deadline: 'Pesanan Harus Dikirimkan Sebelum (Menghindari keterlambatan)', ship: 'Opsi Pengiriman',
+  pickup: 'Antar ke counter/ pick-up', pay: 'Metode Pembayaran', tipe: 'Tipe Pesanan', returned: 'Returned quantity' };
 export function isOrderExport(rows) { return headerIndex(rows, ['No. Pesanan', 'Nama Produk', 'Jumlah']) >= 0 && headerIndex(rows, ['No. Resi']) >= 0; }
 export function parseOrderExport(rows) {
   const hr = headerIndex(rows, ['No. Pesanan', 'Nama Produk', 'Jumlah']);
@@ -146,6 +149,7 @@ export function parseOrderExport(rows) {
       product_name: clean(g(r, 'product_name')), variation: clean(g(r, 'variation')), qty: Math.max(1, Math.round(num(g(r, 'qty'))) || 1),
       price: num(g(r, 'price')), subtotal: num(g(r, 'subtotal')), voucher_penjual: num(g(r, 'voucher_penjual')), total_bayar: num(g(r, 'total_bayar')),
       ongkir_est: num(g(r, 'ongkir_est')), buyer: clean(g(r, 'buyer')) || null, created: clean(g(r, 'created')) || null, finished: clean(g(r, 'finished')) || null,
+      _x: { reason: clean(g(r, 'cancel_reason')), deadline: clean(g(r, 'deadline')), ship: clean(g(r, 'ship')), pickup: clean(g(r, 'pickup')), pay: clean(g(r, 'pay')), tipe: clean(g(r, 'tipe')), returned: num(g(r, 'returned')) },
       _row: hr + 1 + i });
   });
   return { headerRow: hr, cols: C, lines, orders: seen.size };

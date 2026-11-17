@@ -193,7 +193,7 @@ export default {
         return `<div class="line-row"><span>${l}</span><span class="${cls}">${days === 0 ? 'hari ini' : days + ' hari lalu'} · ${esc(store.profilesById[u.user_id]?.full_name || '')}</span></div>`;
       };
       box.innerHTML = `${secH('file', 'Status file Shopee', 'yellow')}
-        ${row('pesanan', 'Pesanan', 2)}${row('pembatalan', 'Pembatalan', 3)}${row('pengembalian', 'Pengembalian / retur', 4)}${row('penghasilan', 'Penghasilan (dana cair)', 5)}${row('pricelist', 'Pricelist WIN', 30)}
+        ${row('pesanan', 'Pesanan (+ pembatalan)', 2)}${row('pengembalian', 'Retur & gagal kirim', 4)}${row('penghasilan', 'Penghasilan (dana cair)', 5)}${row('pricelist', 'Pricelist WIN', 30)}
         <a href="#/upload" class="btn btn-primary" style="margin-top:14px">Buka upload file Shopee</a>`;
     };
 

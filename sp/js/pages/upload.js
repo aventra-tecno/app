@@ -14,9 +14,11 @@ export default {
   ],
   async render(el, { params = {} } = {}) {
     const pesananOff = store.settings.upload_pesanan === false;
-    const ALLOWED = ({ owner: Object.keys(TYPES), admin: ['pesanan', 'pembatalan', 'pengembalian', 'penghasilan', 'pricelist', 'rak'], kepala_gudang: ['rak', 'stok_awal'], supervisor: ['rak', 'stok_awal'] }[store.role] || []).filter((t) => !(pesananOff && t === 'pesanan'));
+    // 2.52: Pembatalan tidak lagi jadi menu terpisah (sudah ada di file Pesanan)
+    const ALLOWED = ({ owner: Object.keys(TYPES), admin: ['pesanan', 'pengembalian', 'penghasilan', 'pricelist', 'rak'], kepala_gudang: ['rak', 'stok_awal'], supervisor: ['rak', 'stok_awal'] }[store.role] || [])
+      .filter((t) => TYPES[t] && !TYPES[t].hidden && !(pesananOff && t === 'pesanan'));
     let type = ALLOWED.includes(params.type) ? params.type : ALLOWED[0], parsed = null, sups = null, supplier = null;
-    const card = (t) => `<button class="type-card ${t === type ? 'on' : ''}" data-type="${t}"><b>${esc(TYPES[t].label)}</b><span class="xs muted">${esc(TYPES[t].desc)}</span><span class="tag" data-last="${t}">…</span></button>`;
+    const card = (t) => `<button class="type-card ${t === type ? 'on' : ''}" data-type="${t}"><b>${esc(TYPES[t].label)}</b><span class="xs muted">${esc(TYPES[t].desc)}</span>${TYPES[t].where ? `<span class="where">${icon('compass', 13)} ${esc(TYPES[t].where)}</span>` : ''}<span class="tag" data-last="${t}">…</span></button>`;
     el.innerHTML = `${pageHead('Upload file Shopee', 'Ekspor dari Shopee Seller Center, lalu upload di sini. Data dicek dulu sebelum disimpan.')}
       <div class="stack" style="gap:16px">
         ${pesananOff ? `<div class="alert blue small">Upload file <b>Pesanan</b> sedang dimatikan owner (marketplace tidak memakai SKU). Pesanan dicatat kepala gudang di menu <a href="#/catat">Catat pesanan</a> dengan scan resi + scan barang.${store.role === 'owner' ? ' Bisa dinyalakan lagi di Pengaturan.' : ''}</div>` : ''}

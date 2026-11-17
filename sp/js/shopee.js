@@ -4,7 +4,8 @@ import { xlsx, parseNum } from './ui.js';
 // Kalau nama kolom di file kamu berbeda, pilih manual di layar upload (disimpan otomatis).
 export const TYPES = {
   pesanan: {
-    label: 'Pesanan', desc: 'Pesanan siap kirim. Jadi daftar picker & daftar beli WIN.',
+    label: 'Pesanan', desc: 'Pesanan + pembatalan sekaligus (status Batal & alasan batal ada di file ini).',
+    where: 'Pesanan › Pesanan Saya › tab Semua › Export (pilih tanggal di jendela Export) › Riwayat Download › Unduh',
     fields: {
       order_no: ['No. Pesanan', 'Nomor Pesanan', 'Order ID', 'No Pesanan'],
       resi: ['No. Resi', 'Nomor Resi', 'Tracking Number', 'No Resi'],
@@ -21,20 +22,26 @@ export const TYPES = {
     labels: { order_no: 'No. Pesanan', resi: 'No. Resi', status: 'Status', order_date: 'Tanggal', sku: 'Kode / SKU', name: 'Nama produk', variant: 'Variasi', qty: 'Jumlah', price: 'Harga jual', cancel_reason: 'Alasan batal' }
   },
   pembatalan: {
+    // 2.52: tidak ditampilkan lagi — pembatalan sudah ada di file Pesanan. Disimpan supaya riwayat upload lama tetap terbaca.
+    hidden: true,
     label: 'Pembatalan', desc: 'Pesanan cancel. Barang yang sudah diambil dikembalikan ke rak.',
     fields: { order_no: ['No. Pesanan', 'Nomor Pesanan', 'Order ID'], reason: ['Alasan Pembatalan', 'Cancel reason', 'Alasan'] },
     required: ['order_no'], labels: { order_no: 'No. Pesanan', reason: 'Alasan' }
   },
   pengembalian: {
-    label: 'Pengembalian / retur', desc: 'Retur pembeli. Dicocokkan dengan scan retur di gudang.',
+    label: 'Retur & gagal kirim', desc: 'Retur pembeli & paket gagal kirim (COD balik). Harus di-scan masuk gudang di menu Retur & cancel.',
+    where: 'Pesanan › Pengembalian/Pembatalan › tab Pengembalian Barang/Dana (sub-tab Semua) atau tab Pengiriman Gagal › Lihat lebih banyak › pilih tanggal (maks. 31 hari) › Terapkan › Export › Riwayat Download',
     fields: {
-      order_no: ['No. Pesanan', 'Nomor Pesanan', 'Order ID'], return_no: ['No. Pengembalian', 'Return ID', 'Nomor Pengembalian', 'ID Pengembalian'],
-      reason: ['Alasan Pengembalian', 'Return Reason', 'Alasan'], received_at: ['Waktu Pengembalian Diterima', 'Tanggal Pengembalian', 'Waktu Pengajuan', 'Tanggal']
+      order_no: ['No. Pesanan', 'Nomor Pesanan', 'Order ID'],
+      return_no: ['No. Pengajuan', 'No. Pengembalian', 'Return ID', 'Nomor Pengembalian', 'ID Pengembalian', 'Nomor Pengajuan'],
+      reason: ['Alasan Pengajuan', 'Alasan Pengembalian', 'Return Reason', 'Alasan Gagal Kirim', 'Alasan Pengiriman Gagal', 'Alasan'],
+      received_at: ['Waktu Pengembalian Diterima', 'Tanggal Pengajuan', 'Waktu Pengajuan', 'Tanggal Pengembalian', 'Tanggal Pengiriman Gagal', 'Tanggal']
     },
     required: ['order_no'], labels: { order_no: 'No. Pesanan', return_no: 'No. Pengembalian', reason: 'Alasan', received_at: 'Tanggal' }
   },
   penghasilan: {
     label: 'Penghasilan', desc: 'Dana yang sudah cair per resi. Mengisi "harga selesai" & omzet lunas.',
+    where: 'Keuangan › Penghasilan Saya › tab Sudah Dilepas › Unduh (Laporan Penghasilan)',
     fields: {
       order_no: ['No. Pesanan', 'Nomor Pesanan', 'Order ID'],
       amount: ['Total Penghasilan', 'Jumlah Dana Dilepaskan', 'Total Dana Dilepaskan', 'Total Released Amount', 'Penghasilan', 'Jumlah'],
@@ -44,16 +51,19 @@ export const TYPES = {
   },
   rak: {
     label: 'Kode rak', desc: 'Daftar kode rak gudang (mis. A-01, A-02). Bisa juga dibuat manual di Stok & rak.',
+    where: 'File Excel buatan sendiri: kolom Kode Rak (+ Keterangan)',
     fields: { code: ['Kode Rak', 'Rak', 'Kode'], note: ['Keterangan', 'Catatan', 'Isi Rak'] },
     required: ['code'], labels: { code: 'Kode rak', note: 'Keterangan' }
   },
   stok_awal: {
     label: 'Stok fisik per rak', desc: 'Hasil hitung fisik awal: rak, kode barang, jumlah. Mengisi stok & lokasi rak sekaligus.',
+    where: 'File Excel hasil hitung fisik: Kode Rak, Kode Barang, Jumlah',
     fields: { rack: ['Kode Rak', 'Rak', 'Lokasi'], sku: ['Part Number', 'Kode Barang', 'Kode', 'Barcode', 'SKU'], name: ['Nama Barang', 'Nama'], qty: ['Jumlah Fisik', 'Jumlah', 'Qty', 'Stok', 'Stock'] },
     required: ['rack', 'sku', 'qty'], labels: { rack: 'Kode rak', sku: 'Kode barang', name: 'Nama (tidak wajib)', qty: 'Jumlah fisik' }
   },
   pricelist: {
     label: 'Pricelist / harga', desc: 'Pricelist WIN (Macallan) dan/atau Harga Shopee. Kolom harga yang kosong tidak mengubah harga lama.',
+    where: 'Pricelist WIN (Excel / PDF) atau Daftar Perubahan Pricelist WIN (PDF). Pricelist STRONG juga bisa (kolom Kode, Nama, Harga).',
     fields: {
       sku: ['Kode', 'Kode Barang', 'Part Number', 'Part No', 'SKU', 'Barcode'], name: ['Nama Barang', 'Nama', 'Keterangan', 'Deskripsi'],
       macallan: ['Macallan', 'Harga WIN', 'HET', 'Harga', 'Price List', 'Pricelist'], harga_shopee: ['Harga Shopee', 'Harga Jual Shopee', 'Shopee', 'Harga Jual'], category: ['Kategori', 'Category'],
@@ -111,8 +121,8 @@ function scoreRow(row, type) {
 export function detect(rows) {
   let best = { type: null, headerRow: 0, score: 0 };
   for (let r = 0; r < Math.min(rows.length, 25); r++) {
-    for (const t of Object.keys(TYPES)) {
-      const s = scoreRow(rows[r], t) - (t === 'pembatalan' ? 0.5 : 0); // file pesanan juga punya kolom pembatalan
+    for (const t of Object.keys(TYPES).filter((k) => !TYPES[k].hidden)) {
+      const s = scoreRow(rows[r], t);
       if (s > best.score) best = { type: t, headerRow: r, score: s };
     }
   }

@@ -118,21 +118,25 @@ export async function shopeeUpload(file, box, book, kind, opts = {}) {
         ${noResi ? `<div class="stat yellow"><b>${num(noResi)}</b><span>belum ada no. resi</span></div>` : ''}</div>
       <div class="small muted">Tidak membuat pesanan baru. Yang dilakukan: no. pesanan Shopee disambungkan ke resi yang di-scan admin, status Shopee diperbarui (pesanan batal dilaporkan), dan nama produk Shopee dipetakan ke kode barang untuk <b>Update SKU</b>. Upload ulang hanya memperbarui baris yang berubah.</div>
       <div id="prog"></div>
-      <div class="row wrap" style="justify-content:flex-end"><button class="btn" data-cancel>Batal</button><button class="btn btn-primary btn-lg" data-save ${st ? '' : 'disabled'}>Simpan ${num(d.lines.length)} baris</button></div></div>`;
+      <div class="row wrap" style="justify-content:flex-end"><button class="btn" data-cancel>Batal</button><button class="btn btn-primary btn-lg" data-save ${st ? '' : 'disabled'}>Simpan ${num(d.lines.length)} baris</button></div>
+      <div id="rep" style="border-top:1px solid var(--line);padding-top:12px"></div></div>`;
+    import('./pesanan-report.js').then(({ renderOrderReport }) => renderOrderReport(box.querySelector('#rep'), d.lines));
     box.querySelectorAll('[data-st]').forEach((b) => b.addEventListener('click', () => { st = +b.dataset.st; paint(); }));
     box.querySelector('[data-cancel]').onclick = () => { box.innerHTML = ''; };
     box.querySelector('[data-save]').onclick = async (ev) => {
       ev.target.disabled = true;
       try {
         // satu pesanan jangan terpotong di dua kiriman
-        const lines = d.lines.map(({ _row, ...x }) => x);
+        const lines = d.lines.map(({ _row, _x, ...x }) => x);
         const lines2 = [...lines].sort((x, y) => (x.order_no < y.order_no ? -1 : x.order_no > y.order_no ? 1 : x.line_no - y.line_no));
         const a = await sendChunks('shopee_orders_sync', { filename: file.name, store_id: st }, 'rows', lines2, box.querySelector('#prog'), {}, (x) => x.order_no);
         box.innerHTML = `<div class="card stack" style="border:2px solid var(--green)"><div class="row">${icon('check', 24)}<h2 class="sec-title" style="margin:0">File pesanan tersimpan</h2></div>
           <div class="grid gauto"><div class="stat green"><b>${num(a.baru || 0)}</b><span>baris baru</span></div><div class="stat ${a.berubah ? 'yellow' : 'gray'}"><b>${num(a.berubah || 0)}</b><span>berubah (status dll.)</span></div>
             <div class="stat gray"><b>${num(a.sama || 0)}</b><span>sama, dilewati</span></div><div class="stat gray"><b>${num(a.cocok_resi || 0)}</b><span>cocok dengan resi di aplikasi</span></div>
             <div class="stat green"><b>${num(a.sku_terpetakan || 0)}</b><span>SKU otomatis terpetakan</span></div>${a.batal ? `<div class="stat red"><b>${num(a.batal)}</b><span>batal di Shopee, jangan dikirim</span></div>` : ''}</div>
-          <div class="row wrap"><a class="btn btn-primary" href="#/sku">Buka Update SKU</a></div></div>`;
+          <div class="row wrap"><a class="btn btn-primary" href="#/sku">Buka Update SKU</a><a class="btn" href="#/catat">Buka Catat pesanan</a></div>
+          <div id="rep" style="border-top:1px solid var(--line);padding-top:12px"></div></div>`;
+        import('./pesanan-report.js').then(({ renderOrderReport }) => renderOrderReport(box.querySelector('#rep'), d.lines));
         toast('File pesanan tersimpan', 'ok');
         opts.onSaved && opts.onSaved(a, { kind, store_id: st, book, sheet, file });
       } catch (e) { toastErr(e); ev.target.disabled = false; }

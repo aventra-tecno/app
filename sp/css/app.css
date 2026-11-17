@@ -1868,3 +1868,7 @@ html[data-theme="hitam"] .cpy { color: #6B4A00; background: #FFF4D6; }
 .btn.kr-ok { background: #dcfce7; border-color: #86efac; color: #166534; }
 .btn.kr-bad { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
 @media (max-width: 600px) { .kr-act { width: 100%; } .kr-act .btn { flex: 1; } }
+
+/* ===== 2.52: lokasi file di Shopee pada kartu upload ===== */
+.type-card .where { display: flex; gap: 6px; align-items: flex-start; text-align: left; font-size: 11.5px; line-height: 1.4; color: #1e40af; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 8px; }
+.type-card .where svg { flex: none; margin-top: 1px; }
