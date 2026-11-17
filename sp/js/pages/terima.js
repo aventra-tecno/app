@@ -178,13 +178,18 @@ function report(el) {
     const dates = days(a, b);
     last = { pos: data, dates, a, b };
     const tot = data.reduce((x, p) => x + p.po_items.reduce((y, i) => y + i.received_qty, 0), 0);
+    // 2.53 nominal tagihan WIN: per item, per order (terlihat saat dropdown tertutup & terbuka) dan total semua order
+    const nom = (p) => p.po_items.reduce((y, i) => y + (Number(i.received_qty) || 0) * (Number(i.unit_cost) || 0), 0);
+    const grand = data.reduce((x, p) => x + nom(p), 0);
     box.innerHTML = data.length ? `<div class="small muted">${data.length} kiriman · <b>${tot}</b> barang${a === b ? '' : ` · ${dates.length} hari`}</div>
+      ${money ? `<div class="win-grand"><span>Total tagihan WIN${data.length > 1 ? ` (${data.length} order)` : ''}</span><b>${rp(grand)}</b></div>${data.some((p) => p.po_items.some((i) => i.received_qty > 0 && !Number(i.unit_cost))) ? '<div class="xs muted">Barang bertanda <span class="neg">harga belum ada</span> belum ikut terhitung — harga terisi otomatis setelah faktur WIN di-upload, atau isi harga modal di Master barang.</div>' : ''}` : ''}
       <div class="win-rep">${data.map((p) => {
         const items = p.po_items.filter((i) => i.received_qty > 0).sort((x, y) => String(x.products?.name).localeCompare(String(y.products?.name)));
         const q = items.reduce((x, i) => x + i.received_qty, 0);
         return `<details class="win-po"><summary><span class="grow"><b class="mono">${esc(p.code)}</b>${p.direct ? '' : ' <span class="tag">daftar beli</span>'}<div class="xs muted">${a === b ? '' : jkt(p.finished_at).split('-').reverse().join('/') + ' · '}${new Date(p.finished_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} · ${items.length} macam</div></span>
-          <b class="win-q">${q}</b>${icon('chev', 16)}</summary>
-          <div class="list no-page">${items.map((i) => `<div class="list-item" style="padding:8px 0"><div class="grow" style="min-width:0"><span class="small">${esc(i.products?.name || '')}</span><div class="xs muted mono">${esc(i.products?.sku || '')}${copyBtn(i.products?.sku)}</div></div>${money ? `<span class="xs muted">${rp(i.unit_cost)}</span>` : ''}<b>${i.received_qty}</b></div>`).join('')}</div></details>`;
+          ${money ? `<span class="right"><b class="win-nom">${rp(nom(p))}</b><div class="xs muted">${q} barang</div>${items.some((i) => !Number(i.unit_cost)) ? '<div class="xs neg">ada harga kosong</div>' : ''}</span>` : `<b class="win-q">${q}</b>`}${icon('chev', 16)}</summary>
+          <div class="list no-page">${items.map((i) => `<div class="list-item" style="padding:8px 0"><div class="grow" style="min-width:0"><span class="small">${esc(i.products?.name || '')}</span><div class="xs muted mono">${esc(i.products?.sku || '')}${copyBtn(i.products?.sku)}</div></div>${money ? `<span class="right xs">${Number(i.unit_cost) ? `<span class="muted">${i.received_qty} × ${rp(i.unit_cost)}</span><br><b>${rp(i.received_qty * Number(i.unit_cost))}</b>` : `<span class="muted">${i.received_qty} × </span><span class="neg">harga belum ada</span>`}</span>` : `<b>${i.received_qty}</b>`}</div>`).join('')}
+          ${money ? `<div class="win-sub"><span>Total order ${esc(p.code)} · ${q} barang</span><b>${rp(nom(p))}</b></div>` : ''}</div></details>`;
       }).join('')}</div>` : emptyState(mode === 'today' ? 'Belum ada barang WIN yang diterima hari ini.' : 'Tidak ada barang WIN di tanggal ini.', 'truck');
   };
   on(el, 'click', '[data-chips="d"] .chip', (e, b) => {

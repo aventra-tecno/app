@@ -1795,6 +1795,10 @@ html[data-theme="hitam"] .cpy { color: #6B4A00; background: #FFF4D6; }
 .win-po[open] summary svg { transform: rotate(90deg); }
 .win-po[open] summary { border-bottom: 1px solid var(--line); }
 .win-q { font-size: 20px; }
+.win-nom { font-size: 16px; white-space: nowrap; }
+.win-sub { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px dashed var(--line); font-size: 14px; }
+.win-grand { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--blue-soft); margin: 6px 0; }
+.win-grand b { font-size: 18px; }
 /* 2.36 — isian dengan satuan (hari) */
 .input-suffix { display: flex; align-items: center; gap: 8px; }
 .input-suffix .input { flex: 1; min-width: 0; }
