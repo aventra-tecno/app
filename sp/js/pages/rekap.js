@@ -8,6 +8,8 @@ export default {
   ],
   async render(el, { params }) {
     let date = params.d || todayStr(), filter = 'all', rows = [];
+    // 2.55 urutan seperti Shopee: tanggal pesanan siap dikirim terlama → terbaru / terbaru → terlama
+    let sortBy = (() => { try { return sessionStorage.getItem('rekap-sort') || 'toko'; } catch (_) { return 'toko'; } })();
     let storeF = (() => { try { return sessionStorage.getItem('rekap-store') || 'all'; } catch (_) { return 'all'; } })();
     const { data: stores } = await supa.from('stores').select('id, name, marketplace').order('sort').order('name');
     el.innerHTML = `${pageHead('Rekap harian per resi', 'Harga selesai = dana cair dari file Penghasilan Shopee. Sebelum cair dipakai estimasi (ditandai *).',
@@ -18,6 +20,7 @@ export default {
         <div class="grid gauto" id="kpi"></div>
         <div id="warn"></div>
         <div class="no-print" id="fil"></div>
+        <div class="no-print row wrap" style="gap:8px"><span class="small muted">Urutkan</span><div id="srt"></div></div>
         <div class="card flush" id="tbl">${skeleton()}</div>
       </div>`;
     const load = async () => {
@@ -42,21 +45,29 @@ export default {
         <div class="card kpi dark"><div class="label">Margin kotor</div><div class="value">${rp(sum(all, 'margin'))}</div><div class="sub" style="color:var(--accent)">${zeroMargin ? rp(zeroMargin) + ' belum pasti (modal kosong)' : 'termasuk rugi retur'}</div></div>`;
       el.querySelector('#warn').innerHTML = zeroCost.length ? `<div class="card warn row wrap between"><div class="small grow" style="min-width:240px"><b>${zeroCost.length} resi memakai barang dengan modal Rp0.</b> Margin terlihat lebih besar dari aslinya.</div><a class="btn btn-dark btn-sm" href="#/harga">Lengkapi harga beli</a></div>` : '';
       el.querySelector('#fil').innerHTML = chips('f', [['all', `Semua (${all.length})`], ['ok', `Terkirim / proses (${valid.length})`], ['cancel', 'Cancel'], ['retur', 'Retur'], ['zero', `Modal kosong (${zeroCost.length})`], ['unpaid', 'Belum cair']], filter);
+      el.querySelector('#srt').innerHTML = chips('srt', [['toko', 'Per toko'], ['siap_lama', 'Siap dikirim: terlama → terbaru'], ['siap_baru', 'Siap dikirim: terbaru → terlama']], sortBy);
       const list = all.filter((o) => filter === 'all' || (filter === 'ok' && valid.includes(o)) || o.status === filter || (filter === 'zero' && zeroCost.includes(o)) || (filter === 'unpaid' && !o.paid && valid.includes(o)));
+      if (sortBy !== 'toko') {
+        const t = (o) => (o.ready_at ? new Date(o.ready_at).getTime() : null);
+        // resi yang belum siap dikirim (belum selesai di-scan) selalu di bawah
+        list.sort((a, b) => (t(a) == null) - (t(b) == null) || (sortBy === 'siap_lama' ? t(a) - t(b) : t(b) - t(a)));
+      }
+      const jam = (v) => { if (!v) return '<span class="xs muted">belum</span>'; const d = new Date(v); const same = fmtDate(d, { year: 'numeric', month: '2-digit', day: '2-digit' }) === fmtDate(date, { year: 'numeric', month: '2-digit', day: '2-digit' }); return `<span class="xs mono">${same ? '' : fmtDate(d, { day: 'numeric', month: 'short' }) + ' '}${fmtDate(d, { hour: '2-digit', minute: '2-digit' })}</span>`; };
       if (!list.length) { el.querySelector('#tbl').innerHTML = emptyState('Tidak ada pesanan di tanggal ini.', 'calendar'); return; }
       let n = 0;
-      el.querySelector('#tbl').innerHTML = `<div class="table-wrap"><table class="tbl" style="min-width:1100px"><thead><tr><th>No</th><th>No resi</th><th>Kode</th><th>Keterangan</th><th class="right">Qty</th><th>Sumber</th><th class="right">Macallan</th><th class="right">Harga beli</th><th class="right">Harga Shopee</th><th class="right">Harga selesai</th><th class="right">Margin</th><th>Status</th></tr></thead><tbody>
+      el.querySelector('#tbl').innerHTML = `<div class="table-wrap"><table class="tbl" style="min-width:1180px"><thead><tr><th>No</th><th>No resi</th><th>Siap dikirim</th><th>Kode</th><th>Keterangan</th><th class="right">Qty</th><th>Sumber</th><th class="right">Macallan</th><th class="right">Harga beli</th><th class="right">Harga Shopee</th><th class="right">Harga selesai</th><th class="right">Margin</th><th>Status</th></tr></thead><tbody>
         ${list.map((o) => o.items.map((i, k) => `<tr class="${['cancel', 'retur'].includes(o.status) ? 'bad' : !Number(i.harga_beli) ? 'hl' : ''}">
-          ${k === 0 ? `<td rowspan="${o.items.length}">${++n}</td><td rowspan="${o.items.length}" class="mono xs">${esc(o.resi || o.order_no)}${storeF === 'all' && o.store_name ? `<div><span class="tag">${esc(o.store_name)}</span></div>` : ''}</td>` : ''}
+          ${k === 0 ? `<td rowspan="${o.items.length}">${++n}</td><td rowspan="${o.items.length}" class="mono xs">${esc(o.resi || o.order_no)}${storeF === 'all' && o.store_name ? `<div><span class="tag">${esc(o.store_name)}</span></div>` : ''}</td><td rowspan="${o.items.length}">${jam(o.ready_at)}</td>` : ''}
           <td class="mono xs">${esc(i.sku || '')}</td><td class="small">${esc(i.name)}</td><td class="num">${i.qty}</td><td>${i.rack_qty ? `<span class="tag green">Rak ${i.rack_qty}</span> ` : ''}${i.source === 'win' ? '<span class="tag yellow">WIN</span>' : '<span class="tag">Gudang</span>'}${i.rack ? ` <span class="xs mono muted">${esc(i.rack)}</span>` : ''}</td>
           <td class="num">${num(i.macallan)}</td><td class="num ${!Number(i.harga_beli) ? 'neg' : ''}">${num(i.harga_beli * i.qty)}</td><td class="num">${num(i.harga_jual)}</td>
           ${k === 0 ? `<td rowspan="${o.items.length}" class="num">${num(o.harga_selesai)}${o.paid ? '' : '*'}</td><td rowspan="${o.items.length}" class="num"><b class="${o.margin < 0 ? 'neg' : 'pos'}">${num(o.margin)}</b></td><td rowspan="${o.items.length}">${statusTag(o.status)}</td>` : ''}</tr>`).join('')).join('')}
-        </tbody><tfoot><tr><td colspan="7">Total ${list.length} resi</td><td class="num">${num(sum(list, 'modal_order'))}</td><td></td><td class="num">${num(sum(list.filter((o) => !['cancel', 'retur'].includes(o.status)), 'harga_selesai'))}</td><td class="num">${num(sum(list, 'margin'))}</td><td></td></tr></tfoot></table></div>`;
+        </tbody><tfoot><tr><td colspan="8">Total ${list.length} resi</td><td class="num">${num(sum(list, 'modal_order'))}</td><td></td><td class="num">${num(sum(list.filter((o) => !['cancel', 'retur'].includes(o.status)), 'harga_selesai'))}</td><td class="num">${num(sum(list, 'margin'))}</td><td></td></tr></tfoot></table></div>`;
       el._list = list;
     };
     el.querySelector('#d').addEventListener('change', (e) => { date = e.target.value; load(); });
     on(el, 'click', '[data-shift]', (e, b) => { date = addDays(date, +b.dataset.shift); el.querySelector('#d').value = date; load(); });
     on(el, 'click', '[data-chips="f"] .chip', (e, b) => { filter = b.dataset.v; paint(); });
+    on(el, 'click', '[data-chips="srt"] .chip', (e, b) => { sortBy = b.dataset.v; try { sessionStorage.setItem('rekap-sort', sortBy); } catch (_) {} paint(); });
     on(el, 'click', '[data-chips="st"] .chip', (e, b) => { storeF = b.dataset.v; try { sessionStorage.setItem('rekap-store', storeF); } catch (_) {} paint(); });
     el.querySelector('#pr').onclick = () => window.print();
     // Excel berwarna: tab RINGKASAN + 1 tab per toko (ringkasan di atas, baris cancel / retur merah)

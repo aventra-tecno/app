@@ -1,5 +1,5 @@
 // Tampilan otomatis untuk semua halaman:
-// 1) Daftar / tabel panjang dibagi per halaman (15 baris, bisa diganti 30/50/100) dengan tombol Sebelumnya / Berikutnya.
+// 1) Daftar / tabel panjang dibagi per halaman (15 baris, bisa diganti 30/50/100) dengan nomor halaman, awal/akhir & lompat ke halaman.
 // 2) Di HP, tabel berubah menjadi kartu (label di kiri, nilai di kanan) supaya tidak perlu digeser ke samping.
 // Tambahkan class "no-page" pada daftar yang tidak boleh dibagi halaman.
 const KEY = 'page-size';
@@ -42,25 +42,42 @@ function paint(c, key) {
     anchorOf(c).after(pager);
     c.__pager = pager;
     pager.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-go]'); if (!b || b.disabled) return;
-      const s = pages.get(key); s.page += +b.dataset.go; paint(c, key);
+      const b = e.target.closest('[data-go],[data-to]'); if (!b || b.disabled) return;
+      const s = pages.get(key); s.page = b.dataset.to != null ? +b.dataset.to : s.page + +b.dataset.go; paint(c, key);
       const top = anchorOf(c).getBoundingClientRect().top;
       if (top < 0) window.scrollBy({ top: top - 90, behavior: 'smooth' });
     });
     pager.addEventListener('change', (e) => {
-      if (!e.target.matches('select')) return;
+      if (e.target.matches('.pg-jump')) {   // 2.55 lompat ke halaman mana saja
+        const s = pages.get(key); s.page = +e.target.value; paint(c, key);
+        const top = anchorOf(c).getBoundingClientRect().top;
+        if (top < 0) window.scrollBy({ top: top - 90, behavior: 'smooth' });
+        return;
+      }
+      if (!e.target.matches('.pg-size')) return;
       try { localStorage.setItem(KEY, e.target.value); } catch (_) {}
       pages.forEach((s) => { s.page = 0; });
       scan();
     });
   }
   const from = st.page * n + 1, to = Math.min(items.length, (st.page + 1) * n);
+  // 2.55 nomor halaman: 1 … 4 5 6 … 20, tombol awal/akhir, dan pilihan "Hal" untuk lompat ke halaman mana saja
+  const p = st.page, nums = [...new Set([0, p - 1, p, p + 1, total - 1])].filter((x) => x >= 0 && x < total).sort((x, y) => x - y);
+  let prev = -1, numBtns = '';
+  for (const x of nums) {
+    if (x - prev > 1) numBtns += '<span class="pg-gap">…</span>';
+    numBtns += `<button class="btn btn-sm pg-n ${x === p ? 'on' : ''}" data-to="${x}" ${x === p ? 'aria-current="page"' : ''} aria-label="Halaman ${x + 1}">${x + 1}</button>`;
+    prev = x;
+  }
   pager.innerHTML = `<span class="pg-info">${from}–${to} dari ${items.length}</span>
     <div class="pg-ctl">
       <select class="pg-size" aria-label="Jumlah baris per halaman">${SIZES.map((s) => `<option value="${s}" ${s === n ? 'selected' : ''}>${s} / hal</option>`).join('')}</select>
-      <button class="btn btn-sm" data-go="-1" ${st.page === 0 ? 'disabled' : ''} aria-label="Halaman sebelumnya">‹ <span class="hide-mobile">Sebelumnya</span></button>
-      <span class="pg-num">${st.page + 1}/${total}</span>
-      <button class="btn btn-sm" data-go="1" ${st.page >= total - 1 ? 'disabled' : ''} aria-label="Halaman berikutnya"><span class="hide-mobile">Berikutnya</span> ›</button>
+      <button class="btn btn-sm" data-to="0" ${p === 0 ? 'disabled' : ''} aria-label="Halaman pertama">«</button>
+      <button class="btn btn-sm" data-go="-1" ${p === 0 ? 'disabled' : ''} aria-label="Halaman sebelumnya">‹</button>
+      <span class="pg-nums">${numBtns}</span>
+      <button class="btn btn-sm" data-go="1" ${p >= total - 1 ? 'disabled' : ''} aria-label="Halaman berikutnya">›</button>
+      <button class="btn btn-sm" data-to="${total - 1}" ${p >= total - 1 ? 'disabled' : ''} aria-label="Halaman terakhir">»</button>
+      <label class="pg-jump-l"><span>Hal</span><select class="pg-jump" aria-label="Pilih halaman">${Array.from({ length: total }, (_, k) => `<option value="${k}" ${k === p ? 'selected' : ''}>${k + 1}</option>`).join('')}</select><span>/ ${total}</span></label>
     </div>`;
   c.__pgSig = items.length + ':' + n + ':' + st.page;
 }

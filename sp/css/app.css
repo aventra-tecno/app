@@ -503,7 +503,20 @@ html, body { max-width: 100%; overflow-x: clip; }
 .pager .pg-num { min-width: 44px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
 .pager .pg-size { height: 34px; border: 1px solid var(--line-2); border-radius: 8px; background: #fff; padding: 0 6px; font: inherit; font-size: 13px; }
 .pager .btn:disabled { opacity: .4; }
-@media (max-width: 899px) { .pager .pg-ctl { width: 100%; justify-content: space-between; } .pager .btn { min-width: 52px; } }
+/* 2.55 nomor halaman + lompat */
+.pager .pg-ctl { flex-wrap: wrap; }
+.pager .pg-nums { display: flex; align-items: center; gap: 4px; }
+.pager .pg-n { min-width: 34px; padding: 0 8px; font-variant-numeric: tabular-nums; }
+.pager .pg-n.on { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 700; }
+.pager .pg-gap { color: var(--muted); padding: 0 2px; }
+.pager .pg-jump-l { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); margin-left: 4px; }
+.pager .pg-jump { height: 34px; border: 1px solid var(--line-2); border-radius: 8px; background: #fff; padding: 0 4px; font: inherit; font-size: 13px; color: var(--ink); font-weight: 700; }
+@media (max-width: 899px) {
+  .pager .pg-ctl { width: 100%; justify-content: space-between; gap: 4px; }
+  .pager .pg-nums { display: none; }
+  .pager .btn { min-width: 40px; }
+  .pager .pg-jump-l { margin: 0; }
+}
 
 /* ===== 1.5: menu profil ===== */
 button.tb-logo { border: 0; cursor: pointer; font: inherit; font-weight: 700; }
