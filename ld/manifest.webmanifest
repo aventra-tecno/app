@@ -1,0 +1,9 @@
+{
+  "name": "Aventra Leads",
+  "short_name": "Leads",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4F6FB",
+  "theme_color": "#26348B"
+}
