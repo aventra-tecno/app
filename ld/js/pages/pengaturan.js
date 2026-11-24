@@ -1,20 +1,20 @@
 // Aventra Leads · Pengaturan
 import { api } from '../api.js';
 import { FUNCTIONS_URL, SCRIPT_URL } from '../config.js';
-import { esc, waktu, modal, toast, icon, copyText, $, $$ } from '../ui.js';
+import { esc, waktu, jam, modal, toast, icon, copyText, $, $$ } from '../ui.js';
 import { loadTenantData } from '../app.js';
 
 let tab = 'bisnis';
-const TABS = { bisnis: 'Bisnis', pixel: 'Pixel & Token', wa: 'Nomor WA', pasang: 'Pasang di Landing Page', api: 'API untuk ERP' };
+const TABS = { bisnis: 'Bisnis', pixel: 'Pixel & Token', wa: 'Nomor WA', pasang: 'Pasang di Landing Page', tes: 'Tes Pemasangan', api: 'API untuk ERP' };
 
 export async function render(el, ctx) {
   el.innerHTML = `<div class="tabs">${Object.entries(TABS).map(([k, v]) => `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${v}</button>`).join('')}</div><div id="tabBody"></div>`;
   $('.tabs', el).onclick = (e) => {
     const b = e.target.closest('[data-t]'); if (!b) return;
-    tab = b.dataset.t; $$('.tabs button', el).forEach((x) => x.classList.toggle('on', x === b)); draw();
+    tab = b.dataset.t; clearInterval(tesTimer); $$('.tabs button', el).forEach((x) => x.classList.toggle('on', x === b)); draw();
   };
   const body = $('#tabBody', el);
-  const draw = () => ({ bisnis, pixel, wa, pasang, api: apiTab })[tab](body, ctx);
+  const draw = () => ({ bisnis, pixel, wa, pasang, tes, api: apiTab })[tab](body, ctx);
   draw();
 }
 
@@ -51,6 +51,9 @@ async function pixel(el, { state }) {
       <input name="token" type="password" autocomplete="off" placeholder="${ts ? 'Token tersimpan · isi untuk mengganti' : 'Tempel token dari Events Manager'}">
     </label>
     <p class="small ${ts ? 'ok-text' : 'err-text'}">${ts ? `Token tersimpan sejak ${waktu(ts)}. Isinya tidak bisa dilihat lagi dari aplikasi.` : 'Token belum diisi. Event belum bisa dikirim ke Meta.'}</p>
+    <label class="check"><input type="checkbox" name="pixel_browser" ${t.pixel_browser ? 'checked' : ''}> Pasang Pixel otomatis lewat script (PageView + ViewContent)</label>
+    <label>Nama konten untuk ViewContent<input name="vc_name" value="${esc(t.vc_name || '')}" placeholder="Pijat Panggilan Surabaya"></label>
+    <p class="muted small">Aktifkan kalau landing page <b>belum</b> punya kode Pixel. Kalau sudah ada kode Pixel manual, biarkan mati supaya PageView tidak dobel. Perubahan terasa di landing page paling lambat 5 menit.</p>
     <label>Test event code (opsional)<input name="test_event_code" value="${esc(t.test_event_code || '')}" placeholder="TEST12345"></label>
     <p class="muted small">Isi hanya saat uji coba, lalu kosongkan lagi. Selama terisi, event hanya muncul di tab <b>Test events</b> Events Manager dan tidak dipakai untuk optimasi iklan.</p>
     <div class="btn-row"><button class="btn primary">Simpan</button>${ts ? '<button type="button" class="btn danger-ghost" id="hapus">Hapus token</button>' : ''}</div>
@@ -65,7 +68,10 @@ async function pixel(el, { state }) {
   f.onsubmit = async (e) => {
     e.preventDefault();
     try {
-      const patch = { pixel_id: f.pixel_id.value.replace(/\D/g, '') || null, test_event_code: f.test_event_code.value.trim() || null };
+      const patch = {
+        pixel_id: f.pixel_id.value.replace(/\D/g, '') || null, test_event_code: f.test_event_code.value.trim() || null,
+        pixel_browser: f.pixel_browser.checked, vc_name: f.vc_name.value.trim() || null,
+      };
       await api.updateTenant(t.id, patch); Object.assign(t, patch);
       if (f.token.value.trim()) await api.saveToken(t.id, f.token.value.trim());
       toast('Tersimpan'); pixel(el, { state });
@@ -126,11 +132,118 @@ function pasang(el, { state }) {
       <p class="muted small">Link <code>wa.me</code> yang sudah ada juga otomatis tertangkap. Pakai <code>data-aventra-wa="LABEL"</code> kalau satu halaman punya beberapa nomor.</p></div>
     <div class="card"><h3><span class="num">3</span>Isi "URL parameters" di setiap iklan Meta</h3>${codeBox(params)}
       <p class="muted small">Ads Manager → level iklan → Tracking → URL parameters. Dari sini laporan "Per iklan" terisi otomatis.</p></div>
-    <div class="card"><h3><span class="num">4</span>Uji</h3>
-      <ol class="small"><li>Isi <b>Test event code</b> di tab Pixel & Token.</li><li>Buka landing page dari HP, klik tombol WA.</li>
-      <li>Cek menu <b>Klik Tombol WA</b> dan tab Test events di Events Manager, lalu kosongkan lagi test event code.</li></ol></div>
+    <div class="card"><h3><span class="num">4</span>Pixel PageView &amp; ViewContent</h3>
+      ${t.pixel_browser ? `<p class="small ok-text">Pixel otomatis <b>aktif</b>: script di langkah 1 sudah memasang Pixel ${esc(t.pixel_id || '')} + PageView + ViewContent. Tidak perlu kode tambahan.</p>`
+        : `<p class="muted small">Pilih salah satu: nyalakan <b>Pixel otomatis</b> di tab Pixel &amp; Token (paling mudah), atau tempel kode ini di &lt;head&gt;:</p>${codeBox(pixelCode(t))}`}
+      <p class="muted small">Jangan menambahkan <code>fbq('track','Contact')</code> sendiri: Contact sudah dikirim script, tanpa dobel.</p></div>
+    <div class="card"><h3><span class="num">5</span>Uji</h3>
+      <p class="small">Pakai tab <b>Tes Pemasangan</b>: masukkan alamat landing page, buka link tesnya, lalu lihat hasilnya langsung.</p></div>
   </div>`;
   bindCopy(el);
+}
+
+const pixelCode = (t) => `<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '${t.pixel_id || 'PIXEL_ID'}');
+fbq('track', 'PageView');
+fbq('track', 'ViewContent', {content_name: '${(t.vc_name || t.nama).replace(/'/g, '')}'});
+</script>`;
+
+// ---------------------------------------------------------------- Tes
+let tesTimer = null;
+async function tes(el, { state }) {
+  const t = state.tenant;
+  const lpKey = `ld_lp_${t.id}`;
+  const lp = localStorage.getItem(lpKey) || '';
+  el.innerHTML = `<div class="grid2 top">
+    <div class="stack">
+      <div class="card">
+        <h3><span class="num">1</span>Mode tes Meta</h3>
+        <div id="modeTes"></div>
+      </div>
+      <div class="card">
+        <h3><span class="num">2</span>Buat link tes</h3>
+        <form class="form" id="lf">
+          <label>Alamat landing page<input name="url" type="url" required placeholder="https://mahyrarelaksia.com/mahyra-sby" value="${esc(lp)}"></label>
+          <button class="btn primary">Buat link tes</button>
+        </form>
+        <div id="linkOut"></div>
+      </div>
+      <div class="card help">
+        <h3><span class="num">3</span>Lakukan tes</h3>
+        <ol class="small"><li>Buka link tes dari HP (tab penyamaran), klik tombol WA. Pesan WA harus berisi kode promo.</li>
+        <li>Catat chat lewat menu <b>Leads &amp; Closing → Chat masuk</b> memakai kode itu, lalu klik <b>Lunas</b> dengan nilai kecil (mis. 1.000).</li>
+        <li>Lihat hasilnya di samping. Setelah semua hijau: <b>matikan mode tes</b> dan <b>hapus data tes</b>.</li></ol>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head flat"><h3>Hasil tes 24 jam terakhir</h3><small class="muted" id="upd"></small></div>
+      <div id="hasil"><div class="loading">Memuat…</div></div>
+      <button class="btn danger-ghost block" id="hapusTes" style="margin-top:12px">Hapus data tes</button>
+    </div>
+  </div>`;
+
+  const drawMode = () => {
+    const box = $('#modeTes', el);
+    box.innerHTML = t.test_event_code
+      ? `<div class="note warn"><div>Mode tes <b>AKTIF</b> · kode <code>${esc(t.test_event_code)}</code><br><small>Event hanya masuk tab Test events dan tidak dipakai optimasi iklan.</small></div></div>
+         <button class="btn block" id="off" style="margin-top:10px">Matikan mode tes</button>`
+      : `<p class="muted small">Ambil kode dari Events Manager → Pixel → tab <b>Test events</b>.</p>
+         <div class="input-btn"><input id="code" placeholder="TEST12345"><button class="btn primary" id="on">Aktifkan</button></div>`;
+    const off = $('#off', box), on = $('#on', box);
+    if (off) off.onclick = async () => { await api.updateTenant(t.id, { test_event_code: null }); t.test_event_code = null; drawMode(); toast('Mode tes dimatikan'); };
+    if (on) on.onclick = async () => {
+      const v = $('#code', box).value.trim(); if (!v) return;
+      await api.updateTenant(t.id, { test_event_code: v }); t.test_event_code = v; drawMode(); toast('Mode tes aktif');
+    };
+  };
+  drawMode();
+
+  const f = $('#lf', el);
+  const makeLink = () => {
+    const raw = f.url.value.trim(); if (!raw) return;
+    localStorage.setItem(lpKey, raw);
+    const id = 'TES' + Math.random().toString(36).slice(2, 8).toUpperCase();
+    let link;
+    try {
+      const u = new URL(raw); u.searchParams.set('fbclid', id); u.searchParams.set('utm_content', 'TES-AVENTRA'); link = u.toString();
+    } catch { toast('Alamat tidak valid', 'err'); return; }
+    $('#linkOut', el).innerHTML = `${codeBox(link)}<div class="btn-row" style="margin-top:8px">
+      <a class="btn" href="${esc(link)}" target="_blank" rel="noopener">Buka di tab baru</a>
+      <a class="btn" href="https://wa.me/?text=${encodeURIComponent(link)}" target="_blank" rel="noopener">Kirim ke WA saya</a></div>`;
+    bindCopy($('#linkOut', el));
+  };
+  f.onsubmit = (e) => { e.preventDefault(); makeLink(); };
+  if (lp) makeLink();
+
+  const waLabel = Object.fromEntries(state.wa.map((w) => [w.id, w.label]));
+  const ok = (b, txt) => `<span class="badge ${b ? 'ok' : 'bad'}">${b ? '✓' : '✗'} ${txt}</span>`;
+  const load = async () => {
+    if (!el.isConnected) { clearInterval(tesTimer); return; }
+    const cs = await api.testClicks(t.id);
+    const ls = await api.leadsForClicks(cs.map((c) => c.id));
+    const byClick = Object.fromEntries(ls.map((l) => [l.click_id, l]));
+    $('#hasil', el).innerHTML = cs.length ? cs.map((c) => {
+      const l = byClick[c.id];
+      return `<div class="tes-row"><div><b>${esc(c.kode)}</b> <span class="tag">${esc(waLabel[c.wa_number_id] || '-')}</span>
+        <small class="muted block">${jam(c.created_at)} · ${esc(c.page_url || '')}</small></div>
+        <div class="tes-badges">${ok(true, 'Klik tercatat')}${ok(!!c.fbc, 'Jejak iklan')}${ok(c.contact_sent, 'Contact ke Meta')}
+        ${ok(!!l, 'Chat dicatat')}${ok(!!l?.purchase_sent_at, 'Purchase ke Meta')}</div></div>`;
+    }).join('') : '<p class="empty muted">Belum ada klik tes. Buka link tes lalu klik tombol WA.</p>';
+    $('#upd', el).textContent = 'diperbarui ' + jam(new Date().toISOString());
+  };
+  clearInterval(tesTimer);
+  await load();
+  tesTimer = setInterval(load, 5000);
+
+  $('#hapusTes', el).onclick = async () => {
+    if (!confirm('Hapus semua klik tes (fbclid berawalan TES) beserta chat & log-nya?')) return;
+    try { const n = await api.deleteTestData(t.id); toast(`${n} klik tes dihapus`); load(); } catch (err) { toast(err.message, 'err'); }
+  };
 }
 
 // ---------------------------------------------------------------- API

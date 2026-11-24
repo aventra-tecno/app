@@ -68,6 +68,16 @@ const real = {
     return must(await c.from('events_log').select('*').eq('tenant_id', tid).order('created_at', { ascending: false }).limit(limit));
   },
   async tokenStatus(tid) { const c = await client(); return must(await c.rpc('status_token', { p_tenant: tid })); },
+  async testClicks(tid) {
+    const c = await client();
+    return must(await c.from('clicks').select('*').eq('tenant_id', tid).like('fbclid', 'TES%')
+      .gte('created_at', new Date(Date.now() - 864e5).toISOString()).order('created_at', { ascending: false }).limit(20));
+  },
+  async leadsForClicks(ids) {
+    if (!ids.length) return [];
+    const c = await client(); return must(await c.from('leads').select('*').in('click_id', ids));
+  },
+  async deleteTestData(tid) { const c = await client(); return must(await c.rpc('hapus_data_tes', { p_tenant: tid })); },
   async saveToken(tid, token) { const c = await client(); must(await c.rpc('simpan_token', { p_tenant: tid, p_token: token })); },
   async keys(tid) { const c = await client(); return must(await c.from('api_keys').select('id,nama,prefix,revoked,last_used,created_at').eq('tenant_id', tid).order('created_at', { ascending: false })); },
   async createKey(tid, nama) { const c = await client(); return must(await c.rpc('buat_api_key', { p_tenant: tid, p_nama: nama })); },
@@ -82,7 +92,7 @@ const D = (() => {
   const tid = 'demo-tenant';
   const now = Date.now();
   const tenant = { id: tid, nama: 'Mahyra Relaksia (contoh)', prefix: 'MR', teks_promo: 'bonus 15 menit',
-    public_key: 'pk_demo1234567890abcdef', pixel_id: '123456789012345', test_event_code: '', created_at: new Date(now - 30 * 864e5).toISOString() };
+    public_key: 'pk_demo1234567890abcdef', pixel_id: '123456789012345', test_event_code: 'TEST40462', pixel_browser: true, vc_name: 'Pijat Panggilan Surabaya', created_at: new Date(now - 30 * 864e5).toISOString() };
   const wa = [
     { id: 'w1', tenant_id: tid, label: 'SBY', phone: '6285778082138', template: 'Halo Mahyra Surabaya, saya mau pijat. Kode promo: {kode} ({promo})', aktif: true },
     { id: 'w2', tenant_id: tid, label: 'MLG', phone: '6285645188603', template: 'Halo Mahyra Malang, saya mau pijat. Kode promo: {kode} ({promo})', aktif: true },
@@ -118,6 +128,8 @@ const D = (() => {
         response: l.purchase_sent_at ? { events_received: 1 } : { error: { message: 'Invalid OAuth access token' } }, created_at: l.paid_at });
     }
   }
+  clicks.unshift({ id: 'ctes', tenant_id: tid, kode: 'MR-TES9K2', wa_number_id: 'w1', fbclid: 'TESA81B', fbc: 'fb.1.x.TESA81B', fbp: 'fb.1.x.z',
+    utm_content: 'TES-AVENTRA', page_url: 'https://mahyrarelaksia.com/mahyra-sby', contact_sent: true, created_at: new Date(now - 2 * 60e3).toISOString() });
   const keys = [{ id: 'k1', nama: 'ERP Mahyra', prefix: 'ak_3f9a21c', revoked: false, last_used: new Date(now - 2 * 3600e3).toISOString(), created_at: new Date(now - 9 * 864e5).toISOString() }];
   return { tenant, wa, clicks, leads, events, keys, token: new Date(now - 5 * 864e5).toISOString(), session: { user: { email: 'akhmad@contoh.id' } } };
 })();
@@ -151,6 +163,12 @@ const demo = {
   },
   async events() { return wait(sortDesc(D.events).slice(0, 200)); },
   async tokenStatus() { return D.token; },
+  async testClicks() { return sortDesc(D.clicks.filter((c) => (c.fbclid || '').startsWith('TES'))); },
+  async leadsForClicks(ids) { return D.leads.filter((l) => ids.includes(l.click_id)); },
+  async deleteTestData() {
+    const ids = D.clicks.filter((c) => (c.fbclid || '').startsWith('TES')).map((c) => c.id);
+    D.leads = D.leads.filter((l) => !ids.includes(l.click_id)); D.clicks = D.clicks.filter((c) => !ids.includes(c.id)); return ids.length;
+  },
   async saveToken(t, v) { D.token = v ? new Date().toISOString() : null; },
   async keys() { return D.keys.slice(); },
   async createKey(t, nama) { const k = 'ak_' + 'd'.repeat(48); D.keys.unshift({ id: 'k' + Date.now(), nama, prefix: k.slice(0, 10), revoked: false, last_used: null, created_at: new Date().toISOString() }); return k; },

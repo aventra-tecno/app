@@ -1,5 +1,5 @@
 // Aventra Leads · service worker (network-first, cadangan cache saat offline)
-const VERSION = 'ld-1.0.0';
+const VERSION = 'ld-1.1.0';
 const SHELL = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/api.js', 'js/ui.js', 'js/config.js',
   'js/pages/ringkasan.js', 'js/pages/leads.js', 'js/pages/klik.js', 'js/pages/log.js', 'js/pages/pengaturan.js'];
 

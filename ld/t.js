@@ -1,10 +1,13 @@
-/*! Aventra Leads · t.js v1.0.1
+/*! Aventra Leads · t.js v1.1.0
  * Pasang di landing page:
  *   <script src="https://app.aventra.id/app/ld/t.js" data-key="pk_xxx" defer></script>
  * Tombol WA:
  *   <a href="https://wa.me/6285778082138" data-aventra-wa="SBY">Chat WA</a>
  *   (atribut data-aventra-wa = label nomor di Aventra; boleh dikosongkan,
  *    link wa.me biasa juga otomatis ditangkap)
+ * Pixel otomatis (PageView + ViewContent) aktif bila dinyalakan di
+ * Aventra Leads > Pengaturan > Pixel & Token. Jangan pasang kode dasar
+ * Pixel manual sekaligus, supaya PageView tidak dobel.
  */
 (function () {
   'use strict';
@@ -60,6 +63,24 @@
       return cfg;
     })
     .catch(function (e) { console.warn('[Aventra] tidak bisa menghubungi server', e); return null; });
+
+  // 3b) Pasang kode dasar Meta Pixel bila diaktifkan di Aventra
+  function initPixel(c) {
+    if (!c || !c.pixel || !c.pixel.id || window.__avPixel) return;
+    if (typeof window.fbq === 'function') return; // halaman sudah punya Pixel sendiri
+    window.__avPixel = true;
+    /* eslint-disable */
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    /* eslint-enable */
+    window.fbq('init', String(c.pixel.id));
+    window.fbq('track', 'PageView');
+    window.fbq('track', 'ViewContent', c.pixel.vc ? { content_name: c.pixel.vc } : {});
+  }
+  cfgReady.then(initPixel);
 
   function digits(s) { return String(s || '').replace(/\D/g, ''); }
   function normPhone(s) {

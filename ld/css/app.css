@@ -159,6 +159,14 @@ select.mini { height: 32px; border: 1px solid var(--line); border-radius: 8px; p
 .codebox { position: relative; background: #0F1530; color: #DDE3FF; border-radius: 10px; padding: 14px 14px 14px; }
 .codebox pre { margin: 0 0 10px; white-space: pre-wrap; word-break: break-all; font-size: 12.5px; font-family: ui-monospace, Menlo, Consolas, monospace; }
 
+/* ---------- tes pemasangan (v1.1.0) ---------- */
+.card-head.flat { padding: 0 0 10px; border: 0; }
+.tes-row { display: grid; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.tes-row:last-child { border-bottom: 0; }
+.tes-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+#linkOut:not(:empty) { margin-top: 12px; }
+.grid2.top { align-items: start; }
+
 /* ---------- login ---------- */
 .center-screen { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
 .hero-bg { background: linear-gradient(160deg, var(--navy-3), var(--navy) 50%, var(--navy-2)); }
