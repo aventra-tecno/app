@@ -91,6 +91,9 @@ async function metaAds(el, { state }) {
     <label>Token Meta Ads (izin ads_read)
       <input name="token" type="password" autocomplete="off" placeholder="${ts ? 'Token tersimpan · isi untuk mengganti' : 'Tempel token system user'}"></label>
     <p class="small ${ts ? 'ok-text' : 'err-text'}">${ts ? `Token tersimpan sejak ${waktu(ts)}.` : 'Token belum diisi.'}</p>
+    <label class="check"><input type="checkbox" name="auto" ${t.auto_sync !== false ? 'checked' : ''}> Sinkron otomatis (mengikuti jadwal, default tiap 30 menit)</label>
+    <div class="note ${!t.last_sync_at ? '' : String(t.last_sync_info || '').startsWith('GAGAL') ? 'bad' : 'ok'}" style="${t.last_sync_at ? '' : 'display:none'}">
+      <div>Sinkron terakhir: <b>${waktu(t.last_sync_at)}</b><br><small>${esc(t.last_sync_info || '')}</small></div></div>
     <div class="btn-row"><button class="btn primary">Simpan</button><button type="button" class="btn" id="tes">Simpan & sinkron 7 hari</button></div>
     <div id="hasil"></div>
   </form>
@@ -103,12 +106,13 @@ async function metaAds(el, { state }) {
       <li>Salin token, tempel di sini, lalu Simpan.</li>
       <li>ID akun iklan: Ads Manager → pojok kiri atas, angka setelah <code>act=</code> di alamat browser.</li>
     </ol>
-    <p class="muted small">Data yang ditarik: spend, impresi, klik link, landing page view, ViewContent, Contact, Purchase per iklan per hari. Dipakai di menu <b>Funnel & Target</b>.</p>
+    <p class="muted small">Data yang ditarik: spend, impresi, klik link, landing page view, ViewContent, Contact, chat dimulai, Purchase per iklan per hari. Dipakai di menu <b>Funnel & Target</b>.</p>
+    <p class="muted small"><b>Sinkron otomatis</b> butuh jadwal di Supabase (file <code>jadwal-sinkron.sql</code>) dan secret <code>CRON_SECRET</code> di Edge Functions. Jadwal menarik data 3 hari terakhir supaya angka konversi yang telat masuk ikut diperbarui.</p>
   </div></div>`;
   const f = $('#f', el);
   const simpan = async () => {
     const acct = f.acct.value.replace(/\D/g, '') || null;
-    await api.updateTenant(t.id, { ad_account_id: acct }); t.ad_account_id = acct;
+    await api.updateTenant(t.id, { ad_account_id: acct, auto_sync: f.auto.checked }); t.ad_account_id = acct; t.auto_sync = f.auto.checked;
     if (f.token.value.trim()) await api.saveAdsToken(t.id, f.token.value.trim());
   };
   f.onsubmit = async (e) => { e.preventDefault(); try { await simpan(); toast('Tersimpan'); metaAds(el, { state }); } catch (err) { toast(err.message, 'err'); } };
@@ -119,6 +123,7 @@ async function metaAds(el, { state }) {
       await simpan();
       const d = (n) => { const x = new Date(Date.now() - n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
       const r = await api.syncMeta(t.id, d(6), d(0));
+      t.last_sync_at = new Date().toISOString(); t.last_sync_info = `${r.baris} baris`;
       out.innerHTML = `<div class="note ok"><div>Berhasil: ${r.baris} baris data, spend ${Number(r.spend).toLocaleString('id-ID')}. Buka menu <b>Funnel & Target</b>.</div></div>`;
     } catch (err) { out.innerHTML = `<div class="note bad"><div>${esc(err.message)}</div></div>`; }
   };

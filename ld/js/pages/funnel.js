@@ -71,7 +71,8 @@ export async function render(el, ctx) {
     api.insights(t.id, dFrom, dTo), api.clicks(t.id, from, to),
     api.leads(t.id, from, new Date(Date.parse(to) + 3 * 864e5).toISOString()),
   ]);
-  const lastSync = insAll.reduce((m, r) => (r.synced_at > m ? r.synced_at : m), '');
+  const lastSync = t.last_sync_at || insAll.reduce((m, r) => (r.synced_at > m ? r.synced_at : m), '');
+  const syncInfo = String(t.last_sync_info || '');
 
   el.innerHTML = `
   <div class="grid2 g-top">
@@ -89,7 +90,7 @@ export async function render(el, ctx) {
   <div class="card" style="margin-top:16px">
     <div class="card-head flat">
       <h3>Funnel aktual</h3>
-      <div class="btn-row">${lastSync ? `<small class="muted">sinkron Meta: ${new Date(lastSync).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</small>` : ''}
+      <div class="btn-row">${lastSync ? `<small class="${syncInfo.startsWith('GAGAL') ? 'err-text' : 'muted'}" title="${esc(syncInfo)}">sinkron Meta${t.auto_sync !== false ? ' otomatis' : ''}: ${new Date(lastSync).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}${syncInfo.startsWith('GAGAL') ? ' · gagal' : ''}</small>` : ''}
       ${isAdmin ? `<button class="btn sm" id="sync">${icon('pulse')}Sinkron data Meta</button>` : ''}</div>
     </div>
     <div class="filters" id="filters"></div>
@@ -102,7 +103,7 @@ export async function render(el, ctx) {
     <div class="card-head"><h3>Per iklan vs patokan</h3></div>
     <table class="tbl"><thead><tr><th>Iklan</th><th class="r">Spend</th><th class="r">CTR</th><th class="r">OCLP</th><th class="r">Contact</th>
       <th class="r">Chat</th><th class="r">Purchase</th><th class="r">CPA</th><th class="r">ROAS</th><th>Status</th></tr></thead>
-    <tbody id="perAd"></tbody></table>
+    <tbody id="perAd"></tbody><tfoot id="perAdTot"></tfoot></table>
   </div>`;
 
   // ---------------------------------------------------------- kalkulator
@@ -283,6 +284,29 @@ export async function render(el, ctx) {
         <td class="r" data-l="CPA">${rpx(cpa)}</td><td class="r" data-l="ROAS">${x.S && x.O ? (x.O / x.S).toFixed(2).replace('.', ',') + 'x' : '-'}</td>
         <td data-l="Status">${st}</td></tr>`;
     }).join('') || '<tr><td colspan="10" class="empty">Belum ada data</td></tr>';
+
+    // baris total (seperti "Results from N ads" di Ads Manager)
+    const rows = Object.values(g);
+    const T2 = rows.reduce((a, x) => {
+      const ctwa = x.MS > 0 && !x.L && !x.W;
+      a.S += x.S; a.I += x.I; a.K += x.K; a.O += x.O; a.n++;
+      if (ctwa) { a.Kc += x.K; a.ch += x.MS; a.p += x.MP; } else { a.Kw += x.K; a.L += x.L; a.W += x.W; a.ch += x.C; a.p += x.P; }
+      return a;
+    }, { S: 0, I: 0, K: 0, O: 0, n: 0, Kc: 0, Kw: 0, L: 0, W: 0, ch: 0, p: 0 });
+    const cpaT = div(T2.S, T2.p);
+    const stT = !T2.S ? '' : !T2.p ? '<span class="badge warn">Belum purchase</span>'
+      : cpaT <= H.cpaT ? '<span class="badge ok">Di bawah target</span>' : cpaT <= H.laba ? '<span class="badge warn">Di atas target</span>' : '<span class="badge bad">Rugi</span>';
+    $('#perAdTot', el).innerHTML = rows.length ? `<tr>
+      <td data-l="Total"><b>Total ${num(T2.n)} iklan</b></td>
+      <td class="r" data-l="Spend"><b>${rp(T2.S)}</b></td>
+      <td class="r" data-l="CTR"><b>${p1(div(T2.K, T2.I))}</b></td>
+      <td class="r" data-l="OCLP"><b>${p1(div(T2.L, T2.Kw))}</b></td>
+      <td class="r" data-l="Contact"><b>${p1(div(T2.W, T2.L))}</b></td>
+      <td class="r" data-l="Chat"><b>${num(T2.ch)}</b> <small class="muted">${p1(div(T2.ch, T2.W + T2.Kc))}</small></td>
+      <td class="r" data-l="Purchase"><b>${num(T2.p)}</b> <small class="muted">${p1(div(T2.p, T2.ch))}</small></td>
+      <td class="r" data-l="CPA"><b>${rpx(cpaT)}</b></td>
+      <td class="r" data-l="ROAS"><b>${T2.S && T2.O ? (T2.O / T2.S).toFixed(2).replace('.', ',') + 'x' : '-'}</b></td>
+      <td data-l="Status">${stT}</td></tr>` : '';
   }
   drawActual();
 

@@ -173,6 +173,7 @@ const D = (() => {
       synced_at: new Date(now - 40 * 60e3).toISOString() });
   }
   tenant.ad_account_id = '1234567890';
+  tenant.auto_sync = true; tenant.last_sync_at = new Date(now - 12 * 60e3).toISOString(); tenant.last_sync_info = '96 baris · otomatis';
   return { tenant, wa, clicks, leads, events, keys, insights, adsToken: new Date(now - 3 * 864e5).toISOString(), token: new Date(now - 5 * 864e5).toISOString(), session: { user: { email: 'akhmad@contoh.id' } } };
 })();
 const inRange = (iso, f, t) => iso >= f && iso < t;
