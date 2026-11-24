@@ -1,4 +1,4 @@
-/*! Aventra Leads · t.js v1.0.0
+/*! Aventra Leads · t.js v1.0.1
  * Pasang di landing page:
  *   <script src="https://app.aventra.id/app/ld/t.js" data-key="pk_xxx" defer></script>
  * Tombol WA:
@@ -48,12 +48,18 @@
 
   // 3) Ambil pengaturan nomor WA (disimpan selama sesi)
   var cfg = load('av_cfg_' + KEY);
-  if (!cfg) {
-    fetch(API + '?key=' + encodeURIComponent(KEY))
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) { if (j && j.numbers) { cfg = j; store('av_cfg_' + KEY, j); } })
-      .catch(function () {});
-  }
+  if (cfg && !(cfg.numbers && cfg.numbers.length)) cfg = null;
+  var cfgReady = cfg ? Promise.resolve(cfg) : fetch(API + '?key=' + encodeURIComponent(KEY))
+    .then(function (r) {
+      if (!r.ok) { console.warn('[Aventra] pengaturan gagal dimuat, status ' + r.status); return null; }
+      return r.json();
+    })
+    .then(function (j) {
+      if (j && j.numbers && j.numbers.length) { cfg = j; store('av_cfg_' + KEY, j); }
+      else if (j) console.warn('[Aventra] belum ada nomor WA aktif di Pengaturan');
+      return cfg;
+    })
+    .catch(function (e) { console.warn('[Aventra] tidak bisa menghubungi server', e); return null; });
 
   function digits(s) { return String(s || '').replace(/\D/g, ''); }
   function normPhone(s) {
@@ -91,10 +97,26 @@
   document.addEventListener('click', function (e) {
     var el = e.target && e.target.closest && e.target.closest('[data-aventra-wa], a[href*="wa.me/"], a[href*="api.whatsapp.com/send"]');
     if (!el || el.getAttribute('data-aventra-skip') !== null) return;
-    var num = pickNumber(el);
-    if (!num) return; // pengaturan belum termuat: biarkan link berjalan normal
-
+    if (!cfg) {
+      // pengaturan belum termuat: tunggu sebentar (maks 1,5 detik), lalu lanjut
+      e.preventDefault();
+      var href = el.getAttribute('href');
+      var done = false;
+      var fallback = setTimeout(function () { done = true; if (href) location.href = href; }, 1500);
+      cfgReady.then(function () {
+        if (done) return;
+        clearTimeout(fallback);
+        if (cfg && pickNumber(el)) go(el); else if (href) location.href = href;
+      });
+      return;
+    }
+    if (!pickNumber(el)) { console.warn('[Aventra] nomor tombol tidak cocok dengan Pengaturan'); return; }
     e.preventDefault();
+    go(el);
+  }, true);
+
+  function go(el) {
+    var num = pickNumber(el);
     var kode = makeKode();
     var eventId = 'ct_' + kode;
     var text = (num.template || 'Halo, kode promo: {kode}')
@@ -116,7 +138,7 @@
     }
     window.AventraLeads = { kode: kode };
 
-    var go = 'https://wa.me/' + num.phone + '?text=' + encodeURIComponent(text);
-    setTimeout(function () { location.href = go; }, 150);
-  }, true);
+    var url = 'https://wa.me/' + num.phone + '?text=' + encodeURIComponent(text);
+    setTimeout(function () { location.href = url; }, 150);
+  }
 })();
