@@ -258,10 +258,9 @@ async function opnameRak(box) {
     if (!rack) { op.innerHTML = ''; return; }
     const { data } = await supa.from('products').select('id, sku, name').eq('rack_code', rack).eq('active', true).order('name');
     if (!data.length) { op.innerHTML = `<div class="card">${emptyState('Belum ada barang di rak ini.', 'box')}</div>`; return; }
-    op.innerHTML = `<div class="card stack">${scanBox('osb', 'Scan barang untuk menambah hitungan +1')}
+    op.innerHTML = `<div class="card stack"><button class="btn btn-primary btn-lg" id="save">${icon('check', 18)} Simpan stok opname rak ${esc(rack)}</button>${scanBox('osb', 'Scan barang untuk menambah hitungan +1')}
       <div class="list">${data.map((p) => `<div class="list-item" style="padding:10px 0"><div class="grow"><b>${esc(p.name)}</b><div class="xs muted mono">${esc(p.sku)}</div></div>
-        <input class="input num" style="width:90px" inputmode="numeric" data-count="${p.id}" data-sku="${esc(p.sku)}" placeholder="0" aria-label="Jumlah fisik ${esc(p.name)}"></div>`).join('')}</div>
-      <button class="btn btn-primary btn-lg" id="save">Simpan stok opname rak ${esc(rack)}</button></div>`;
+        <input class="input num" style="width:90px" inputmode="numeric" data-count="${p.id}" data-sku="${esc(p.sku)}" placeholder="0" aria-label="Jumlah fisik ${esc(p.name)}"></div>`).join('')}</div></div>`;
     bindScan(op, 'osb', (code) => {
       const inp = [...op.querySelectorAll('[data-sku]')].find((i) => skuMatch(code, i.dataset.sku));
       if (!inp) { beep(false); return { ok: false, title: 'Bukan barang rak ' + rack, info: 'Barang ini tidak terdaftar di rak ini' }; }
@@ -420,10 +419,9 @@ async function tabPenataan(box) {
     <div class="hero"><div class="label">Penataan ulang berjalan</div><div class="big">${num(st.pcs)} <span style="font-size:18px;opacity:.75">pcs</span></div>
       <div class="small" style="color:#C9CCC8">${st.racks.length} rak · ${num(st.jenis)} jenis barang · dimulai ${fmtDateTime(st.started_at)}${st.started_by ? ' oleh ' + esc(st.started_by) : ''}</div></div>
       ${(Date.now() - new Date(st.started_at)) / 864e5 >= 2 ? `<div class="alert yellow small" style="margin-top:8px">Penataan ini sudah berjalan <b>${Math.floor((Date.now() - new Date(st.started_at)) / 864e5)} hari</b>. Kalau semua rak sudah dihitung, tekan <b>Selesai penataan</b>. Selama belum selesai, menyimpan ulang rak akan mengubah stok barang di rak itu.</div>` : ''}
-    <button class="btn btn-primary btn-lg" id="prak">${icon('scan', 20)} Pilih rak & mulai scan</button>
+    <div class="row" style="gap:8px"><button class="btn btn-primary btn-lg grow" id="prak">${icon('scan', 20)} Pilih rak & mulai scan</button><button class="btn btn-lg grow" id="pselesai">${icon('check', 18)} Selesai penataan</button></div>
     <div class="card flush"><div class="card-h"><h2>Rak yang sudah ditata</h2></div>${st.racks.length ? `<div class="list no-page">${st.racks.map((r) => `<button class="list-item" data-prak="${esc(r.rack)}"><b class="mono" style="min-width:58px">${esc(r.rack)}</b><span class="grow small">${num(r.jenis)} jenis · ${num(r.pcs)} pcs<div class="xs muted">${fmtDateTime(r.at)}</div></span><span class="btn btn-sm">Ubah</span></button>`).join('')}</div>` : emptyState('Belum ada rak yang ditata.', 'box')}</div>
-    <div class="card stack"><div class="row between wrap"><span><b>Belum di-scan di rak mana pun</b><div class="small muted">${num(st.belum_jenis)} jenis · ${num(st.belum_pcs)} pcs menurut stok sistem</div></span>${st.belum_jenis ? '<button class="btn btn-sm btn-see" id="pbelum">Lihat</button>' : ''}</div><div id="pbelumlist"></div></div>
-    <button class="btn btn-lg" id="pselesai">${icon('check', 18)} Selesai penataan</button></div>`;
+    <div class="card stack"><div class="row between wrap"><span><b>Belum di-scan di rak mana pun</b><div class="small muted">${num(st.belum_jenis)} jenis · ${num(st.belum_pcs)} pcs menurut stok sistem</div></span>${st.belum_jenis ? '<button class="btn btn-sm btn-see" id="pbelum">Lihat</button>' : ''}</div><div id="pbelumlist"></div></div></div>`;
   const openRack = (rack) => rackScan(box, st, rack);
   box.querySelector('#prak').onclick = async () => { const k = await pickRack({ title: 'Pilih rak yang akan ditata', okLabel: 'Mulai scan' }); if (k) openRack(k.rack); };
   on(box, 'click', '[data-prak]', (e, b) => openRack(b.dataset.prak));
@@ -451,10 +449,10 @@ async function rackScan(box, st, rack) {
   const products = await allProductsCached({ active: true }).catch(() => []);
   box.innerHTML = `<div class="stack">
     <div class="row between wrap"><button class="btn btn-ghost btn-sm" id="pback">${icon('back', 16)} Kembali</button><span class="row"><span class="small muted">Rak</span><b class="mono" style="font-size:22px">${esc(rack)}</b></span></div>
+    <button class="btn btn-primary btn-lg" id="psave">${icon('check', 18)} Simpan rak ${esc(rack)}</button>
     <div class="card stack">${scanBox('psb', 'Scan setiap barang yang ditaruh di rak ' + rack)}<div id="plast" aria-live="polite"></div>
       <input class="input" id="pq" placeholder="atau cari nama / kode barang" autocomplete="off"></div>
-    <div class="card flush" id="prows"></div>
-    <button class="btn btn-primary btn-lg" id="psave">Simpan rak ${esc(rack)}</button></div>`;
+    <div class="card flush" id="prows"></div></div>`;
   const save = () => draftSet(key, rows);
   const paint = () => {
     const t = rows.reduce((a, r) => a + r.qty, 0);

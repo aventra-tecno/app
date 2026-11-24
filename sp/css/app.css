@@ -1889,3 +1889,8 @@ html[data-theme="hitam"] .cpy { color: #6B4A00; background: #FFF4D6; }
 /* ===== 2.52: lokasi file di Shopee pada kartu upload ===== */
 .type-card .where { display: flex; gap: 6px; align-items: flex-start; text-align: left; font-size: 11.5px; line-height: 1.4; color: #1e40af; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 8px; }
 .type-card .where svg { flex: none; margin-top: 1px; }
+/* 2.59 Catat pesanan: cari barang / resi di samping toko */
+.cat-top { align-items: center; gap: 8px; }
+.cat-find { flex: 1 1 260px; max-width: 420px; flex-wrap: nowrap; gap: 6px; }
+.cat-find .input { min-width: 0; }
+@media (max-width: 640px) { .cat-find { max-width: none; flex-basis: 100%; } }
