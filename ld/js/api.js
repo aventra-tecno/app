@@ -154,14 +154,23 @@ const D = (() => {
     const day = ymd(new Date(now - d * 864e5));
     ads.forEach((ad, i) => {
       const spend = Math.round(28000 + rnd() * 18000);
+      const adset = i === 0 ? ['as1', 'SBY · Broad 23-55'] : ['as2', 'SBY · Wanita 25-45'];
       const imp = Math.round(spend / (22 + rnd() * 10) * 1000 / 1000);
       const ctr = [0.016, 0.011, 0.007][i] * (0.8 + rnd() * 0.4);
       const k = Math.round(imp * ctr);
       const lpv = Math.round(k * (0.6 + rnd() * 0.2));
-      insights.push({ tenant_id: tid, tanggal: day, ad_id: ad.ad_id, ad_name: ad.ad_name, campaign_name: ad.campaign_name,
+      insights.push({ tenant_id: tid, tanggal: day, ad_id: ad.ad_id, ad_name: ad.ad_name, campaign_name: ad.campaign_name, campaign_id: 'cmp1',
+        adset_id: adset[0], adset_name: adset[1], msg_started: 0,
         spend, impressions: imp, reach: Math.round(imp * 0.8), link_clicks: k, lpv, view_content: Math.round(lpv * 0.95), contact: 0, purchase: 0,
         purchase_value: 0, synced_at: new Date(now - 40 * 60e3).toISOString() });
     });
+  }
+  for (let d = 0; d < 30; d++) {
+    const spend = Math.round(55000 + rnd() * 20000), imp = Math.round(spend / 24), k = Math.round(imp * 0.018), ms = Math.round(k * 0.55);
+    insights.push({ tenant_id: tid, tanggal: ymd(new Date(now - d * 864e5)), ad_id: '120219999', ad_name: 'CTWA Reels Pijat', campaign_id: 'cmp2',
+      campaign_name: 'CTWA Mahyra SBY', adset_id: 'as3', adset_name: 'CTWA · LLA 1%', spend, impressions: imp, reach: Math.round(imp * 0.8), link_clicks: k,
+      lpv: 0, view_content: 0, contact: 0, msg_started: ms, purchase: Math.round(ms * 0.1 * rnd() * 2), purchase_value: 0,
+      synced_at: new Date(now - 40 * 60e3).toISOString() });
   }
   tenant.ad_account_id = '1234567890';
   return { tenant, wa, clicks, leads, events, keys, insights, adsToken: new Date(now - 3 * 864e5).toISOString(), token: new Date(now - 5 * 864e5).toISOString(), session: { user: { email: 'akhmad@contoh.id' } } };

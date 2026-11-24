@@ -1,63 +1,86 @@
-// Aventra Leads · Funnel & Target (v1.2.0)
+// Aventra Leads · Funnel & Target (v1.3.0)
+// Rumus inti:  CPA = CPM ÷ (1000 × CTR × OCLP × Contact × Chat × Purchase)   (iklan ke website)
+//              CPA = CPM ÷ (1000 × CTR × Chat × Purchase)                    (iklan CTWA)
 import { api } from '../api.js';
-import { esc, rp, num, range, toast, icon, $, $$ } from '../ui.js';
+import { esc, rp, num, range, toast, icon, $ } from '../ui.js';
 
-const DEF = { harga: 135000, margin: 45, porsi: 60, ctr: 1.2, lpv: 70, wa: 25, chat: 80, closing: 20, budget: 100000 };
-const FIELDS = [
-  ['harga', 'Harga rata-rata order', 'Rp'], ['margin', 'Margin kotor sebelum iklan', '%'], ['porsi', 'Porsi laba yang boleh untuk iklan', '%'],
-  ['ctr', 'CTR link (klik ÷ impresi)', '%'], ['lpv', 'Landing page view ÷ klik', '%'], ['wa', 'Klik WA ÷ landing page view', '%'],
-  ['chat', 'Chat masuk ÷ klik WA', '%'], ['closing', 'Closing ÷ chat', '%'], ['budget', 'Budget iklan per hari', 'Rp'],
+// ---------- nilai awal & penjelasan ----------
+const DEF = {
+  mode: 'web', harga: 135000, margin: 45, porsi: 60, budget: 100000, cpm: 25000,
+  ctr: 1.2, oclp: 70, contact: 25, chat: 80, purchase: 25,
+  wctr: 1.5, wchat: 60, wpurchase: 15,
+};
+const BIZ = [
+  ['harga', 'Harga rata-rata order', 'Rp', 'Pakai rata-rata nilai closing, bukan harga termurah.'],
+  ['margin', 'Margin kotor sebelum iklan', '%', 'Sisa setelah bagi hasil terapis/teknisi, bahan, transport.'],
+  ['porsi', 'Porsi laba untuk iklan', '%', '50–70%: sisanya laba bersih. 100% = impas.'],
+  ['budget', 'Budget iklan per hari', 'Rp', 'Untuk perkiraan closing & laba per hari.'],
+  ['cpm', 'Perkiraan CPM', 'Rp', 'Biaya per 1.000 tayangan. Jasa lokal Indonesia umumnya Rp15–35 rb.'],
 ];
+const STEPS = {
+  web: [
+    ['ctr', 'CTR link', 'klik link ÷ impresi', '1–2%. Di bawah 0,8% = kreatif/hook tidak menarik.'],
+    ['oclp', 'OCLP', 'landing page view ÷ klik link', '60–80%. Di bawah 50% = halaman lambat atau klik nyasar (Audience Network).'],
+    ['contact', 'Contact', 'klik tombol WA ÷ landing page view', '15–30%. Halaman 1 tujuan dengan harga jelas bisa 25%+.'],
+    ['chat', 'Chat masuk', 'chat tercatat ÷ klik WA', '70–90%. Sisanya batal kirim di WhatsApp.'],
+    ['purchase', 'Purchase', 'closing ÷ chat', 'Pijat 20–35%, mesin cuci 15–25%. Tergantung CS.'],
+  ],
+  ctwa: [
+    ['wctr', 'CTR link', 'klik ÷ impresi', '1–2,5%. CTWA biasanya sedikit lebih tinggi dari iklan web.'],
+    ['wchat', 'Chat dimulai', 'percakapan dimulai ÷ klik', '50–80%. Sisanya membuka WA tapi tidak mengirim pesan.'],
+    ['wpurchase', 'Purchase', 'closing ÷ chat', '10–25%. Lebih rendah dari web karena chat CTWA lebih "iseng".'],
+  ],
+};
 
-export function hitung(t) {
-  const laba = t.harga * t.margin / 100;
-  const cpa = laba * t.porsi / 100;
-  const chat = cpa * t.closing / 100;
-  const wa = chat * t.chat / 100;
-  const lpv = wa * t.wa / 100;
-  const cpc = lpv * t.lpv / 100;
-  const cpm = cpc * t.ctr / 100 * 1000;
-  const closingHari = cpa ? t.budget / cpa : 0;
-  return { laba, impas: laba, cpa, chat, wa, lpv, cpc, cpm, closingHari, omzetHari: closingHari * t.harga, labaHari: closingHari * (laba - cpa) };
+export function hitung(T) {
+  const st = STEPS[T.mode];
+  const rates = st.map(([k]) => (Number(T[k]) || 0) / 100);
+  const laba = T.harga * T.margin / 100;
+  const cpaT = laba * T.porsi / 100;
+  const perK = 1000 * rates.reduce((a, b) => a * b, 1); // closing per 1.000 tayangan
+  const cpaEst = perK ? T.cpm / perK : Infinity;
+  // batas biaya per tahap, dihitung mundur dari CPA target
+  const max = []; let c = cpaT;
+  for (let i = st.length - 1; i >= 0; i--) { c *= rates[i]; max.unshift(c); } // max[i] = biaya maks per "masuk tahap i"
+  const need = rates.map((r) => (Number.isFinite(cpaEst) ? r * cpaEst / cpaT : Infinity)); // nilai yang dibutuhkan bila tahap lain tetap
+  return { st, rates, laba, cpaT, perK, cpaEst, max, need, cpmMax: max[0] * 1000, closingHari: Number.isFinite(cpaEst) ? T.budget / cpaEst : 0 };
 }
 
 const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const p1 = (v) => (Number.isFinite(v) ? v.toFixed(1).replace('.', ',') + '%' : '-');
+const p1 = (v) => (Number.isFinite(v) ? (v * 100).toFixed(v < 0.1 ? 2 : 1).replace('.', ',') + '%' : '-');
 const div = (a, b) => (b ? a / b : NaN);
 const rpx = (v) => (Number.isFinite(v) ? rp(v) : '-');
+const fmt = (v, u) => (u === 'Rp' ? String(v) : String(v).replace('.', ','));
+
+let sel = { c: '', a: '', d: '' };
 
 export async function render(el, ctx) {
   const { state } = ctx;
   const t = state.tenant;
-  const T = { ...DEF, ...(t.target || {}) };
+  const old = t.target || {};
+  const T = { ...DEF, ...old };
+  // kompatibel dengan patokan v1.2
+  if (old.lpv != null && old.oclp == null) T.oclp = old.lpv;
+  if (old.wa != null && old.contact == null) T.contact = old.wa;
+  if (old.closing != null && old.purchase == null) T.purchase = old.closing;
   const { from, to } = range(state.period);
   const dFrom = ymd(new Date(from)), dTo = ymd(new Date(Date.parse(to) - 1));
   const isAdmin = state.role !== 'cs';
 
-  const [ins, clicks, leads] = await Promise.all([
+  const [insAll, clicks, leads] = await Promise.all([
     api.insights(t.id, dFrom, dTo), api.clicks(t.id, from, to),
     api.leads(t.id, from, new Date(Date.parse(to) + 3 * 864e5).toISOString()),
   ]);
-
-  // ---------- angka aktual ----------
-  const adClicks = clicks.filter((c) => c.ad_id || c.fbc);
-  const ids = new Set(adClicks.map((c) => c.id));
-  const adLeads = leads.filter((l) => ids.has(l.click_id));
-  const paid = adLeads.filter((l) => l.paid_at);
-  const A = {
-    S: ins.reduce((s, r) => s + Number(r.spend), 0), I: ins.reduce((s, r) => s + r.impressions, 0),
-    K: ins.reduce((s, r) => s + r.link_clicks, 0), L: ins.reduce((s, r) => s + r.lpv, 0), V: ins.reduce((s, r) => s + r.view_content, 0),
-    W: adClicks.length, C: adLeads.length, P: paid.length, O: paid.reduce((s, l) => s + (l.nilai || 0), 0),
-  };
-  const lastSync = ins.reduce((m, r) => (r.synced_at > m ? r.synced_at : m), '');
+  const lastSync = insAll.reduce((m, r) => (r.synced_at > m ? r.synced_at : m), '');
 
   el.innerHTML = `
   <div class="grid2 g-top">
     <form class="card" id="calc">
-      <div class="card-head flat"><h3>Kalkulator patokan</h3><small class="muted">disimpan per bisnis</small></div>
-      <div class="calc-grid">${FIELDS.map(([k, lbl, u]) => `
-        <label><span>${lbl}</span><div class="unit"><input name="${k}" inputmode="decimal" value="${String(T[k]).replace('.', ',')}"><b>${u}</b></div></label>`).join('')}
-      </div>
+      <div class="card-head flat"><h3>Kalkulator patokan</h3>
+        <div class="seg" id="mode"><button type="button" data-m="web">Iklan ke website</button><button type="button" data-m="ctwa">Iklan CTWA</button></div></div>
+      <div class="calc-grid" id="bizF"></div>
+      <h4 class="sub">Rasio tiap tahap funnel</h4>
+      <div class="calc-grid" id="stepF"></div>
       ${isAdmin ? '<button class="btn primary" style="margin-top:12px">Simpan sebagai patokan</button>' : ''}
     </form>
     <div class="card" id="target"></div>
@@ -65,127 +88,204 @@ export async function render(el, ctx) {
 
   <div class="card" style="margin-top:16px">
     <div class="card-head flat">
-      <h3>Funnel aktual · dari klik iklan</h3>
+      <h3>Funnel aktual</h3>
       <div class="btn-row">${lastSync ? `<small class="muted">sinkron Meta: ${new Date(lastSync).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</small>` : ''}
       ${isAdmin ? `<button class="btn sm" id="sync">${icon('pulse')}Sinkron data Meta</button>` : ''}</div>
     </div>
-    ${ins.length ? '' : `<div class="note warn" style="margin-bottom:12px"><div>Belum ada data Meta Ads untuk periode ini. Isi <b>Pengaturan → Meta Ads</b>, lalu tekan <b>Sinkron data Meta</b>. Bagian Meta (impresi sampai landing page view) masih kosong.</div></div>`}
+    <div class="filters" id="filters"></div>
+    ${insAll.length ? '' : `<div class="note warn" style="margin-bottom:12px"><div>Belum ada data Meta Ads untuk periode ini. Isi <b>Pengaturan → Meta Ads</b>, lalu tekan <b>Sinkron data Meta</b>.</div></div>`}
     <div id="funnel"></div>
     <div id="diag"></div>
   </div>
 
   <div class="card flush" style="margin-top:16px">
     <div class="card-head"><h3>Per iklan vs patokan</h3></div>
-    <table class="tbl"><thead><tr><th>Iklan</th><th class="r">Spend</th><th class="r">CTR</th><th class="r">CPC</th><th class="r">Biaya/LPV</th>
-      <th class="r">Klik WA</th><th class="r">Chat</th><th class="r">Closing</th><th class="r">CPA</th><th class="r">ROAS</th><th>Status</th></tr></thead>
+    <table class="tbl"><thead><tr><th>Iklan</th><th class="r">Spend</th><th class="r">CTR</th><th class="r">OCLP</th><th class="r">Contact</th>
+      <th class="r">Chat</th><th class="r">Purchase</th><th class="r">CPA</th><th class="r">ROAS</th><th>Status</th></tr></thead>
     <tbody id="perAd"></tbody></table>
   </div>`;
 
+  // ---------------------------------------------------------- kalkulator
+  const field = ([k, lbl, u, hint], v) => `<label><span>${lbl}</span><div class="unit"><input name="${k}" inputmode="decimal" value="${fmt(v, u)}"><b>${u}</b></div><small class="hint">${hint}</small></label>`;
+  const drawFields = () => {
+    $('#bizF', el).innerHTML = BIZ.map((f) => field(f, T[f[0]])).join('');
+    $('#stepF', el).innerHTML = STEPS[T.mode].map(([k, lbl, rumus, hint]) => field([k, `${lbl} = ${rumus}`, '%', hint], T[k])).join('');
+    el.querySelectorAll('#mode button').forEach((b) => b.classList.toggle('on', b.dataset.m === T.mode));
+  };
   const read = () => {
-    const f = $('#calc', el); const o = {};
-    FIELDS.forEach(([k]) => { o[k] = Number(String(f[k].value).replace(/\./g, '').replace(',', '.')) || 0; });
-    // harga & budget diketik dengan titik ribuan; persen boleh koma
-    o.harga = Number(String(f.harga.value).replace(/\D/g, '')) || 0;
-    o.budget = Number(String(f.budget.value).replace(/\D/g, '')) || 0;
-    return o;
+    const f = $('#calc', el);
+    [...BIZ, ...STEPS[T.mode]].forEach(([k, , u]) => {
+      const raw = String(f[k]?.value ?? '');
+      T[k] = u === 'Rp' ? Number(raw.replace(/\D/g, '')) || 0 : Number(raw.replace(/\./g, '').replace(',', '.')) || 0;
+    });
   };
 
-  const draw = () => {
-    const tg = read();
-    const H = hitung(tg);
+  const drawTarget = () => {
+    const H = hitung(T);
+    const st = H.st;
+    const ok = H.cpaEst <= H.cpaT;
+    const maxLbl = T.mode === 'web'
+      ? ['Maks CPC (link)', 'Maks biaya per LPV', 'Maks biaya per klik WA', 'Maks biaya per chat', 'CPA target']
+      : ['Maks CPC (link)', 'Maks biaya per chat', 'CPA target'];
     $('#target', el).innerHTML = `
-      <div class="card-head flat"><h3>Patokan untuk Ads Manager</h3></div>
+      <div class="card-head flat"><h3>Hasil & patokan Ads Manager</h3></div>
       <div class="targets">
         ${tgt('Laba kotor per order', rp(H.laba), 'sebelum biaya iklan')}
-        ${tgt('CPA impas', rp(H.impas), 'di atas ini rugi', 'bad')}
-        ${tgt('CPA target', rp(H.cpa), `laba bersih ${rp(H.laba - H.cpa)}/order`, 'ok')}
-        ${tgt('Maks biaya per chat', rp(H.chat), `closing ${p1(tg.closing)}`)}
-        ${tgt('Maks biaya per klik WA', rp(H.wa), 'kolom Cost per contact')}
-        ${tgt('Maks biaya per LPV', rp(H.lpv), 'Cost per landing page view')}
-        ${tgt('Maks CPC (link)', rp(H.cpc), 'Cost per link click')}
-        ${tgt('Maks CPM', rp(H.cpm), `dengan CTR ${p1(tg.ctr)}`)}
+        ${tgt('CPA impas', rp(H.laba), 'di atas ini rugi', 'bad')}
+        ${tgt('CPA target', rp(H.cpaT), `laba bersih ${rp(H.laba - H.cpaT)}/order`, 'ok')}
+        ${tgt('CPA perkiraan', rpx(H.cpaEst), `${(H.perK).toFixed(2).replace('.', ',')} closing per 1.000 tayangan`, ok ? 'ok' : 'bad')}
       </div>
-      <div class="note ok" style="margin-top:12px"><div>Budget <b>${rp(tg.budget)}/hari</b> pada patokan ini ≈ <b>${H.closingHari.toFixed(1).replace('.', ',')} closing/hari</b>,
-        omzet ${rp(H.omzetHari)}, laba bersih setelah iklan ${rp(H.labaHari)}.</div></div>`;
-    drawFunnel(tg, H);
-    drawPerAd(H);
+      <div class="formula">CPA = CPM ÷ (1.000 × ${st.map(([, l]) => l).join(' × ')})<br>
+        = ${rp(T.cpm)} ÷ (1.000 × ${H.rates.map((r) => p1(r)).join(' × ')}) = <b>${rpx(H.cpaEst)}</b></div>
+      <h4 class="sub">Batas biaya per tahap (dari CPA target)</h4>
+      <table class="tbl compact"><tbody>
+        <tr><td>Maks CPM</td><td class="r"><b>${rp(H.cpmMax)}</b></td></tr>
+        ${[...H.max.slice(1), H.cpaT].map((v, i) => `<tr><td>${maxLbl[i]}</td><td class="r"><b>${rp(v)}</b></td></tr>`).join('')}
+      </tbody></table>
+      <h4 class="sub">${ok ? 'Sudah di bawah target. Batas aman tiap rasio:' : 'Supaya CPA = target, naikkan SALAH SATU rasio ini menjadi:'}</h4>
+      <table class="tbl compact"><tbody>${st.map(([k, l], i) => `<tr><td>${l}</td><td class="r">${p1(H.rates[i])} → <b class="${H.need[i] > 1 ? 'err-text' : ''}">${H.need[i] > 1 ? 'tidak mungkin (>100%)' : p1(H.need[i])}</b></td></tr>`).join('')}</tbody></table>
+      <div class="note ${ok ? 'ok' : 'warn'}" style="margin-top:12px"><div>Budget <b>${rp(T.budget)}/hari</b> ≈ <b>${H.closingHari.toFixed(1).replace('.', ',')} closing/hari</b>,
+        omzet ${rp(H.closingHari * T.harga)}, laba bersih setelah iklan ${rp(H.closingHari * (H.laba - (Number.isFinite(H.cpaEst) ? H.cpaEst : 0)))}.</div></div>`;
   };
 
-  const drawFunnel = (tg, H) => {
-    const steps = [
+  drawFields(); drawTarget();
+  $('#calc', el).oninput = () => { read(); drawTarget(); drawActual(); };
+  $('#mode', el).onclick = (e) => {
+    const b = e.target.closest('[data-m]'); if (!b) return;
+    read(); T.mode = b.dataset.m; drawFields(); drawTarget(); drawActual();
+  };
+  $('#calc', el).onsubmit = async (e) => {
+    e.preventDefault(); read();
+    try { await api.updateTenant(t.id, { target: { ...T } }); t.target = { ...T }; toast('Patokan tersimpan'); } catch (err) { toast(err.message, 'err'); }
+  };
+
+  // ---------------------------------------------------------- filter campaign / ad set / iklan
+  const camps = {}, sets = {}, adsMap = {};
+  insAll.forEach((r) => {
+    const cid = r.campaign_id || r.campaign_name || '-', aid = r.adset_id || r.adset_name || '-';
+    camps[cid] = r.campaign_name || cid;
+    sets[aid] = { name: r.adset_name || aid, c: cid };
+    adsMap[r.ad_id] = { name: r.ad_name || r.ad_id, a: aid, c: cid };
+  });
+  const opt = (obj, cur, all, keep = () => true) => `<option value="">${all}</option>` +
+    Object.entries(obj).filter(([k, v]) => keep(k, v)).sort((x, y) => String(x[1].name ?? x[1]).localeCompare(String(y[1].name ?? y[1])))
+      .map(([k, v]) => `<option value="${esc(k)}" ${k === cur ? 'selected' : ''}>${esc(v.name ?? v)}</option>`).join('');
+  // campaign CTWA: ada chat dimulai, tanpa landing page view
+  const agg = {};
+  insAll.forEach((r) => { const c = adsMap[r.ad_id].c; const a = (agg[c] ??= { ms: 0, lpv: 0 }); a.ms += r.msg_started || 0; a.lpv += r.lpv || 0; });
+  const ctwaCamp = new Set(Object.entries(agg).filter(([, a]) => a.ms > 0 && a.lpv === 0).map(([c]) => c));
+  Object.keys(camps).forEach((c) => { if (ctwaCamp.has(c)) camps[c] = camps[c] + ' (CTWA)'; });
+  const drawFilters = () => {
+    if (sel.c && !camps[sel.c]) sel = { c: '', a: '', d: '' };
+    $('#filters', el).innerHTML = `
+      <select data-f="c">${opt(camps, sel.c, 'Semua campaign')}</select>
+      <select data-f="a">${opt(sets, sel.a, 'Semua ad set', (k, v) => !sel.c || v.c === sel.c)}</select>
+      <select data-f="d">${opt(adsMap, sel.d, 'Semua iklan', (k, v) => (!sel.c || v.c === sel.c) && (!sel.a || v.a === sel.a))}</select>`;
+  };
+  $('#filters', el).onchange = (e) => {
+    const s = e.target.closest('select'); if (!s) return;
+    sel[s.dataset.f] = s.value;
+    if (s.dataset.f === 'c') { sel.a = ''; sel.d = ''; }
+    if (s.dataset.f === 'a') sel.d = '';
+    drawFilters(); drawActual();
+  };
+  drawFilters();
+
+  // ---------------------------------------------------------- funnel aktual
+  function drawActual() {
+    const H = hitung(T);
+    const filtered = !!(sel.c || sel.a || sel.d);
+    const insSel = insAll.filter((r) => {
+      const m = adsMap[r.ad_id];
+      return (!sel.c || m.c === sel.c) && (!sel.a || m.a === sel.a) && (!sel.d || r.ad_id === sel.d);
+    });
+    // Tanpa filter: funnel website saja (campaign CTWA punya alur berbeda, lihat dengan memilih campaign-nya)
+    const ins = filtered ? insSel : insSel.filter((r) => !ctwaCamp.has(adsMap[r.ad_id].c));
+    const adIds = new Set(ins.map((r) => r.ad_id));
+    const adClicks = clicks.filter((c) => (filtered ? c.ad_id && adIds.has(c.ad_id) : c.ad_id || c.fbc));
+    const ids = new Set(adClicks.map((c) => c.id));
+    const adLeads = leads.filter((l) => ids.has(l.click_id));
+    const paid = adLeads.filter((l) => l.paid_at);
+    const S = (k) => ins.reduce((s, r) => s + Number(r[k] || 0), 0);
+    const A = { S: S('spend'), I: S('impressions'), K: S('link_clicks'), L: S('lpv'), V: S('view_content'), MC: S('contact'),
+      MS: S('msg_started'), MP: S('purchase'), W: adClicks.length, C: adLeads.length, P: paid.length, O: paid.reduce((s, l) => s + (l.nilai || 0), 0) };
+    const isCtwa = A.MS > 0 && A.L === 0 && A.W === 0;
+    const Tm = { ...T, mode: isCtwa ? 'ctwa' : 'web' };
+    const Hm = hitung(Tm);
+    const P = isCtwa ? A.MP : A.P;
+    const steps = isCtwa ? [
       { k: 'Impresi', n: A.I, src: 'Meta' },
-      { k: 'Klik link', n: A.K, src: 'Meta', rate: div(A.K, A.I) * 100, tr: tg.ctr, rl: 'CTR', cost: div(A.S, A.K), max: H.cpc, cl: 'CPC' },
-      { k: 'Landing page view', n: A.L, src: 'Meta', rate: div(A.L, A.K) * 100, tr: tg.lpv, rl: 'dari klik', cost: div(A.S, A.L), max: H.lpv, cl: 'per LPV' },
-      { k: 'ViewContent', n: A.V, src: 'Meta' },
-      { k: 'Klik tombol WA', n: A.W, src: 'Aventra', rate: div(A.W, A.L) * 100, tr: tg.wa, rl: 'dari LPV', cost: div(A.S, A.W), max: H.wa, cl: 'per klik WA' },
-      { k: 'Chat masuk', n: A.C, src: 'Aventra', rate: div(A.C, A.W) * 100, tr: tg.chat, rl: 'dari klik WA', cost: div(A.S, A.C), max: H.chat, cl: 'per chat' },
-      { k: 'Closing', n: A.P, src: 'Aventra', rate: div(A.P, A.C) * 100, tr: tg.closing, rl: 'dari chat', cost: div(A.S, A.P), max: H.cpa, cl: 'CPA' },
+      { k: 'Klik link', n: A.K, src: 'Meta', l: 'CTR', r: div(A.K, A.I), t: Tm.wctr / 100, cost: div(A.S, A.K), max: Hm.max[1], cl: 'CPC' },
+      { k: 'Chat dimulai', n: A.MS, src: 'Meta', l: 'Chat', r: div(A.MS, A.K), t: Tm.wchat / 100, cost: div(A.S, A.MS), max: Hm.max[2], cl: 'per chat' },
+      { k: 'Purchase', n: A.MP, src: 'Meta (label WA)', l: 'Purchase', r: div(A.MP, A.MS), t: Tm.wpurchase / 100, cost: div(A.S, A.MP), max: Hm.cpaT, cl: 'CPA' },
+    ] : [
+      { k: 'Impresi', n: A.I, src: 'Meta' },
+      { k: 'Klik link', n: A.K, src: 'Meta', l: 'CTR', r: div(A.K, A.I), t: Tm.ctr / 100, cost: div(A.S, A.K), max: Hm.max[1], cl: 'CPC' },
+      { k: 'Landing page view', n: A.L, src: 'Meta', l: 'OCLP', r: div(A.L, A.K), t: Tm.oclp / 100, cost: div(A.S, A.L), max: Hm.max[2], cl: 'per LPV' },
+      { k: 'Contact (klik WA)', n: A.W, src: `Aventra${A.MC ? ` · Meta ${num(A.MC)}` : ''}`, l: 'Contact', r: div(A.W, A.L), t: Tm.contact / 100, cost: div(A.S, A.W), max: Hm.max[3], cl: 'per klik WA' },
+      { k: 'Chat masuk', n: A.C, src: 'Aventra', l: 'Chat', r: div(A.C, A.W), t: Tm.chat / 100, cost: div(A.S, A.C), max: Hm.max[4], cl: 'per chat' },
+      { k: 'Purchase', n: A.P, src: 'Aventra', l: 'Purchase', r: div(A.P, A.C), t: Tm.purchase / 100, cost: div(A.S, A.P), max: Hm.cpaT, cl: 'CPA' },
     ];
     const top = Math.max(1, ...steps.map((s) => s.n));
     $('#funnel', el).innerHTML = `
       <div class="fn-sum">
-        ${sum('Spend', A.S ? rp(A.S) : '-')}${sum('Omzet', rp(A.O))}${sum('ROAS', A.S ? (A.O / A.S).toFixed(2).replace('.', ',') + 'x' : '-')}
-        ${sum('CPM', A.I ? rp(A.S / A.I * 1000) : '-')}
+        ${sum('Jenis funnel', isCtwa ? 'CTWA' : 'Website')}${sum('Spend', A.S ? rp(A.S) : '-')}
+        ${sum('Purchase', num(P))}${sum('CPA', rpx(div(A.S, P)))}${sum('ROAS', A.S && A.O ? (A.O / A.S).toFixed(2).replace('.', ',') + 'x' : '-')}
+        ${sum('CPM', A.I ? rp(A.S / A.I * 1000) : '-')}${sum('Klik → purchase', p1(div(P, A.K)))}
       </div>
       <div class="fn">${steps.map((s) => {
         const w = s.n ? Math.max(2, Math.sqrt(s.n / top) * 100) : 0;
-        const rOk = Number.isFinite(s.rate) && s.tr != null ? s.rate >= s.tr : null;
+        const rOk = Number.isFinite(s.r) && s.t != null ? s.r >= s.t : null;
         const cOk = Number.isFinite(s.cost) && s.max != null ? s.cost <= s.max : null;
         return `<div class="fn-row">
           <div class="fn-lbl"><b>${s.k}</b><small class="muted">${s.src}</small></div>
           <b class="fn-n">${num(s.n)}</b>
           <div class="fn-bar"><i style="width:${w}%"></i></div>
-          <div class="fn-m">${s.rl ? `<span class="badge ${rOk === null ? '' : rOk ? 'ok' : 'bad'}">${s.rl} ${p1(s.rate)} <small>/ ${p1(s.tr)}</small></span>` : ''}</div>
+          <div class="fn-m">${s.l ? `<span class="badge ${rOk === null ? '' : rOk ? 'ok' : 'bad'}">${s.l} ${p1(s.r)} <small>/ ${p1(s.t)}</small></span>` : ''}</div>
           <div class="fn-m">${s.cl ? `<span class="badge ${cOk === null ? '' : cOk ? 'ok' : 'bad'}">${s.cl} ${rpx(s.cost)} <small>/ ${rp(s.max)}</small></span>` : ''}</div>
         </div>`;
       }).join('')}</div>
-      <p class="muted small">Lebar bar memakai skala akar supaya tahap kecil tetap terlihat. Angka di belakang "/" adalah patokan.</p>`;
+      ${!filtered && ctwaCamp.size ? `<div class="note warn" style="margin-bottom:8px"><div>${ctwaCamp.size} campaign CTWA tidak dimasukkan ke funnel website ini. Pilih campaign CTWA di filter untuk melihat funnelnya sendiri.</div></div>` : ''}
+      <p class="muted small">${isCtwa ? 'Funnel CTWA memakai data Meta: chat dimulai & purchase dari label WhatsApp Business.' : 'Contact, chat & purchase dihitung dari klik iklan yang tercatat di Aventra.'} Angka setelah "/" = patokan.</p>`;
 
-    // diagnosis: tahap pertama yang di bawah patokan
     const tips = {
-      'Klik link': 'CTR di bawah patokan → kreatif/hook kurang menarik. Uji 2–3 kreatif baru dengan hook 3 detik pertama berbeda.',
-      'Landing page view': 'Banyak klik tapi halaman tidak terbuka → landing page lambat di HP. Kompres gambar dan kurangi font/script.',
-      'Klik tombol WA': 'Halaman terbuka tapi jarang klik WA → penawaran/isi halaman kurang meyakinkan. Perjelas harga, testimoni, tombol WA di atas.',
-      'Chat masuk': 'Klik WA tapi tidak jadi chat → pesan otomatis terlalu panjang atau pelanggan ragu. Pendekkan template, tonjolkan kode promo.',
-      'Closing': 'Chat banyak tapi closing rendah → CS: kecepatan balas, script, follow up, dan jadwal terapis/teknisi.',
+      CTR: 'CTR rendah → kreatif/hook kurang menarik. Uji 2–3 kreatif baru dengan 3 detik pertama berbeda.',
+      OCLP: 'OCLP rendah → halaman lambat di HP atau klik nyasar. Kompres gambar, cek placement Audience Network.',
+      Contact: 'Contact rendah → isi halaman/penawaran kurang meyakinkan. Perjelas harga, testimoni, tombol WA di atas.',
+      Chat: isCtwa ? 'Chat dimulai rendah → pesan sambutan/ice breaker kurang menarik.' : 'Chat rendah → pelanggan batal kirim di WA, atau CS belum mencatat semua chat di Aventra.',
+      Purchase: 'Purchase rendah → CS: kecepatan balas, script, follow up, dan ketersediaan jadwal.',
     };
-    const bad = steps.find((s) => Number.isFinite(s.rate) && s.tr != null && s.rate < s.tr);
-    $('#diag', el).innerHTML = A.W + A.I === 0 ? '' : bad
-      ? `<div class="note bad"><div><b>Titik bocor terbesar: ${esc(bad.k)}</b><br>${tips[bad.k] || ''}</div></div>`
-      : '<div class="note ok"><div><b>Semua tahap memenuhi patokan.</b> Kalau CPA juga di bawah target, iklan siap di-scale 20–30% per 2–3 hari.</div></div>';
-  };
+    const bad = steps.find((s) => Number.isFinite(s.r) && s.t != null && s.r < s.t);
+    $('#diag', el).innerHTML = !A.I && !A.W ? '' : bad
+      ? `<div class="note bad"><div><b>Titik bocor terbesar: ${esc(bad.l)} (${p1(bad.r)} dari patokan ${p1(bad.t)})</b><br>${tips[bad.l] || ''}</div></div>`
+      : '<div class="note ok"><div><b>Semua tahap memenuhi patokan.</b> Kalau CPA juga di bawah target, siap di-scale 20–30% per 2–3 hari.</div></div>';
 
-  const drawPerAd = (H) => {
+    // per iklan
     const g = {};
-    const row = (id) => (g[id] ??= { name: '', S: 0, I: 0, K: 0, L: 0, W: 0, C: 0, P: 0, O: 0 });
-    ins.forEach((r) => { const x = row(r.ad_id); x.name = x.name || r.ad_name; x.S += Number(r.spend); x.I += r.impressions; x.K += r.link_clicks; x.L += r.lpv; });
-    const leadByClick = Object.fromEntries(adLeads.map((l) => [l.click_id, l]));
+    const row = (id) => (g[id] ??= { name: '', S: 0, I: 0, K: 0, L: 0, MS: 0, MP: 0, W: 0, C: 0, P: 0, O: 0 });
+    insSel.forEach((r) => { const x = row(r.ad_id); x.name = x.name || r.ad_name; x.S += Number(r.spend); x.I += r.impressions; x.K += r.link_clicks; x.L += r.lpv; x.MS += r.msg_started || 0; x.MP += r.purchase || 0; });
+    const lb = Object.fromEntries(adLeads.map((l) => [l.click_id, l]));
     adClicks.forEach((c) => {
       const x = row(c.ad_id || 'tanpa-id'); x.name = x.name || c.ad_name || c.utm_content || '(tanpa ID iklan)'; x.W++;
-      const l = leadByClick[c.id]; if (l) { x.C++; if (l.paid_at) { x.P++; x.O += l.nilai || 0; } }
+      const l = lb[c.id]; if (l) { x.C++; if (l.paid_at) { x.P++; x.O += l.nilai || 0; } }
     });
-    const list = Object.values(g).sort((a, b) => b.S - a.S || b.W - a.W);
-    $('#perAd', el).innerHTML = list.map((x) => {
-      const cpa = div(x.S, x.P);
+    $('#perAd', el).innerHTML = Object.values(g).sort((a, b) => b.S - a.S || b.W - a.W).map((x) => {
+      const ctwa = x.MS > 0 && !x.L && !x.W;
+      const pur = ctwa ? x.MP : x.P, cpa = div(x.S, pur);
       const st = !x.S ? '<span class="badge">tanpa data Meta</span>'
-        : !x.P ? (x.S > H.cpa * 2 ? '<span class="badge bad">Matikan? 2× CPA tanpa closing</span>' : '<span class="badge warn">Belum closing</span>')
-        : cpa <= H.cpa ? '<span class="badge ok">Winning</span>' : cpa <= H.impas ? '<span class="badge warn">Di atas target</span>' : '<span class="badge bad">Rugi</span>';
-      return `<tr><td data-l="Iklan" class="ad"><b>${esc(x.name)}</b></td>
-        <td class="r" data-l="Spend">${x.S ? rp(x.S) : '-'}</td><td class="r" data-l="CTR">${p1(div(x.K, x.I) * 100)}</td>
-        <td class="r" data-l="CPC">${rpx(div(x.S, x.K))}</td><td class="r" data-l="Biaya/LPV">${rpx(div(x.S, x.L))}</td>
-        <td class="r" data-l="Klik WA">${num(x.W)}</td><td class="r" data-l="Chat">${num(x.C)}</td><td class="r" data-l="Closing">${num(x.P)}</td>
-        <td class="r" data-l="CPA">${rpx(cpa)}</td><td class="r" data-l="ROAS">${x.S ? (x.O / x.S).toFixed(2).replace('.', ',') + 'x' : '-'}</td>
+        : !pur ? (x.S > H.cpaT * 2 ? '<span class="badge bad">Matikan? 2× CPA tanpa purchase</span>' : '<span class="badge warn">Belum purchase</span>')
+        : cpa <= H.cpaT ? '<span class="badge ok">Winning</span>' : cpa <= H.laba ? '<span class="badge warn">Di atas target</span>' : '<span class="badge bad">Rugi</span>';
+      return `<tr><td data-l="Iklan" class="ad"><b>${esc(x.name)}</b>${ctwa ? ' <span class="tag">CTWA</span>' : ''}</td>
+        <td class="r" data-l="Spend">${x.S ? rp(x.S) : '-'}</td><td class="r" data-l="CTR">${p1(div(x.K, x.I))}</td>
+        <td class="r" data-l="OCLP">${ctwa ? '-' : p1(div(x.L, x.K))}</td><td class="r" data-l="Contact">${ctwa ? '-' : p1(div(x.W, x.L))}</td>
+        <td class="r" data-l="Chat">${ctwa ? p1(div(x.MS, x.K)) : p1(div(x.C, x.W))}</td>
+        <td class="r" data-l="Purchase">${num(pur)} <small class="muted">${ctwa ? p1(div(x.MP, x.MS)) : p1(div(x.P, x.C))}</small></td>
+        <td class="r" data-l="CPA">${rpx(cpa)}</td><td class="r" data-l="ROAS">${x.S && x.O ? (x.O / x.S).toFixed(2).replace('.', ',') + 'x' : '-'}</td>
         <td data-l="Status">${st}</td></tr>`;
-    }).join('') || '<tr><td colspan="11" class="empty">Belum ada data</td></tr>';
-  };
+    }).join('') || '<tr><td colspan="10" class="empty">Belum ada data</td></tr>';
+  }
+  drawActual();
 
-  draw();
-  $('#calc', el).oninput = draw;
-  $('#calc', el).onsubmit = async (e) => {
-    e.preventDefault();
-    const v = read();
-    try { await api.updateTenant(t.id, { target: v }); t.target = v; toast('Patokan tersimpan'); } catch (err) { toast(err.message, 'err'); }
-  };
   const sb = $('#sync', el);
   if (sb) sb.onclick = async () => {
     sb.disabled = true; sb.lastChild.textContent = 'Menyinkron…';
