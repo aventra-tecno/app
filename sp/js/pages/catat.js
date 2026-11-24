@@ -2,6 +2,7 @@ import { supa, rpc } from '../supa.js';
 import { store } from '../store.js';
 import { esc, rp, num, fmtTime, fmtDate, todayStr, addDays, on, toast, toastErr, icon, emptyState, confirmBox, promptBox, statusTag, beep, copyBtn } from '../ui.js';
 import { scanBox, bindScan } from '../scanner.js';
+import { bindProductSearch } from '../daftar-file.js';
 
 // Catat pesanan tanpa SKU marketplace:
 // 1) pilih toko  2) scan resi  3) scan setiap barang (kode dari pricelist WIN)
@@ -29,6 +30,8 @@ export default {
     if (!stores.some((s) => s.id === storeId)) storeId = null;
     let order = null;       // pesanan yang sedang dicatat
     let mode = 'resi';      // 'resi' | 'barang'
+    // 2.57 cara input barang: 'scan' (bawaan) atau 'cari' (ketik nama barang)
+    let itemMode = (() => { try { return localStorage.getItem('catat-item-mode') || 'scan'; } catch (_) { return 'scan'; } })();
 
     el.innerHTML = `<div class="stack">
       <section class="card stack" id="stores">
@@ -38,7 +41,9 @@ export default {
       <section class="card stack" id="scanwrap">
         <div class="ctx-bar" id="ctx"></div>
         <div class="row between wrap"><h2 class="sec-title" id="steptitle"></h2><button class="btn btn-sm hidden" id="next">${icon('check', 16)} Selesai, resi berikutnya</button></div>
-        ${scanBox('sb', 'Scan resi')}
+        <div class="chips hidden" id="imode" role="tablist" aria-label="Cara input barang"><button class="chip" data-imode="scan">${icon('scan', 15)} Scan barcode</button><button class="chip" data-imode="cari">${icon('search', 15)} Cari nama barang</button></div>
+        <div id="sbwrap">${scanBox('sb', 'Scan resi')}</div>
+        <div class="stack s8 hidden" id="srch"><input class="input" id="srchin" placeholder="Ketik nama / kode barang, misal: panel vario hitam" autocomplete="off" enterkeyhint="search"><div id="srchhint"></div></div>
         <div id="cur"></div>
       </section>
       ${kg ? '<details class="card meja-card" id="meja"></details>' : `<div class="alert blue small">Barang yang <b>ada di rak langsung diambil</b> (stok berkurang) supaya cepat dipacking. <b>Semua barang tetap dibeli di WIN</b> lewat menu Beli WIN. Saat sopir sampai dan barang di-scan di Terima barang WIN: kalau barangnya ada, pesanan siap dikirim dan rak terisi lagi. Kalau WIN kosong, pesanan otomatis <b>cancel</b> dan barang rak dikembalikan.</div>`}
@@ -72,11 +77,22 @@ export default {
       el.querySelector('#sb').closest('.scanwrap').dataset.ph = inp.placeholder;
       el.querySelector('#next').classList.toggle('hidden', m !== 'barang');
       el.querySelector('#scanwrap').classList.toggle('mode-barang', m === 'barang');
+      paintItemMode();
     };
+    function paintItemMode() {
+      const cari = mode === 'barang' && itemMode === 'cari';
+      el.querySelector('#imode').classList.toggle('hidden', mode !== 'barang');
+      el.querySelectorAll('[data-imode]').forEach((b) => b.classList.toggle('on', b.dataset.imode === itemMode));
+      el.querySelector('#sbwrap').classList.toggle('hidden', cari);
+      el.querySelector('#srch').classList.toggle('hidden', !cari);
+      if (el.querySelector('#steptitle')) el.querySelector('#steptitle').textContent = mode === 'resi' ? '2. Scan resi' : cari ? '3. Cari barang' : '3. Scan barang';
+    }
 
     const paintCur = async () => {
       const box = el.querySelector('#cur');
       if (!order) { box.innerHTML = storeId ? '' : '<div class="alert yellow small">Pilih toko dulu sebelum scan resi.</div>'; return; }
+      const hint = el.querySelector('#srchhint');
+      if (hint) hint.innerHTML = order.shopee?.length && isOpen(order.status) ? `<div class="xs muted">Isi pesanan Shopee, ketuk untuk mencari:</div><div class="chips">${order.shopee.map((l) => `<button class="chip" data-shint="${esc(String(l.name).replace(/\[.*?\]|\(.*?\)/g, ' ').replace(/[^\w\s-]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 4).join(' '))}">×${l.qty} ${esc(String(l.name).slice(0, 40))}</button>`).join('')}</div>` : '';
       const { data: items } = await supa.from('order_items').select('id, name, sku, qty, price, rack_qty, ready_qty, meja_qty, po_id, win_ok, products(rack_code, stock)').eq('order_id', order.id).order('id');
       const total = (items || []).reduce((a, i) => a + i.qty * Number(i.price || 0), 0);
       const editable = isOpen(order.status);
@@ -93,7 +109,7 @@ export default {
             <div class="right">${editable && !i.po_id ? `<div class="qty-step"><button class="btn btn-ghost btn-sm" data-undo="${i.id}" aria-label="Kurangi 1 (kembali ke stok)">−</button><span class="qs-n">${i.qty}</span><button class="btn btn-ghost btn-sm" data-plus="${esc(i.sku || '')}" aria-label="Tambah 1">+</button></div>` : `<b style="font-size:18px">×${i.qty}</b>`}<div class="xs muted">${rp(i.price)}</div></div></div>`).join('')}</div>
           <div class="line-row total"><span>${items.reduce((a, i) => a + i.qty, 0)} barang</span><span>${rp(total)}</span></div>` : '<div class="muted small" style="margin-top:8px">Belum ada barang. Scan kode barang sekarang.</div>'}
         ${editable || canDel(order) ? `<div class="row wrap" style="margin-top:8px">${editable ? '<button class="btn btn-ghost btn-sm" id="cancelord" style="color:var(--red)">Batalkan pesanan ini</button>' : ''}${canDel(order) ? `<button class="btn btn-ghost btn-sm" id="delord" style="color:var(--red)">${icon('x', 15)} Hapus resi</button>` : ''}</div>` : ''}
-        ${editable && order.status === 'baru' ? '<div class="xs muted" style="margin-top:6px">Tekan <b>Enter</b> di kolom scan (kosong) untuk menyelesaikan resi ini.</div>' : ''}
+        ${editable && order.status === 'baru' ? `<div class="xs muted" style="margin-top:6px">Tekan <b>Enter</b> di kolom ${itemMode === 'cari' ? 'cari' : 'scan'} (kosong) untuk menyelesaikan resi ini.</div>` : ''}
         ${order.auto_kirim && order.status === 'dikirim' ? '<div class="xs muted" style="margin-top:6px">Langsung terkirim (packing dilewati). Masih bisa dibuka lagi / dihapus kalau salah.</div>' : ''}
         ${kg && order.entry === 'scan' && (order.status === 'siap_packing' || (order.status === 'dikirim' && order.auto_kirim)) && !order.packed_at ? `<div class="row wrap" style="margin-top:8px"><button class="btn btn-sm" id="reopen">Buka lagi untuk diperbaiki</button></div>` : ''}
       </div>`;
@@ -163,6 +179,25 @@ export default {
       return r;
     };
 
+    // 2.57 mode cari: pilih barang dari hasil pencarian = sama seperti scan kodenya
+    bindProductSearch(el.querySelector('#srchin'), async (p) => {
+      const r = await onScan(p.sku);
+      toast(`${r.ok ? '✓' : '✗'} ${r.title || p.name}${r.info ? ' · ' + r.info : ''}`, r.ok ? 'ok' : 'err');
+      keepTop();
+    });
+    el.querySelector('#srchin').addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const first = el.querySelector('#srch .ps-item');
+      if (e.target.value.trim()) { first?.click(); return; }   // Enter = pilih hasil teratas
+      if (order) el.querySelector('#next').click();            // Enter di kolom kosong = selesai resi
+    });
+    on(el, 'click', '[data-imode]', (e, b) => {
+      itemMode = b.dataset.imode; try { localStorage.setItem('catat-item-mode', itemMode); } catch (_) {}
+      paintItemMode();
+      (itemMode === 'cari' ? el.querySelector('#srchin') : el.querySelector('#sb input'))?.focus({ preventScroll: true });
+    });
+    on(el, 'click', '[data-shint]', (e, b) => { const i = el.querySelector('#srchin'); i.value = b.dataset.shint; i.dispatchEvent(new Event('input')); i.focus({ preventScroll: true }); });
     bindScan(el, 'sb', async (code) => {
       try { return await onScan(code); } finally { keepTop(); }
     });
