@@ -78,6 +78,23 @@ const real = {
     const c = await client(); return must(await c.from('leads').select('*').in('click_id', ids));
   },
   async deleteTestData(tid) { const c = await client(); return must(await c.rpc('hapus_data_tes', { p_tenant: tid })); },
+  async insights(tid, fromDate, toDate) {
+    const c = await client();
+    return must(await c.from('ad_insights').select('*').eq('tenant_id', tid).gte('tanggal', fromDate).lte('tanggal', toDate).limit(5000));
+  },
+  async adsTokenStatus(tid) { const c = await client(); return must(await c.rpc('status_ads_token', { p_tenant: tid })); },
+  async saveAdsToken(tid, token) { const c = await client(); must(await c.rpc('simpan_ads_token', { p_tenant: tid, p_token: token })); },
+  async syncMeta(tid, since, until) {
+    const c = await client(); const s = (await c.auth.getSession()).data.session;
+    const r = await fetch(`${FUNCTIONS_URL}/meta-sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s.access_token}`, apikey: SUPABASE_ANON_KEY },
+      body: JSON.stringify({ tenant_id: tid, since, until }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Gagal sinkron');
+    return j;
+  },
   async saveToken(tid, token) { const c = await client(); must(await c.rpc('simpan_token', { p_tenant: tid, p_token: token })); },
   async keys(tid) { const c = await client(); return must(await c.from('api_keys').select('id,nama,prefix,revoked,last_used,created_at').eq('tenant_id', tid).order('created_at', { ascending: false })); },
   async createKey(tid, nama) { const c = await client(); return must(await c.rpc('buat_api_key', { p_tenant: tid, p_nama: nama })); },
@@ -131,7 +148,23 @@ const D = (() => {
   clicks.unshift({ id: 'ctes', tenant_id: tid, kode: 'MR-TES9K2', wa_number_id: 'w1', fbclid: 'TESA81B', fbc: 'fb.1.x.TESA81B', fbp: 'fb.1.x.z',
     utm_content: 'TES-AVENTRA', page_url: 'https://mahyrarelaksia.com/mahyra-sby', contact_sent: true, created_at: new Date(now - 2 * 60e3).toISOString() });
   const keys = [{ id: 'k1', nama: 'ERP Mahyra', prefix: 'ak_3f9a21c', revoked: false, last_used: new Date(now - 2 * 3600e3).toISOString(), created_at: new Date(now - 9 * 864e5).toISOString() }];
-  return { tenant, wa, clicks, leads, events, keys, token: new Date(now - 5 * 864e5).toISOString(), session: { user: { email: 'akhmad@contoh.id' } } };
+  const insights = [];
+  const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  for (let d = 0; d < 30; d++) {
+    const day = ymd(new Date(now - d * 864e5));
+    ads.forEach((ad, i) => {
+      const spend = Math.round(28000 + rnd() * 18000);
+      const imp = Math.round(spend / (22 + rnd() * 10) * 1000 / 1000);
+      const ctr = [0.016, 0.011, 0.007][i] * (0.8 + rnd() * 0.4);
+      const k = Math.round(imp * ctr);
+      const lpv = Math.round(k * (0.6 + rnd() * 0.2));
+      insights.push({ tenant_id: tid, tanggal: day, ad_id: ad.ad_id, ad_name: ad.ad_name, campaign_name: ad.campaign_name,
+        spend, impressions: imp, reach: Math.round(imp * 0.8), link_clicks: k, lpv, view_content: Math.round(lpv * 0.95), contact: 0, purchase: 0,
+        purchase_value: 0, synced_at: new Date(now - 40 * 60e3).toISOString() });
+    });
+  }
+  tenant.ad_account_id = '1234567890';
+  return { tenant, wa, clicks, leads, events, keys, insights, adsToken: new Date(now - 3 * 864e5).toISOString(), token: new Date(now - 5 * 864e5).toISOString(), session: { user: { email: 'akhmad@contoh.id' } } };
 })();
 const inRange = (iso, f, t) => iso >= f && iso < t;
 const sortDesc = (a) => a.slice().sort((x, y) => (x.created_at < y.created_at ? 1 : -1));
@@ -165,6 +198,10 @@ const demo = {
   async tokenStatus() { return D.token; },
   async testClicks() { return sortDesc(D.clicks.filter((c) => (c.fbclid || '').startsWith('TES'))); },
   async leadsForClicks(ids) { return D.leads.filter((l) => ids.includes(l.click_id)); },
+  async insights(t, f, to) { return D.insights.filter((r) => r.tanggal >= f && r.tanggal <= to); },
+  async adsTokenStatus() { return D.adsToken; },
+  async saveAdsToken(t, v) { D.adsToken = v ? new Date().toISOString() : null; },
+  async syncMeta() { await wait(); return { ok: true, baris: D.insights.length, spend: D.insights.reduce((s, r) => s + r.spend, 0) }; },
   async deleteTestData() {
     const ids = D.clicks.filter((c) => (c.fbclid || '').startsWith('TES')).map((c) => c.id);
     D.leads = D.leads.filter((l) => !ids.includes(l.click_id)); D.clicks = D.clicks.filter((c) => !ids.includes(c.id)); return ids.length;

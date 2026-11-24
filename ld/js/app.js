@@ -11,6 +11,7 @@ export const state = {
 const PAGES = [
   { id: 'ringkasan', label: 'Ringkasan', icon: 'home', load: () => import('./pages/ringkasan.js') },
   { id: 'leads', label: 'Leads & Closing', icon: 'users', load: () => import('./pages/leads.js') },
+  { id: 'funnel', label: 'Funnel & Target', icon: 'funnel', load: () => import('./pages/funnel.js') },
   { id: 'klik', label: 'Klik Tombol WA', icon: 'click', load: () => import('./pages/klik.js') },
   { id: 'log', label: 'Log Event Meta', icon: 'pulse', load: () => import('./pages/log.js') },
   { id: 'pengaturan', label: 'Pengaturan', icon: 'gear', load: () => import('./pages/pengaturan.js'), admin: true },
@@ -128,7 +129,7 @@ async function route() {
   const page = PAGES.find((p) => p.id === id && (!p.admin || state.role !== 'cs')) || PAGES[0];
   $$('.side-nav a').forEach((a) => a.classList.toggle('active', a.dataset.page === page.id));
   $('#pageTitle').textContent = page.label;
-  $('#periodSeg').style.visibility = ['ringkasan', 'leads', 'klik'].includes(page.id) ? 'visible' : 'hidden';
+  $('#periodSeg').style.visibility = ['ringkasan', 'leads', 'klik', 'funnel'].includes(page.id) ? 'visible' : 'hidden';
   const el = $('#page');
   const my = ++seq;
   el.innerHTML = '<div class="loading">Memuat…</div>';

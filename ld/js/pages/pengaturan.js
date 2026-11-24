@@ -5,7 +5,7 @@ import { esc, waktu, jam, modal, toast, icon, copyText, $, $$ } from '../ui.js';
 import { loadTenantData } from '../app.js';
 
 let tab = 'bisnis';
-const TABS = { bisnis: 'Bisnis', pixel: 'Pixel & Token', wa: 'Nomor WA', pasang: 'Pasang di Landing Page', tes: 'Tes Pemasangan', api: 'API untuk ERP' };
+const TABS = { bisnis: 'Bisnis', pixel: 'Pixel & Token', meta: 'Meta Ads', wa: 'Nomor WA', pasang: 'Pasang di Landing Page', tes: 'Tes Pemasangan', api: 'API untuk ERP' };
 
 export async function render(el, ctx) {
   el.innerHTML = `<div class="tabs">${Object.entries(TABS).map(([k, v]) => `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${v}</button>`).join('')}</div><div id="tabBody"></div>`;
@@ -14,7 +14,7 @@ export async function render(el, ctx) {
     tab = b.dataset.t; clearInterval(tesTimer); $$('.tabs button', el).forEach((x) => x.classList.toggle('on', x === b)); draw();
   };
   const body = $('#tabBody', el);
-  const draw = () => ({ bisnis, pixel, wa, pasang, tes, api: apiTab })[tab](body, ctx);
+  const draw = () => ({ bisnis, pixel, meta: metaAds, wa, pasang, tes, api: apiTab })[tab](body, ctx);
   draw();
 }
 
@@ -79,6 +79,49 @@ async function pixel(el, { state }) {
   };
   const h = $('#hapus', el);
   if (h) h.onclick = async () => { if (!confirm('Hapus token? Event berhenti terkirim ke Meta.')) return; await api.saveToken(t.id, ''); pixel(el, { state }); };
+}
+
+// ---------------------------------------------------------------- Meta Ads (v1.2.0)
+async function metaAds(el, { state }) {
+  const t = state.tenant;
+  const ts = await api.adsTokenStatus(t.id);
+  el.innerHTML = `<div class="grid2 g-top">
+  <form class="card form" id="f">
+    <label>ID akun iklan<input name="acct" inputmode="numeric" value="${esc(t.ad_account_id || '')}" placeholder="1234567890 (tanpa act_)"></label>
+    <label>Token Meta Ads (izin ads_read)
+      <input name="token" type="password" autocomplete="off" placeholder="${ts ? 'Token tersimpan · isi untuk mengganti' : 'Tempel token system user'}"></label>
+    <p class="small ${ts ? 'ok-text' : 'err-text'}">${ts ? `Token tersimpan sejak ${waktu(ts)}.` : 'Token belum diisi.'}</p>
+    <div class="btn-row"><button class="btn primary">Simpan</button><button type="button" class="btn" id="tes">Simpan & sinkron 7 hari</button></div>
+    <div id="hasil"></div>
+  </form>
+  <div class="card help">
+    <h3>Cara mengambil token (sekali, tidak kedaluwarsa)</h3>
+    <ol class="small">
+      <li>Business Settings → <b>Users → System users</b> → Add (peran Admin).</li>
+      <li><b>Assign assets</b>: pilih <b>akun iklan</b> bisnis ini (View performance cukup) dan app Meta Anda.</li>
+      <li><b>Generate new token</b> → pilih app → centang izin <code>ads_read</code> → masa berlaku <b>Never</b>.</li>
+      <li>Salin token, tempel di sini, lalu Simpan.</li>
+      <li>ID akun iklan: Ads Manager → pojok kiri atas, angka setelah <code>act=</code> di alamat browser.</li>
+    </ol>
+    <p class="muted small">Data yang ditarik: spend, impresi, klik link, landing page view, ViewContent, Contact, Purchase per iklan per hari. Dipakai di menu <b>Funnel & Target</b>.</p>
+  </div></div>`;
+  const f = $('#f', el);
+  const simpan = async () => {
+    const acct = f.acct.value.replace(/\D/g, '') || null;
+    await api.updateTenant(t.id, { ad_account_id: acct }); t.ad_account_id = acct;
+    if (f.token.value.trim()) await api.saveAdsToken(t.id, f.token.value.trim());
+  };
+  f.onsubmit = async (e) => { e.preventDefault(); try { await simpan(); toast('Tersimpan'); metaAds(el, { state }); } catch (err) { toast(err.message, 'err'); } };
+  $('#tes', el).onclick = async () => {
+    const out = $('#hasil', el);
+    out.innerHTML = '<div class="loading">Menyinkron…</div>';
+    try {
+      await simpan();
+      const d = (n) => { const x = new Date(Date.now() - n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+      const r = await api.syncMeta(t.id, d(6), d(0));
+      out.innerHTML = `<div class="note ok"><div>Berhasil: ${r.baris} baris data, spend ${Number(r.spend).toLocaleString('id-ID')}. Buka menu <b>Funnel & Target</b>.</div></div>`;
+    } catch (err) { out.innerHTML = `<div class="note bad"><div>${esc(err.message)}</div></div>`; }
+  };
 }
 
 // ---------------------------------------------------------------- Nomor WA
@@ -159,7 +202,7 @@ async function tes(el, { state }) {
   const t = state.tenant;
   const lpKey = `ld_lp_${t.id}`;
   const lp = localStorage.getItem(lpKey) || '';
-  el.innerHTML = `<div class="grid2 top">
+  el.innerHTML = `<div class="grid2 g-top">
     <div class="stack">
       <div class="card">
         <h3><span class="num">1</span>Mode tes Meta</h3>
