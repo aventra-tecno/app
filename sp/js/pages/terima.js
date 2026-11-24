@@ -2,6 +2,7 @@ import { supa, rpc } from '../supa.js';
 import { store } from '../store.js';
 import { esc, on, toast, toastErr, emptyState, skeleton, icon, beep, confirmBox, fmtDateTime, chips, todayStr, addDays, copyBtn, rp, modal } from '../ui.js';
 import { scanBox, bindScan } from '../scanner.js';
+import { bindProductSearch } from '../daftar-file.js';
 import { poTag } from './beli.js';
 
 export default {
@@ -49,7 +50,7 @@ async function scanPO(el, id) {
   if (p.direct) return scanDirect(el, id, p, load);
   el.innerHTML = `<div class="stack">
     <div class="row between wrap"><a href="#/terima" class="btn btn-ghost btn-sm">${icon('back', 16)} Kembali</a><div class="row"><b class="mono">${esc(p.code)}</b>${poTag(p.status)}</div></div>
-    <div class="card stack" id="scan">${scanBox('sb', 'Scan barcode barang')}<div id="last" aria-live="polite"></div></div>
+    <div class="card stack" id="scan"><div class="chips" id="imode" role="tablist" aria-label="Cara input barang"><button class="chip" data-imode="scan">${icon('scan', 15)} Scan barcode</button><button class="chip" data-imode="cari">${icon('search', 15)} Cari nama barang</button></div><div id="sbwrap">${scanBox('sb', 'Scan barcode barang')}</div><div class="stack s8 hidden" id="srch"><input class="input" id="srchin" placeholder="Ketik nama / kode barang, misal: panel vario hitam" autocomplete="off" enterkeyhint="search"></div><div id="last" aria-live="polite"></div></div>
     <div class="card stack" id="items"></div>
     <div class="row"><button class="btn btn-danger grow" id="short">Lapor kurang & selesai</button><button class="btn btn-primary btn-lg grow" id="done">Selesai terima</button></div>
   </div>`;
@@ -65,7 +66,7 @@ async function scanPO(el, id) {
       }).join('')}`;
   };
   paint();
-  bindScan(el, 'sb', async (code) => {
+  const onCode = async (code) => {
     try {
       const r = await rpc('receive_scan', { p_po: id, p_sku: code });
       const last = el.querySelector('#last');
@@ -76,7 +77,9 @@ async function scanPO(el, id) {
       ({ data: p } = await load()); paint();
       return { ok: true, title: r.name, info: `${r.received}/${r.qty} → ${dest}` };
     } catch (e) { toastErr(e); return false; }
-  });
+  };
+  bindScan(el, 'sb', onCode);
+  itemSearch(el, onCode);
   const finish = async (short) => {
     const q = p.po_items.reduce((a, i) => a + i.qty, 0), r = p.po_items.reduce((a, i) => a + i.received_qty, 0);
     if (r < q && !(await confirmBox('Barang kurang ' + (q - r), 'Kekurangan dicatat dan dilaporkan ke owner. Beli lagi di WIN untuk barang yang kurang.', 'Selesai dengan kekurangan'))) return;
@@ -97,7 +100,7 @@ async function scanDirect(el, id, p, load) {
   el.innerHTML = `<div class="stack">
     <div class="row between wrap"><a href="#/terima" class="btn btn-ghost btn-sm">${icon('back', 16)} Kembali</a><div class="row"><b class="mono">${esc(p.code)}</b>${open ? '<span class="tag yellow">Sedang di-scan</span>' : poTag(p.status)}</div></div>
     ${open ? `<div class="row terima-act"><button class="btn btn-danger" id="cancel">Batalkan</button><button class="btn btn-primary btn-lg grow" id="done">${icon('check', 18)} Selesai terima <span id="donen"></span></button></div>
-      <div class="card stack" id="scan">${scanBox('sb', 'Scan barang WIN yang datang')}<div class="xs muted">Angka di belakang kode = isi kolian: <span class="mono">…AA1</span> / <span class="mono">…AA</span> = 1 pcs, <span class="mono">…AA9</span> = 9 pcs.</div><div id="last" aria-live="polite"></div></div>` : ''}
+      <div class="card stack" id="scan"><div class="chips" id="imode" role="tablist" aria-label="Cara input barang"><button class="chip" data-imode="scan">${icon('scan', 15)} Scan barcode</button><button class="chip" data-imode="cari">${icon('search', 15)} Cari nama barang</button></div><div id="sbwrap">${scanBox('sb', 'Scan barang WIN yang datang')}</div><div class="stack s8 hidden" id="srch"><input class="input" id="srchin" placeholder="Ketik nama / kode barang, misal: panel vario hitam" autocomplete="off" enterkeyhint="search"></div><div class="xs muted">Angka di belakang kode = isi kolian: <span class="mono">…AA1</span> / <span class="mono">…AA</span> = 1 pcs, <span class="mono">…AA9</span> = 9 pcs.</div><div id="last" aria-live="polite"></div></div>` : ''}
     <div class="card stack" id="items"></div>
   </div>`;
   const paint = () => {
@@ -113,7 +116,7 @@ async function scanDirect(el, id, p, load) {
   if (!open) return;
   const reload = async () => { ({ data: p } = await load()); paint(); paintN(); };
   const setQ = async (itemId, q) => { try { await rpc('win_direct_set', { p_item: itemId, p_qty: q }); await reload(); } catch (err) { toastErr(err); } };
-  bindScan(el, 'sb', async (code) => {
+  const onCode = async (code) => {
     try {
       const r = await rpc('win_direct_scan', { p_po: id, p_code: code });
       const last = el.querySelector('#last');
@@ -122,7 +125,9 @@ async function scanDirect(el, id, p, load) {
       await reload();
       return { ok: true, title: r.name, info: `${r.add > 1 ? '+' + r.add + ' kolian · ' : ''}jadi ${r.qty} · total ${r.total} barang` };
     } catch (e) { toastErr(e); return false; }
-  });
+  };
+  bindScan(el, 'sb', onCode);
+  itemSearch(el, onCode);
   on(el, 'click', '[data-undo]', async (e, b) => { try { await rpc('win_direct_undo', { p_item: +b.dataset.undo }); await reload(); } catch (err) { toastErr(err); } });
   on(el, 'click', '[data-plus]', (e, b) => { const it = p.po_items.find((i) => i.id === +b.dataset.plus); if (it) setQ(it.id, it.received_qty + 1); });
   on(el, 'click', '[data-setq]', async (e, b) => {
@@ -208,4 +213,26 @@ function report(el) {
     e.target.disabled = false;
   };
   load();
+}
+
+// 2.58 pilihan input barang: Scan barcode (bawaan) atau Cari nama barang — pilih dari hasil cari = sama seperti scan kodenya
+function itemSearch(el, onCode) {
+  let mode = (() => { try { return localStorage.getItem('terima-item-mode') || 'scan'; } catch (_) { return 'scan'; } })();
+  const paint = () => {
+    el.querySelectorAll('[data-imode]').forEach((b) => b.classList.toggle('on', b.dataset.imode === mode));
+    el.querySelector('#sbwrap')?.classList.toggle('hidden', mode === 'cari');
+    el.querySelector('#srch')?.classList.toggle('hidden', mode !== 'cari');
+  };
+  const inp = el.querySelector('#srchin'); if (!inp) return;
+  bindProductSearch(inp, async (p) => {
+    const r = await onCode(p.sku);
+    if (r && r.ok === false) toast(r.title || 'Gagal', 'err');
+    else if (r) toast(`✓ ${r.title}${r.info ? ' · ' + r.info : ''}`, 'ok');
+  });
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter' && inp.value.trim()) { e.preventDefault(); el.querySelector('#srch .ps-item')?.click(); } });
+  on(el, 'click', '[data-imode]', (e, b) => {
+    mode = b.dataset.imode; try { localStorage.setItem('terima-item-mode', mode); } catch (_) {}
+    paint(); (mode === 'cari' ? inp : el.querySelector('#sb input'))?.focus({ preventScroll: true });
+  });
+  paint();
 }

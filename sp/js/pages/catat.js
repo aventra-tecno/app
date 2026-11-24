@@ -1,6 +1,6 @@
-import { supa, rpc } from '../supa.js';
+import { supa, rpc, fetchAll } from '../supa.js';
 import { store } from '../store.js';
-import { esc, rp, num, fmtTime, fmtDate, todayStr, addDays, on, toast, toastErr, icon, emptyState, confirmBox, promptBox, statusTag, beep, copyBtn } from '../ui.js';
+import { esc, rp, num, fmtTime, fmtDate, todayStr, addDays, on, toast, toastErr, icon, emptyState, confirmBox, promptBox, statusTag, beep, copyBtn, skuMatch } from '../ui.js';
 import { scanBox, bindScan } from '../scanner.js';
 import { bindProductSearch } from '../daftar-file.js';
 
@@ -116,9 +116,12 @@ export default {
     };
 
     let listDate = todayStr(), listAll = false, rq = '';
+    // 2.58 cari di daftar: 'resi' (no. resi / pesanan, semua tanggal) atau 'barang' (barang yang sudah dicatat di tanggal terpilih)
+    let rqMode = 'resi', bq = '', bpick = null, dayItems = null;
     const loadToday = async () => {
       const box = el.querySelector('#today');
-      if (!storeId && !listAll && !rq) { box.innerHTML = ''; return; }
+      if (!storeId && !listAll && !rq && rqMode !== 'barang') { box.innerHTML = ''; return; }
+      if (rqMode === 'barang') return paintBarang(box);
       const { data } = await (() => {
         let q = supa.from('orders').select('id, resi, order_no, status, total_jual, created_at, store_id, stores(name), order_items(qty, rack_qty)');
         if (rq) {
@@ -139,7 +142,7 @@ export default {
           <div class="small muted">${list.length} resi · ${kg ? n('baru') + ' sedang di-scan' : n('menunggu_win') + ' tunggu WIN'} · ${n('siap_packing')} siap packing · ${n('dikirim') + n('selesai')} dikirim · ${n('cancel')} cancel</div></div>
           <div class="row wrap"><button class="btn btn-sm" data-dshift="-1" aria-label="Hari sebelumnya">${icon('back', 16)}</button><input type="date" class="input sm" id="ld" value="${listDate}" max="${todayStr()}" style="max-width:160px"><button class="btn btn-sm" data-dshift="1" aria-label="Hari berikutnya" ${isToday ? 'disabled' : ''}>${icon('chev', 16)}</button>
           <label class="check small"><input type="checkbox" id="lall" ${listAll ? 'checked' : ''}> Semua toko</label></div>
-          <div class="row" style="margin-top:8px"><input class="input sm grow" id="rq" placeholder="🔍 Cari no. resi / no. pesanan (semua tanggal)" value="${esc(rq)}" autocomplete="off" spellcheck="false"></div></div>
+          ${searchRow()}</div>
         ${rq ? `<div class="alert blue small" style="margin:8px 12px 0">Hasil cari “${esc(rq)}” · ${list.length} resi (semua tanggal & toko)</div>` : ''}
         ${list.length ? `<div class="list">${list.map((o) => `<button class="list-item" data-open="${o.id}"><span class="xs muted" style="width:${rq ? 64 : 40}px">${rq ? fmtDate(o.created_at, { day: 'numeric', month: 'short' }) + '<br>' : ''}${fmtTime(o.created_at)}</span>
           <div class="grow" style="min-width:0"><b class="mono">${esc(o.resi || o.order_no)}</b>${copyBtn(o.resi || o.order_no)}${(listAll || rq) && o.stores?.name ? ` <span class="tag">${esc(o.stores.name)}</span>` : ''}<div class="xs muted">${o.order_items.reduce((a, i) => a + i.qty, 0)} barang · ${o.order_items.reduce((a, i) => a + (i.rack_qty || 0), 0)} dari rak · ${rp(o.total_jual)}</div></div>${statusTag(o.status)}</button>`).join('')}</div>`
@@ -147,11 +150,65 @@ export default {
       const ri = box.querySelector('#rq');
       if (ri && document.activeElement !== ri && box._rqFocus) { ri.focus(); ri.setSelectionRange(ri.value.length, ri.value.length); }
     };
+    const searchRow = () => `<div class="row" style="margin-top:8px;flex-wrap:nowrap;gap:6px"><div class="chips" style="flex:none">${[['resi', 'Resi'], ['barang', 'Barang']].map(([k, t]) => `<button class="chip ${rqMode === k ? 'on' : ''}" data-rqm="${k}">${t}</button>`).join('')}</div>
+      ${rqMode === 'resi' ? `<input class="input sm grow" id="rq" placeholder="🔍 Cari no. resi / no. pesanan (semua tanggal)" value="${esc(rq)}" autocomplete="off" spellcheck="false">`
+        : `<input class="input sm grow" id="bq" placeholder="🔍 Ketik nama barang atau scan barcode" value="${esc(bq)}" autocomplete="off" spellcheck="false" enterkeyhint="search">`}</div>`;
+    // barang yang sudah dicatat di tanggal terpilih (semua toko) -> di resi mana & toko mana
+    async function paintBarang(box) {
+      if (!dayItems || dayItems.date !== listDate) {
+        box.innerHTML = '<div class="card-h"><div class="small muted">Memuat barang di resi tanggal ini…</div></div>';
+        const rows = await fetchAll(() => supa.from('order_items').select('qty, product_id, products(id, sku, name), orders!inner(id, resi, order_no, status, created_at, stores(name))')
+          .gte('orders.created_at', listDate + 'T00:00:00+07:00').lt('orders.created_at', addDays(listDate, 1) + 'T00:00:00+07:00').not('product_id', 'is', null).order('id')).catch(() => []);
+        const m = new Map();
+        for (const r of rows) {
+          if (!r.products || r.orders?.status === 'cancel') continue;
+          let g = m.get(r.product_id);
+          if (!g) m.set(r.product_id, g = { id: r.product_id, sku: r.products.sku, name: r.products.name, qty: 0, resi: [] });
+          g.qty += r.qty;
+          const o = g.resi.find((x) => x.id === r.orders.id);
+          if (o) o.qty += r.qty; else g.resi.push({ id: r.orders.id, resi: r.orders.resi || r.orders.order_no, store: r.orders.stores?.name || '-', status: r.orders.status, at: r.orders.created_at, qty: r.qty });
+        }
+        dayItems = { date: listDate, list: [...m.values()].sort((a, b) => b.qty - a.qty) };
+      }
+      const isToday = listDate === todayStr(), k = bq.toLowerCase();
+      const words = k.split(/\s+/).filter(Boolean);
+      const found = dayItems.list.filter((g) => !words.length || words.every((w) => `${g.name} ${g.sku}`.toLowerCase().includes(w) || skuMatch(w, g.sku)));
+      const g = bpick && dayItems.list.find((x) => x.id === bpick);
+      box.innerHTML = `<div class="card-h cat-head ${isToday ? '' : 'past'}"><div><h2>Barang di resi <span class="ctx-pill date">${icon('calendar', 15)} ${isToday ? 'Hari ini · ' : ''}${esc(fmtDate(listDate, { day: 'numeric', month: 'long', year: 'numeric' }))}</span> <span class="ctx-pill store">${icon('bag', 15)} Semua toko</span></h2>
+          <div class="small muted">${dayItems.list.length} jenis barang · ${dayItems.list.reduce((a, x) => a + x.qty, 0)} pcs sudah dicatat</div></div>
+          <div class="row wrap"><button class="btn btn-sm" data-dshift="-1" aria-label="Hari sebelumnya">${icon('back', 16)}</button><input type="date" class="input sm" id="ld" value="${listDate}" max="${todayStr()}" style="max-width:160px"><button class="btn btn-sm" data-dshift="1" aria-label="Hari berikutnya" ${isToday ? 'disabled' : ''}>${icon('chev', 16)}</button></div>
+          ${searchRow()}</div>
+        ${g ? `<div style="padding:10px 14px" class="stack s8"><button class="btn btn-ghost btn-sm" data-bback style="align-self:flex-start">${icon('back', 16)} Semua barang</button>
+            <div><b>${esc(g.name)}</b> <span class="xs muted mono">${esc(g.sku)}</span><div class="small">${g.qty} pcs di <b>${g.resi.length}</b> resi · toko: ${[...new Set(g.resi.map((r) => r.store))].map((t) => `<span class="tag">${esc(t)}</span>`).join(' ')}</div></div></div>
+            <div class="list">${g.resi.map((o) => `<button class="list-item" data-open="${o.id}"><span class="xs muted" style="width:40px">${fmtTime(o.at)}</span><div class="grow" style="min-width:0"><b class="mono">${esc(o.resi)}</b>${copyBtn(o.resi)} <span class="tag">${esc(o.store)}</span><div class="xs muted">×${o.qty} barang ini</div></div>${statusTag(o.status)}</button>`).join('')}</div>`
+        : found.length ? `<div class="list">${found.map((x) => `<button class="list-item" data-bpick="${x.id}"><div class="grow" style="min-width:0"><b class="small">${esc(x.name)}</b><div class="xs muted mono">${esc(x.sku)}</div></div><div class="right small"><b>${x.qty} pcs</b><div class="xs muted">${x.resi.length} resi · ${new Set(x.resi.map((r) => r.store)).size} toko</div></div></button>`).join('')}</div>`
+        : emptyState(bq ? 'Barang ini belum dicatat di resi mana pun pada tanggal ini.' : 'Belum ada barang yang dicatat di tanggal ini.', 'box')}`;
+      const bi = box.querySelector('#bq');
+      if (bi && box._rqFocus) { bi.focus(); bi.setSelectionRange(bi.value.length, bi.value.length); }
+    }
+    let bqTimer = null;
+    on(el, 'click', '[data-rqm]', (e, b) => { rqMode = b.dataset.rqm; bpick = null; el.querySelector('#today')._rqFocus = true; loadToday(); });
+    on(el, 'input', '#bq', (e) => { clearTimeout(bqTimer); bqTimer = setTimeout(() => { bq = e.target.value.trim(); bpick = null; el.querySelector('#today')._rqFocus = true; loadToday(); }, 300); });
+    on(el, 'keydown', '#bq', async (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault(); clearTimeout(bqTimer);
+      const code = e.target.value.trim(); if (!code) return;
+      // hasil scan barcode / Enter: cocokkan kode dulu, kalau tidak ketemu pakai hasil cari teratas
+      const id = await rpc('find_product', { p_code: code }).catch(() => null);
+      if (!dayItems) await paintBarang(el.querySelector('#today'));
+      const hit = (id && dayItems.list.find((x) => x.id === id)) || null;
+      bq = hit ? '' : code; bpick = hit ? hit.id : null;
+      if (!hit && id) toast('Barang ini belum dicatat di resi mana pun pada tanggal ini', 'err');
+      if (!hit && !id) { const words = code.toLowerCase().split(/\s+/); const f = dayItems.list.filter((g) => words.every((w) => `${g.name} ${g.sku}`.toLowerCase().includes(w))); if (f.length === 1) { bq = ''; bpick = f[0].id; } }
+      el.querySelector('#today')._rqFocus = !bpick; loadToday();
+    });
+    on(el, 'click', '[data-bpick]', (e, b) => { bpick = +b.dataset.bpick; el.querySelector('#today')._rqFocus = false; loadToday(); });
+    on(el, 'click', '[data-bback]', () => { bpick = null; loadToday(); });
     let rqTimer = null;
     on(el, 'input', '#rq', (e) => { clearTimeout(rqTimer); rqTimer = setTimeout(() => { rq = e.target.value.trim(); el.querySelector('#today')._rqFocus = true; loadToday(); }, 350); });
-    on(el, 'change', '#ld', (e) => { listDate = e.target.value || todayStr(); loadToday(); });
+    on(el, 'change', '#ld', (e) => { listDate = e.target.value || todayStr(); bpick = null; loadToday(); });
     on(el, 'change', '#lall', (e) => { listAll = e.target.checked; loadToday(); });
-    on(el, 'click', '[data-dshift]', (e, b) => { const d = addDays(listDate, +b.dataset.dshift); if (d > todayStr()) return; listDate = d; loadToday(); });
+    on(el, 'click', '[data-dshift]', (e, b) => { const d = addDays(listDate, +b.dataset.dshift); if (d > todayStr()) return; listDate = d; bpick = null; loadToday(); });
 
     // resi yang sedang di-scan (alur kepala gudang) ditandai selesai -> siap packing
     const finishCur = async () => {

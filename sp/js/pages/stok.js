@@ -130,8 +130,12 @@ async function tabBarang(box) {
   box.querySelector('#q').addEventListener('input', debounce((e) => { search = e.target.value.trim().replace(/[,%()]/g, ''); load(); }, 300));
   box.querySelector('#q').addEventListener('keydown', async (e) => {
     if (e.key !== 'Enter') return;
-    const id = await rpc('find_product', { p_code: e.target.value.trim() }).catch(() => null);
-    if (id) { e.target.value = ''; openProduct(id, load); }
+    e.preventDefault();
+    // 2.58 kolom cari hanya MEMBUKA detail barang (tidak pernah mengubah stok). Enter kosong / Enter kedua dari alat scanner diabaikan.
+    const code = e.target.value.trim();
+    if (!code || document.querySelector('.overlay')) return;
+    const id = await rpc('find_product', { p_code: code }).catch(() => null);
+    if (id && !document.querySelector('.overlay')) { e.target.value = ''; search = ''; e.target.blur(); openProduct(id, load); }
   });
   box.querySelector('#fr').onchange = (e) => { rak = e.target.value; load(); };
   box.querySelector('#so').onchange = (e) => { sort = e.target.value; load(); };
@@ -270,7 +274,7 @@ async function opnameRak(box) {
       try {
         const r = await rpc('opname_submit', { p: { rack_code: rack, items } });
         toast(`Tersimpan. ${r.kurang} barang kurang${r.kurang ? ' (' + rp(r.nilai_hilang) + ')' : ''}, ${r.lebih} lebih.`, r.kurang ? 'err' : 'ok');
-        box.querySelector('#rk').value = ''; op.innerHTML = '';
+        box.querySelector('#rk').value = ''; op.innerHTML = ''; toTop();
       } catch (e) { toastErr(e); ev.target.disabled = false; }
     };
   });
@@ -433,7 +437,7 @@ async function tabPenataan(box) {
       ${st.belum_jenis ? `<div class="alert yellow small"><b>${num(st.belum_jenis)} jenis barang (${num(st.belum_pcs)} pcs)</b> punya stok di sistem tapi tidak di-scan di rak mana pun. Kalau semua rak sudah selesai, barang itu memang tidak ada → pilih <b>Jadikan stok 0</b>.</div>` : '<div class="small muted">Semua barang yang punya stok sudah di-scan.</div>'}`,
       actions: [{ label: 'Batal', value: null }, ...(st.belum_jenis ? [{ label: 'Biarkan stoknya', value: 'keep' }, { label: 'Jadikan stok 0', cls: 'btn-primary', value: 'zero' }] : [{ label: 'Selesai', cls: 'btn-primary', value: 'keep' }])] });
     if (!r) return;
-    try { const x = await rpc('penataan_selesai', { p_nolkan: r === 'zero' }); toast(`Penataan selesai: ${x.rak} rak, ${x.pcs} pcs${x.dinolkan ? `, ${x.dinolkan} barang dijadikan 0` : ''}`, 'ok'); tabPenataan(box); } catch (err) { toastErr(err); }
+    try { const x = await rpc('penataan_selesai', { p_nolkan: r === 'zero' }); toast(`Penataan selesai: ${x.rak} rak, ${x.pcs} pcs${x.dinolkan ? `, ${x.dinolkan} barang dijadikan 0` : ''}`, 'ok'); await tabPenataan(box); toTop(); } catch (err) { toastErr(err); }
   };
 }
 
@@ -484,7 +488,10 @@ async function rackScan(box, st, rack) {
       toast(`Rak ${r.rack} tersimpan: ${r.jenis} jenis, ${r.pcs} pcs`, 'ok');
       if (r.dobel?.length) await modal({ title: 'Barang ada di beberapa rak', body: `<p style="margin-top:0" class="small">Stoknya dijumlah, lokasinya dicatat di rak dengan jumlah terbanyak. Sebaiknya satukan di satu rak.</p><div class="list no-page">${r.dobel.map((d) => `<div class="list-item" style="padding:6px 0"><span class="grow small">${esc(d.name)}</span><span class="mono xs">${esc(d.racks)}</span></div>`).join('')}</div>`, actions: [{ label: 'Oke', cls: 'btn-primary', value: true }] });
       import('../products-cache.js').then((m) => m.touchProducts());
-      tabPenataan(box);
+      await tabPenataan(box); toTop();
     } catch (err) { toastErr(err); e.target.disabled = false; }
   };
 }
+
+// 2.58 sesudah Simpan / Selesai di Stok opname: kembali ke atas halaman (tidak tertinggal di bawah)
+function toTop() { requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })); }
