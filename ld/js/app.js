@@ -15,6 +15,7 @@ const PAGES = [
   { id: 'funnel', label: 'Funnel & Target', icon: 'funnel', load: () => import('./pages/funnel.js') },
   { id: 'klik', label: 'Klik Tombol WA', icon: 'click', load: () => import('./pages/klik.js') },
   { id: 'log', label: 'Log Event Meta', icon: 'pulse', load: () => import('./pages/log.js') },
+  { id: 'kinerja', label: 'Kinerja CS', icon: 'award', load: () => import('./pages/kinerja.js'), admin: true },
   { id: 'tim', label: 'Tim & Akses', icon: 'team', load: () => import('./pages/tim.js'), admin: true },
   { id: 'pengaturan', label: 'Pengaturan', icon: 'gear', load: () => import('./pages/pengaturan.js'), admin: true },
 ];
@@ -224,7 +225,7 @@ async function route() {
   const page = ok.find((p) => p.id === id) || ok[0];
   $$('.side-nav a').forEach((a) => a.classList.toggle('active', a.dataset.page === page.id));
   $('#pageTitle').textContent = page.label;
-  $('#periodSeg').style.visibility = ['ringkasan', 'leads', 'klik', 'funnel'].includes(page.id) ? 'visible' : 'hidden';
+  $('#periodSeg').style.visibility = ['ringkasan', 'leads', 'klik', 'funnel', 'kinerja'].includes(page.id) ? 'visible' : 'hidden';
   pullTenant();
   const el = $('#page');
   const my = ++seq;

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kebijakan Privasi · Ekstensi Aventra Leads</title>
+<link rel="icon" href="img/favicon.ico">
+<style>
+  body { margin: 0; font: 16px/1.7 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #16231F; background: #F1F5F3; }
+  header { padding: 40px 20px 34px; color: #fff; background: linear-gradient(150deg, #128C7E, #075E54 60%, #04433C); }
+  header div, main { max-width: 760px; margin: 0 auto; }
+  header h1 { margin: 6px 0 4px; font-size: 28px; line-height: 1.25; } header p { margin: 0; opacity: .8; }
+  main { padding: 28px 20px 60px; }
+  section { background: #fff; border: 1px solid #E2E9E5; border-radius: 16px; padding: 18px 22px; margin-bottom: 14px; }
+  h2 { font-size: 18px; margin: 0 0 6px; } ul { padding-left: 20px; margin: 6px 0; } li { margin: 3px 0; }
+  code { background: #E7F6F1; color: #075E54; padding: 1px 6px; border-radius: 5px; font-size: 14px; }
+  .muted { color: #64736D; font-size: 14px; }
+</style></head>
+<body>
+<header><div><small>Aventra Leads · PT. Klinhome Indonesia</small><h1>Kebijakan Privasi Ekstensi Chrome "Aventra Leads: Catat Chat Iklan"</h1><p>Berlaku sejak 25 November 2026</p></div></header>
+<main>
+  <section><h2>Ringkasan</h2>
+    <p>Ekstensi ini membantu bisnis yang beriklan mencatat chat calon pelanggan yang datang dari iklan. Ekstensi membaca WhatsApp Web di browser pengguna <b>hanya untuk mencari kode promo</b> yang dibuat oleh Aventra Leads (contoh <code>MR-K7M2QX</code>). Ekstensi <b>tidak pernah mengirim pesan</b> WhatsApp dan tidak berafiliasi dengan WhatsApp atau Meta.</p></section>
+
+  <section><h2>Data yang diproses</h2>
+    <ul>
+      <li><b>Isi chat yang tampil di layar WhatsApp Web</b> dibaca di perangkat pengguna untuk mencari kode promo. Isi percakapan tidak disimpan dan tidak dikirim.</li>
+      <li>Hanya untuk chat yang berisi kode promo, ekstensi mengirim ke akun Aventra Leads milik bisnis: <b>kode promo, nomor WhatsApp dan nama profil pelanggan, nomor WhatsApp CS yang menerima, dan waktu</b>.</li>
+      <li><b>Data akun</b>: email dan token login Aventra Leads, disimpan di penyimpanan lokal ekstensi untuk menjaga sesi login.</li>
+      <li>Bila pengguna (paket Pro) mengubah tahap, alasan, atau menandai Lunas dari panel, perubahan itu dan nilai order dikirim ke akun Aventra Leads.</li>
+    </ul></section>
+
+  <section><h2>Cara data digunakan</h2>
+    <ul>
+      <li>Menampilkan laporan iklan, chat, dan closing di dashboard Aventra Leads milik bisnis tersebut.</li>
+      <li>Bila diaktifkan oleh bisnis, mengirim event <b>Lead</b> dan <b>Purchase</b> ke Meta Pixel/Conversions API <b>milik bisnis itu sendiri</b>. Nomor telepon dikirim dalam bentuk hash SHA-256.</li>
+      <li>Data <b>tidak dijual</b>, tidak dipakai untuk iklan pihak ketiga, dan tidak dipakai untuk tujuan lain di luar fitur di atas.</li>
+    </ul></section>
+
+  <section><h2>Penyimpanan &amp; keamanan</h2>
+    <ul>
+      <li>Data disimpan di database Aventra Leads (Supabase) dengan akses terbatas per bisnis (row level security). Hanya anggota bisnis tersebut yang dapat melihatnya.</li>
+      <li>Semua pengiriman data memakai koneksi terenkripsi (HTTPS/TLS).</li>
+      <li>Data lead disimpan selama akun bisnis aktif. Bisnis dapat menghapus data lead kapan saja dari dashboard, atau meminta penghapusan seluruh data melalui kontak di bawah.</li>
+    </ul></section>
+
+  <section><h2>Pilihan pengguna</h2>
+    <ul>
+      <li>Ekstensi baru bekerja setelah pengguna menekan <b>Setuju &amp; lanjut</b> di layar izin.</li>
+      <li>Pengguna dapat mematikan "Catat otomatis", <b>mencabut izin</b>, atau keluar kapan saja dari menu ekstensi. Menghapus ekstensi menghapus seluruh data lokalnya.</li>
+    </ul></section>
+
+  <section><h2>Kontak</h2>
+    <p>PT. Klinhome Indonesia · Jl. Kenanga Indah 1 No. 21 A, Jatimulyo, Malang · Telepon/WhatsApp +62 852-9049-0949</p>
+    <p class="muted">Kebijakan ini dapat diperbarui. Perubahan penting akan ditampilkan di ekstensi sebelum berlaku.</p></section>
+</main>
+</body></html>

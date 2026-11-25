@@ -5,7 +5,7 @@ import { esc, waktu, jam, modal, toast, icon, copyText, metaDates, $, $$ } from 
 import { loadTenantData } from '../app.js';
 
 let tab = 'bisnis';
-const TABS = { bisnis: 'Bisnis', pixel: 'Pixel & Token', meta: 'Meta Ads', wa: 'Nomor WA', pasang: 'Pasang di Landing Page', tes: 'Tes Pemasangan', api: 'API untuk ERP' };
+const TABS = { bisnis: 'Bisnis', pixel: 'Pixel & Token', meta: 'Meta Ads', wa: 'Nomor WA', pasang: 'Pasang di Landing Page', tes: 'Tes Pemasangan', ext: 'Ekstensi WhatsApp', api: 'API untuk ERP' };
 
 export async function render(el, ctx) {
   el.innerHTML = `<div class="tabs">${Object.entries(TABS).map(([k, v]) => `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${v}</button>`).join('')}</div><div id="tabBody"></div>`;
@@ -14,7 +14,7 @@ export async function render(el, ctx) {
     tab = b.dataset.t; clearInterval(tesTimer); $$('.tabs button', el).forEach((x) => x.classList.toggle('on', x === b)); draw();
   };
   const body = $('#tabBody', el);
-  const draw = () => ({ bisnis, pixel, meta: metaAds, wa, pasang, tes, api: apiTab })[tab](body, ctx);
+  const draw = () => ({ bisnis, pixel, meta: metaAds, wa, pasang, tes, ext: extTab, api: apiTab })[tab](body, ctx);
   draw();
 }
 
@@ -52,6 +52,8 @@ async function pixel(el, { state }) {
     </label>
     <p class="small ${ts ? 'ok-text' : 'err-text'}">${ts ? `Token tersimpan sejak ${waktu(ts)}. Isinya tidak bisa dilihat lagi dari aplikasi.` : 'Token belum diisi. Event belum bisa dikirim ke Meta.'}</p>
     <label class="check"><input type="checkbox" name="pixel_browser" ${t.pixel_browser ? 'checked' : ''}> Pasang Pixel otomatis lewat script (PageView + ViewContent)</label>
+    <label class="check"><input type="checkbox" name="lead_event" ${t.lead_event !== false ? 'checked' : ''}><span>Kirim event <b>Lead</b> ke Meta saat chat berkode tercatat (dari CS atau ekstensi WhatsApp)</span></label>
+    <p class="muted small" style="margin:-6px 0 0 26px">Bisa dipakai campaign <b>Leads → Website → Lead</b> supaya Meta mencari orang yang benar-benar chat, bukan sekadar klik tombol WA.</p>
     <label>Nama konten untuk ViewContent<input name="vc_name" value="${esc(t.vc_name || '')}" placeholder="Pijat Panggilan Surabaya"></label>
     <p class="muted small">Aktifkan kalau landing page <b>belum</b> punya kode Pixel. Kalau sudah ada kode Pixel manual, biarkan mati supaya PageView tidak dobel. Perubahan terasa di landing page paling lambat 5 menit.</p>
     <label>Test event code (opsional)<input name="test_event_code" value="${esc(t.test_event_code || '')}" placeholder="TEST12345"></label>
@@ -71,6 +73,7 @@ async function pixel(el, { state }) {
       const patch = {
         pixel_id: f.pixel_id.value.replace(/\D/g, '') || null, test_event_code: f.test_event_code.value.trim() || null,
         pixel_browser: f.pixel_browser.checked, vc_name: f.vc_name.value.trim() || null,
+        lead_event: f.lead_event.checked,
       };
       await api.updateTenant(t.id, patch); Object.assign(t, patch);
       if (f.token.value.trim()) await api.saveToken(t.id, f.token.value.trim());
@@ -331,4 +334,47 @@ async function apiTab(el, { state }) {
     if (!confirm('Cabut kunci ini? ERP yang memakainya berhenti bisa mengirim.')) return;
     await api.revokeKey(b.closest('tr').dataset.id); apiTab(el, { state });
   };
+}
+
+// ---------------------------------------------------------------- Ekstensi WhatsApp (v1.11.0)
+const EXT_ZIP = 'ext/aventra-leads-wa.zip';
+async function extTab(el, { state }) {
+  el.innerHTML = '<div class="loading">Memuat…</div>';
+  let st;
+  try { st = await api.extStatus(state.tenant.id); } catch (e) { el.innerHTML = `<div class="note bad"><div>${esc(e.message)}. Jalankan update-1.11.sql dulu.</div></div>`; return; }
+  const pro = st.plan === 'pro', pct = Math.min(100, Math.round(st.terpakai / st.kuota * 100));
+  const row = (f, g, p) => `<tr><td>${f}</td><td class="c">${g}</td><td class="c">${p}</td></tr>`;
+  const y = '<span class="ok-text">✓</span>', n = '<span class="muted">–</span>';
+  el.innerHTML = `<div class="grid2 g-top">
+    <div class="stack">
+      <div class="card ext-plan ${pro ? 'pro' : ''}">
+        <div class="ext-plan-top"><div><small>Paket bisnis ini</small><b>${pro ? 'Pro' : 'Gratis'}</b></div><span class="plan-badge ${pro ? 'pro' : ''}">${pro ? 'PRO' : 'GRATIS'}</span></div>
+        ${pro ? `<p class="muted">Catat otomatis tanpa batas${st.plan_until ? ` · aktif sampai <b>${new Date(st.plan_until).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</b>` : ''}.</p>`
+          : `<div class="ext-quota"><span>Chat tercatat otomatis bulan ini</span><b>${st.terpakai} / ${st.kuota}</b></div><div class="bar"><i style="width:${pct}%"></i></div>
+             <p class="muted small">Upgrade ke Pro: hubungi admin Aventra.</p>`}
+      </div>
+      <div class="card flush">
+        <div class="card-head"><h3>Gratis vs Pro</h3></div>
+        <table class="tbl ext-cmp"><thead><tr><th>Fitur</th><th class="c">Gratis</th><th class="c">Pro</th></tr></thead><tbody>
+          ${row('Deteksi kode promo di WhatsApp Web', y, y)}
+          ${row('Catat otomatis ke Leads (kode, nomor, nama, nomor CS)', `${st.kuota} chat/bulan`, 'Tanpa batas')}
+          ${row('Notifikasi "tercatat" di WhatsApp Web', y, y)}
+          ${row('Panel di samping chat: tahap A–D & alasan', n, y)}
+          ${row('Tandai Lunas + nilai → Purchase ke Meta dari chat', n, y)}
+          ${row('Panel muncul juga untuk chat tanpa kode (cari dari nomor)', n, y)}
+        </tbody></table>
+      </div>
+    </div>
+    <div class="card help">
+      <h3>Cara pasang di Chrome laptop CS</h3>
+      <ol>
+        <li><a class="btn sm primary" href="${EXT_ZIP}" download>Unduh ekstensi</a> lalu <b>ekstrak</b> zip-nya ke satu folder.</li>
+        <li>Buka <code>chrome://extensions</code>, nyalakan <b>Developer mode</b> (kanan atas).</li>
+        <li>Klik <b>Load unpacked</b> → pilih folder hasil ekstrak.</li>
+        <li>Klik ikon <b>Aventra Leads</b> di toolbar → masuk dengan akun Aventra → pilih bisnis.</li>
+        <li>Buka <b>web.whatsapp.com</b> di Chrome yang sama dan biarkan tabnya terbuka. CS boleh tetap membalas dari HP.</li>
+      </ol>
+      <div class="note warn"><div>Ekstensi hanya <b>membaca</b> chat yang tampil di WhatsApp Web dan tidak pernah mengirim pesan. Yang dikirim ke Aventra hanya chat berisi kode <b>${esc(st.prefix || state.tenant.prefix)}-…</b>. Bila tampilan WhatsApp Web berubah, pencatatan bisa berhenti sementara sampai ekstensi diperbarui. Selama itu CS tetap bisa mencatat manual.</div></div>
+    </div>
+  </div>`;
 }

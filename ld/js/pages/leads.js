@@ -51,7 +51,7 @@ export async function render(el, ctx) {
       const paid = !!l.paid_at;
       return `<tr data-id="${l.id}" class="${paid ? 'is-paid' : ''}">
         <td data-l="Masuk" class="nw">${waktu(l.created_at)}</td>
-        <td data-l="Kode">${c ? `<code>${esc(c.kode)}</code>` : l.sumber === 'ctwa' ? '<span class="tag">CTWA</span>' : '<span class="muted">tanpa kode</span>'}</td>
+        <td data-l="Kode">${c ? `<code>${esc(c.kode)}</code>` : l.sumber === 'ctwa' ? '<span class="tag">CTWA</span>' : '<span class="muted">tanpa kode</span>'}${l.sumber === 'wa' ? ' <span class="badge ok" title="Dicatat otomatis oleh ekstensi WhatsApp Web">auto</span>' : ''}</td>
         <td data-l="Pelanggan"><b>${esc(l.nama || '-')}</b> <span class="tag">${esc(waLabel[l.wa_number_id] || '-')}</span><small class="muted block">${esc(l.phone || '')}</small></td>
         <td data-l="Iklan" class="ad">${esc(c?.ad_name || c?.utm_content || l.ad_name || (c ? '-' : 'manual'))}</td>
         <td data-l="Tahap">${paid ? '<span class="tag tE">E · Closing</span>'
@@ -179,13 +179,14 @@ export async function openLeadModal(state, { click = null } = {}, onDone) {
     const ad = mode === 'ctwa' ? (f.ctwa._list || []).find((x) => x.id === f.ctwa.value) : null;
     if (mode === 'ctwa' && !ad) { toast('Pilih iklan CTWA-nya', 'err'); return; }
     try {
-      await api.createLead({
+      const baru = await api.createLead({
         tenant_id: tid, click_id: ad ? null : chosen?.id ?? null, wa_number_id: f.wa.value || null,
         phone: f.phone.value, nama: f.nama.value.trim() || null, stage: f.stage.value,
         sumber: ad ? 'ctwa' : chosen ? 'lp' : 'manual',
         ...(ad ? { ad_id: ad.id, ad_name: ad.name } : {}),
       });
       if (ad) localStorage.setItem('ld_last_ctwa_' + tid, ad.id);
+      if (baru?.click_id) api.sendLead(baru.id).catch(() => {}); // event Lead ke Meta
       m.close(); toast('Chat tercatat'); onDone?.();
     } catch (err) { toast(err.message, 'err'); }
   };

@@ -35,6 +35,7 @@ const real = {
     const r = must(await c.from('members').select('*').eq('tenant_id', tid).eq('user_id', uid).maybeSingle());
     return { role: r?.role ?? 'cs', nama: r?.nama ?? null, jabatan: r?.jabatan ?? null, menus: r?.menus ?? null };
   },
+  async extStatus(tid) { const c = await client(); return must(await c.rpc('ext_status', { p_tenant: tid })); },
   // ----- tim & akses -----
   async klaimUndangan() { const c = await client(); try { return must(await c.rpc('klaim_undangan')); } catch { return 0; } },
   async members(tid) { const c = await client(); return must(await c.rpc('daftar_anggota', { p_tenant: tid })); },
@@ -70,6 +71,15 @@ const real = {
   async leadByClick(clickId) { const c = await client(); return must(await c.from('leads').select('*').eq('click_id', clickId).maybeSingle()); },
   async createLead(row) { const c = await client(); return must(await c.from('leads').insert(row).select('*').single()); },
   async updateLead(id, patch) { const c = await client(); must(await c.from('leads').update(patch).eq('id', id)); },
+  // kirim event Lead ke Meta (hanya chat yang terhubung ke klik iklan; dicek di server)
+  async sendLead(leadId) {
+    const c = await client(); const s = (await c.auth.getSession()).data.session;
+    const r = await fetch(`${FUNCTIONS_URL}/lead`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s.access_token}`, apikey: SUPABASE_ANON_KEY },
+      body: JSON.stringify({ lead_id: leadId }),
+    });
+    return r.json().catch(() => ({}));
+  },
   async markPaid(leadId, nilai) {
     const c = await client(); const s = (await c.auth.getSession()).data.session;
     const r = await fetch(`${FUNCTIONS_URL}/convert`, {
@@ -157,8 +167,10 @@ const D = (() => {
         nilai: paid ? pick([135000, 135000, 140000, 200000, 100000]) : null,
         paid_at: paid ? new Date(t + 3 * 3600e3).toISOString() : null,
         purchase_sent_at: paid && rnd() < 0.92 ? new Date(t + 3 * 3600e3).toISOString() : null,
-        sumber: 'lp', catatan: null, created_at: new Date(t + 5 * 60e3).toISOString() };
+        sumber: 'lp', catatan: null, created_at: new Date(t + 5 * 60e3).toISOString(),
+        cs_id: w.id === 'w1' ? pick(['u2', 'u2', 'u1']) : 'u3', lead_sent_at: rnd() < 0.9 ? new Date(t + 6 * 60e3).toISOString() : null };
       leads.push(l);
+      events.push({ id: events.length + 1, tenant_id: tid, lead_id: l.id, click_id: c.id, event_name: 'Lead', ok: true, response: { events_received: 1 }, created_at: l.created_at });
       if (paid) events.push({ id: events.length + 1, tenant_id: tid, lead_id: l.id, event_name: 'Purchase', ok: !!l.purchase_sent_at,
         response: l.purchase_sent_at ? { events_received: 1 } : { error: { message: 'Invalid OAuth access token' } }, created_at: l.paid_at });
     }
@@ -194,7 +206,7 @@ const D = (() => {
     const t = now - d * 864e5 - j * 3 * 3600e3 - 3600e3; const paid = rnd() < 0.2;
     leads.push({ id: `lc${d}_${j}`, tenant_id: tid, click_id: null, wa_number_id: 'w1', phone: '628' + Math.floor(1e9 + rnd() * 8e9), nama: pick(nama),
       stage: paid ? 'E' : pick(['A', 'B', 'B', 'C']), alasan: null, nilai: paid ? 135000 : null, paid_at: paid ? new Date(t + 2 * 3600e3).toISOString() : null,
-      purchase_sent_at: paid ? new Date(t + 2 * 3600e3).toISOString() : null, sumber: 'ctwa', ad_id: '120219999', ad_name: 'CTWA Reels Pijat',
+      purchase_sent_at: paid ? new Date(t + 2 * 3600e3).toISOString() : null, sumber: 'ctwa', cs_id: pick(['u2', 'u3']), ad_id: '120219999', ad_name: 'CTWA Reels Pijat',
       created_at: new Date(t).toISOString() });
   }
   tenant.ad_account_id = '1234567890';
@@ -224,6 +236,7 @@ const demo = {
   async myRole() { return 'owner'; },
   async myMember() { const m = D.team[0]; return { role: 'owner', nama: m.nama, jabatan: m.jabatan, menus: null }; },
   async klaimUndangan() { return 0; },
+  async extStatus() { return { plan: 'free', plan_until: null, kuota: 100, terpakai: 37, prefix: 'MR' }; },
   async members() { return wait(D.team.slice()); },
   async addMember(t, email, nama, role, jabatan, menus) { D.team.push({ user_id: null, undangan_id: 'u' + Date.now(), email, nama, role, jabatan, menus, status: 'diundang' }); return 'diundang'; },
   async updateMember(t, uid, nama, role, jabatan, menus) { const m = D.team.find((x) => x.user_id === uid); Object.assign(m, m.role === 'owner' ? { nama, jabatan } : { nama, role, jabatan, menus }); },
@@ -240,6 +253,7 @@ const demo = {
   async leadByClick(cid) { return D.leads.find((l) => l.click_id === cid) ?? null; },
   async createLead(row) { const l = { id: 'l' + Date.now(), stage: 'A', sumber: 'manual', created_at: new Date().toISOString(), ...row }; D.leads.push(l); return l; },
   async updateLead(id, p) { Object.assign(D.leads.find((l) => l.id === id), p); },
+  async sendLead(id) { const l = D.leads.find((x) => x.id === id); if (l?.click_id) l.lead_sent_at = new Date().toISOString(); return { ok: true }; },
   async markPaid(id, nilai) {
     const l = D.leads.find((x) => x.id === id);
     Object.assign(l, { stage: 'E', alasan: null, nilai, paid_at: new Date().toISOString(), purchase_sent_at: new Date().toISOString() });
