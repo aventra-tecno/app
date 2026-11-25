@@ -81,11 +81,10 @@ export async function render(el, ctx) {
   <div class="card">
     <div class="card-head flat">
       <h3>Funnel aktual</h3>
-      <div class="btn-row">${lastSync ? `<small class="${syncInfo.startsWith('GAGAL') ? 'err-text' : 'muted'}" title="${esc(syncInfo)}">sinkron Meta${t.auto_sync !== false ? ' otomatis' : ''}: ${new Date(lastSync).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}${syncInfo.startsWith('GAGAL') ? ' · gagal' : ''}${tzBeda(t.ad_tz) ? ` · tanggal Meta ${dFrom === dTo ? dFrom : dFrom + ' s/d ' + dTo} (zona akun iklan ${esc(t.ad_tz)})` : ''}</small>` : ''}
-      ${isAdmin ? `<button class="btn sm" id="sync">${icon('pulse')}Sinkron data Meta</button>` : ''}</div>
+      ${tzBeda(t.ad_tz) ? `<small class="muted">tanggal Meta ${dFrom === dTo ? dFrom : dFrom + ' s/d ' + dTo} (zona akun iklan ${esc(t.ad_tz)})</small>` : ''}
     </div>
     <div class="filters" id="filters"></div>
-    ${insAll.length ? '' : `<div class="note warn" style="margin-bottom:12px"><div>Belum ada data Meta Ads untuk periode ini. Isi <b>Pengaturan → Meta Ads</b>, lalu tekan <b>Sinkron data Meta</b>.</div></div>`}
+    ${insAll.length ? '' : `<div class="note warn" style="margin-bottom:12px"><div>Belum ada data Meta Ads untuk periode ini. Isi <b>Pengaturan → Meta Ads</b>, lalu tekan <b>Sinkron</b> di pojok kanan atas.</div></div>`}
     <div id="funnel"></div>
     <div id="diag"></div>
   </div>
@@ -97,7 +96,6 @@ export async function render(el, ctx) {
     <tbody id="perAd"></tbody><tfoot id="perAdTot"></tfoot></table>
   </div>    </div>
     <aside class="fz-side">
-      <div class="card" id="target"></div>
     <form class="card" id="calc">
       <div class="card-head flat"><h3>Kalkulator patokan</h3>
         <div class="seg" id="mode"><button type="button" data-m="web">Iklan ke website</button><button type="button" data-m="ctwa">Iklan CTWA</button></div></div>
@@ -106,6 +104,7 @@ export async function render(el, ctx) {
       <div class="calc-grid" id="stepF"></div>
       ${isAdmin ? '<button class="btn primary" style="margin-top:12px">Simpan sebagai patokan</button>' : ''}
     </form>
+      <div class="card" id="target"></div>
     </aside>
   </div>`;
 
@@ -366,67 +365,108 @@ export function aktual(insAll, clicks, leads, T, sel = { c: '', a: '', d: '' }) 
 }
 
 // ---------- grafik alur funnel: garis berdenyut di titik bocor ----------
-const SHORT = { 'Landing page view': 'Landing page', 'Contact (klik WA)': 'Klik WA' };
+const SHORT = { 'Landing page view': 'Landing page', 'Contact (klik WA)': 'Klik WA', 'Chat dimulai': 'Chat dimulai' };
+let fxSeq = 0;
+// Grafik funnel premium: pita cair bergradasi, partikel mengalir, tetesan "bocor" di tahap terlemah
 export function flowSvg(steps, bad, vertical, boxW = 1000) {
-  const n = steps.length, top = Math.max(1, ...steps.map((s) => s.n));
-  const st = (s) => (!Number.isFinite(s.r) || s.t == null ? 'na' : s.r >= s.t ? 'ok' : 'bad');
-  const thick = (s) => 10 + 46 * Math.sqrt((s.n || 0) / top);
-  const short = (v) => (v >= 1e6 ? (v / 1e6).toFixed(1).replace('.', ',') + ' jt' : v >= 1e4 ? Math.round(v / 1e3) + ' rb' : num(v));
-  const pill = (x, y, s, worst) => {
-    if (!s.l) return '';
-    const t = `${s.l} ${p1(s.r)}`, w = t.length * (vertical ? 6.6 : 7.2) + 18;
-    return `<g class="fx-pill ${st(s)} ${worst ? 'worst' : ''}"><rect x="${x - w / 2}" y="${y - 12}" width="${w}" height="24" rx="12"/><text x="${x}" y="${y + 4}">${esc(t)}</text></g>`;
-  };
+  const id = 'fx' + (++fxSeq);
+  const n = steps.length, top = Math.max(1, ...steps.map((s) => s.n || 0));
+  const st = (s, i) => (!i ? 'na' : !Number.isFinite(s.r) || s.t == null ? 'na' : s.r >= s.t ? 'ok' : 'bad');
+  const short = (v) => (v >= 1e6 ? (v / 1e6).toFixed(1).replace('.', ',') + ' jt' : v >= 1e5 ? Math.round(v / 1e3) + ' rb' : num(v));
+  const rnd = (a) => Math.round(a * 10) / 10;
   const defs = `<defs>
-    <linearGradient id="fxBand" ${vertical ? 'x1="0" y1="0" x2="0" y2="1"' : 'x1="0" y1="0" x2="1" y2="0"'}><stop offset="0" stop-color="#25D366" stop-opacity=".32"/><stop offset="1" stop-color="#128C7E" stop-opacity=".14"/></linearGradient>
-    <filter id="fxGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <linearGradient id="${id}b" ${vertical ? 'x1="0" y1="0" x2="0" y2="1"' : 'x1="0" y1="0" x2="1" y2="0"'}>
+      <stop offset="0" stop-color="#3BF08A"/><stop offset=".55" stop-color="#1FB57A"/><stop offset="1" stop-color="#0E8C7A"/></linearGradient>
+    <linearGradient id="${id}h" ${vertical ? 'x1="0" y1="0" x2="1" y2="0"' : 'x1="0" y1="0" x2="0" y2="1"'}>
+      <stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient>
+    <linearGradient id="${id}r" ${vertical ? 'x1="0" y1="0" x2="0" y2="1"' : 'x1="0" y1="0" x2="1" y2="0"'}>
+      <stop offset="0" stop-color="#FF5A5A" stop-opacity=".15"/><stop offset=".5" stop-color="#FF3B3B" stop-opacity=".9"/><stop offset="1" stop-color="#FF5A5A" stop-opacity=".25"/></linearGradient>
+    <filter id="${id}g" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="${id}s" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="10"/></filter>
   </defs>`;
+  const pill = (x, y, s, i, anchor = 'middle') => {
+    if (!s.l) return '';
+    const k = st(s, i), worst = s === bad;
+    const t1 = `${s.l} ${p1(s.r)}`, t2 = `patokan ${p1(s.t)}`;
+    const w = Math.max(t1.length * 7.4, t2.length * 5.6) + 22, x0 = anchor === 'middle' ? x - w / 2 : x;
+    return `<g class="fxp ${k} ${worst ? 'worst' : ''}"><rect x="${rnd(x0)}" y="${y - 19}" width="${rnd(w)}" height="38" rx="11"/>
+      <text x="${rnd(x0 + w / 2)}" y="${y - 2}" class="t1">${esc(t1)}</text><text x="${rnd(x0 + w / 2)}" y="${y + 12}" class="t2">${esc(t2)}</text></g>`;
+  };
+  // partikel mengalir di sepanjang garis tengah
+  const particles = (path, k, dur) => (k === 'na' ? '' : [0, 1, 2].map((j) =>
+    `<circle r="${k === 'bad' ? 2.6 : 2.3}" class="fxdot ${k}"><animateMotion dur="${dur}s" begin="-${rnd(j * dur / 3)}s" repeatCount="indefinite" path="${path}"/></circle>`).join(''));
   let out = '';
+
   if (!vertical) {
-    const W = Math.round(Math.max(760, Math.min(1000, boxW * 1.15))), H = 250, cy = 112, x0 = 66, gap = (W - 2 * x0) / (n - 1), R = 26;
-    const X = (i) => x0 + i * gap;
-    // pita funnel (tebal = volume)
-    let up = '', dn = '';
-    steps.forEach((s, i) => { const h = thick(s) / 2; up += `${i ? 'L' : 'M'}${X(i)},${cy - h} `; });
-    for (let i = n - 1; i >= 0; i--) dn += `L${X(i)},${cy + thick(steps[i]) / 2} `;
-    out += `<path class="fx-band" d="${up}${dn}Z"/>`;
+    const W = Math.round(Math.max(760, Math.min(1000, boxW * 1.15))), H = 300, cy = 158, x0 = 74, gap = (W - 2 * x0) / (n - 1);
+    const X = (i) => x0 + i * gap, h = (i) => 7 + 50 * Math.sqrt((steps[i].n || 0) / top);
+    const edge = (sign, from, to) => { // kurva halus antar node
+      let d = '';
+      for (let i = from + 1; i <= to; i++) { const m = X(i - 1) + gap / 2; d += ` C${rnd(m)},${rnd(cy + sign * h(i - 1))} ${rnd(m)},${rnd(cy + sign * h(i))} ${rnd(X(i))},${rnd(cy + sign * h(i))}`; }
+      return d;
+    };
+    const back = (from, to) => { let d = ''; for (let i = to; i > from; i--) { const m = X(i - 1) + gap / 2; d += ` C${rnd(m)},${rnd(cy + h(i))} ${rnd(m)},${rnd(cy + h(i - 1))} ${rnd(X(i - 1))},${rnd(cy + h(i - 1))}`; } return d; };
+    const seg = (a, b) => `M${rnd(X(a))},${rnd(cy - h(a))}${edge(-1, a, b)} L${rnd(X(b))},${rnd(cy + h(b))}${back(a, b)} Z`;
+    // kolom pemandu
+    steps.forEach((s, i) => { out += `<line class="fxguide" x1="${rnd(X(i))}" y1="78" x2="${rnd(X(i))}" y2="${cy + 62}"/>`; });
+    out += `<path d="${seg(0, n - 1)}" fill="url(#${id}b)" filter="url(#${id}s)" opacity=".35" transform="translate(0,10)"/>`;
+    out += `<path d="${seg(0, n - 1)}" fill="url(#${id}b)"/><path d="${seg(0, n - 1)}" fill="url(#${id}h)"/>`;
     steps.forEach((s, i) => {
       if (!i) return;
-      const worst = s === bad, k = st(s);
-      out += `<line class="fx-line ${k} ${worst ? 'worst' : ''}" x1="${X(i - 1) + R}" y1="${cy}" x2="${X(i) - R}" y2="${cy}" ${worst ? 'filter="url(#fxGlow)"' : ''}/>`;
-      out += pill((X(i - 1) + X(i)) / 2, cy - Math.max(thick(steps[i - 1]), thick(s)) / 2 - 18, s, worst);
+      const k = st(s, i), worst = s === bad;
+      if (k === 'bad') out += `<path d="${seg(i - 1, i)}" fill="url(#${id}r)" class="fxleak ${worst ? 'worst' : ''}"/>`;
+      out += particles(`M${rnd(X(i - 1))},${cy} L${rnd(X(i))},${cy}`, k, worst ? 1.1 : 1.8);
+      if (worst) for (let j = 0; j < 4; j++) {
+        const dx = rnd(X(i - 1) + gap * (0.25 + j * 0.17)), y0 = rnd(cy + (h(i - 1) + h(i)) / 2 - 4);
+        out += `<circle class="fxdrop" cx="${dx}" cy="${y0}" r="2.6"><animate attributeName="cy" values="${y0};${y0 + 46}" dur="1.5s" begin="-${rnd(j * 0.37)}s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="1;0" dur="1.5s" begin="-${rnd(j * 0.37)}s" repeatCount="indefinite"/></circle>`;
+      }
     });
     steps.forEach((s, i) => {
-      const worst = s === bad, k = i ? st(s) : 'na';
-      if (worst) out += `<circle class="fx-ring" cx="${X(i)}" cy="${cy}" r="${R}"/><circle class="fx-ring d2" cx="${X(i)}" cy="${cy}" r="${R}"/>`;
-      out += `<circle class="fx-node ${k} ${worst ? 'worst' : ''}" cx="${X(i)}" cy="${cy}" r="${R}"/><text class="fx-n" x="${X(i)}" y="${cy + 5}">${short(s.n || 0)}</text>`;
-      out += `<text class="fx-k" x="${X(i)}" y="${cy + 64}">${esc(gap < 150 ? (SHORT[s.k] || s.k) : s.k)}</text>`;
-      if (worst) out += `<text class="fx-fix" x="${X(i)}" y="${cy + 84}">▲ perbaiki di sini</text>`;
+      const worst = s === bad, x = rnd(X(i));
+      if (worst) out += `<circle class="fxring" cx="${x}" cy="${cy}" r="14"/><circle class="fxring d2" cx="${x}" cy="${cy}" r="14"/>`;
+      out += `<circle cx="${x}" cy="${cy}" r="9" class="fxhalo ${worst ? 'worst' : ''}"/><circle cx="${x}" cy="${cy}" r="4.5" class="fxcore ${worst ? 'worst' : ''}"/>`;
+      out += `<text class="fxname" x="${x}" y="30">${esc((gap < 150 ? SHORT[s.k] || s.k : s.k).toUpperCase())}</text>`;
+      out += `<text class="fxval ${worst ? 'worst' : ''}" x="${x}" y="62">${short(s.n || 0)}</text>`;
+      if (worst) out += `<text class="fxtag" x="${x}" y="${cy - h(i) - 14}">BOCOR DI SINI</text>`;
+      if (i) out += pill(rnd((X(i - 1) + X(i)) / 2), 268, s, i);
     });
-    return `<svg viewBox="0 0 ${W} ${H}" class="fx-svg" role="img" aria-label="Grafik funnel">${defs}${out}</svg>${legend(bad)}`;
+    return `<div class="fxwrap"><svg viewBox="0 0 ${W} ${H}" class="fx-svg" role="img" aria-label="Grafik funnel">${defs}${out}</svg>${legend(bad)}</div>`;
   }
+
   // HP: vertikal
-  const W = 360, gapY = 92, y0 = 40, cx = 64, R = 24, H = y0 * 2 + gapY * (n - 1) + 10;
-  const Y = (i) => y0 + i * gapY;
-  let l = '', r = '';
-  steps.forEach((s, i) => { l += `${i ? 'L' : 'M'}${cx - thick(s) / 2},${Y(i)} `; });
-  for (let i = n - 1; i >= 0; i--) r += `L${cx + thick(steps[i]) / 2},${Y(i)} `;
-  out += `<path class="fx-band" d="${l}${r}Z"/>`;
+  const W = 360, gapY = 104, y0 = 46, cx = 62, H = y0 * 2 + gapY * (n - 1) + 6;
+  const Y = (i) => y0 + i * gapY, h = (i) => 6 + 30 * Math.sqrt((steps[i].n || 0) / top);
+  const seg = (a, b) => {
+    let d = `M${rnd(cx - h(a))},${Y(a)}`;
+    for (let i = a + 1; i <= b; i++) { const m = Y(i - 1) + gapY / 2; d += ` C${rnd(cx - h(i - 1))},${m} ${rnd(cx - h(i))},${m} ${rnd(cx - h(i))},${Y(i)}`; }
+    d += ` L${rnd(cx + h(b))},${Y(b)}`;
+    for (let i = b; i > a; i--) { const m = Y(i - 1) + gapY / 2; d += ` C${rnd(cx + h(i))},${m} ${rnd(cx + h(i - 1))},${m} ${rnd(cx + h(i - 1))},${Y(i - 1)}`; }
+    return d + ' Z';
+  };
+  out += `<path d="${seg(0, n - 1)}" fill="url(#${id}b)"/><path d="${seg(0, n - 1)}" fill="url(#${id}h)"/>`;
   steps.forEach((s, i) => {
     if (!i) return;
-    const worst = s === bad;
-    out += `<line class="fx-line ${st(s)} ${worst ? 'worst' : ''}" x1="${cx}" y1="${Y(i - 1) + R}" x2="${cx}" y2="${Y(i) - R}" ${worst ? 'filter="url(#fxGlow)"' : ''}/>`;
-    out += pill(250, (Y(i - 1) + Y(i)) / 2, s, worst);
+    const k = st(s, i), worst = s === bad;
+    if (k === 'bad') out += `<path d="${seg(i - 1, i)}" fill="url(#${id}r)" class="fxleak ${worst ? 'worst' : ''}"/>`;
+    out += particles(`M${cx},${Y(i - 1)} L${cx},${Y(i)}`, k, worst ? 1.1 : 1.8);
+    if (worst) for (let j = 0; j < 3; j++) {
+      const yy = rnd(Y(i - 1) + gapY * (0.3 + j * 0.2)), xs = rnd(cx + (h(i - 1) + h(i)) / 2 - 3);
+      out += `<circle class="fxdrop" cx="${xs}" cy="${yy}" r="2.4"><animate attributeName="cx" values="${xs};${xs + 34}" dur="1.4s" begin="-${rnd(j * 0.45)}s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="1;0" dur="1.4s" begin="-${rnd(j * 0.45)}s" repeatCount="indefinite"/></circle>`;
+    }
+    out += pill(132, rnd((Y(i - 1) + Y(i)) / 2), s, i, 'start');
   });
   steps.forEach((s, i) => {
-    const worst = s === bad, k = i ? st(s) : 'na';
-    if (worst) out += `<circle class="fx-ring" cx="${cx}" cy="${Y(i)}" r="${R}"/><circle class="fx-ring d2" cx="${cx}" cy="${Y(i)}" r="${R}"/>`;
-    out += `<circle class="fx-node ${k} ${worst ? 'worst' : ''}" cx="${cx}" cy="${Y(i)}" r="${R}"/><text class="fx-n" x="${cx}" y="${Y(i) + 5}">${short(s.n || 0)}</text>`;
-    out += `<text class="fx-k left" x="${cx + 40}" y="${Y(i) + 5}">${esc(s.k)}${worst ? ' ◀' : ''}</text>`;
+    const worst = s === bad;
+    if (worst) out += `<circle class="fxring" cx="${cx}" cy="${Y(i)}" r="12"/><circle class="fxring d2" cx="${cx}" cy="${Y(i)}" r="12"/>`;
+    out += `<circle cx="${cx}" cy="${Y(i)}" r="8" class="fxhalo ${worst ? 'worst' : ''}"/><circle cx="${cx}" cy="${Y(i)}" r="4" class="fxcore ${worst ? 'worst' : ''}"/>`;
+    out += `<text class="fxname l" x="132" y="${Y(i) - 8}">${esc((SHORT[s.k] || s.k).toUpperCase())}${worst ? ' · BOCOR' : ''}</text>`;
+    out += `<text class="fxval l ${worst ? 'worst' : ''}" x="132" y="${Y(i) + 14}">${short(s.n || 0)}</text>`;
   });
-  return `<svg viewBox="0 0 ${W} ${H}" class="fx-svg v" role="img" aria-label="Grafik funnel">${defs}${out}</svg>${legend(bad)}`;
+  return `<div class="fxwrap"><svg viewBox="0 0 ${W} ${H}" class="fx-svg v" role="img" aria-label="Grafik funnel">${defs}${out}</svg>${legend(bad)}</div>`;
 }
 const legend = (bad) => `<div class="fx-legend">
   <span><i class="ok"></i>sesuai patokan</span><span><i class="bad"></i>di bawah patokan</span><span><i class="na"></i>belum ada data</span>
-  ${bad ? `<b class="fx-alert">Perbaiki dulu: ${esc(bad.l)} ${p1(bad.r)} (patokan ${p1(bad.t)})</b>` : '<b class="fx-good">Semua tahap aman</b>'}
+  ${bad ? `<b class="fx-alert"><span class="dotlive"></span>Perbaiki dulu: ${esc(bad.l)} ${p1(bad.r)} (patokan ${p1(bad.t)})</b>` : '<b class="fx-good">Semua tahap aman</b>'}
 </div>`;

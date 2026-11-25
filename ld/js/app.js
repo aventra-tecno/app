@@ -1,7 +1,7 @@
 // Aventra Leads · kerangka aplikasi, login, router
 import { api } from './api.js';
 import { APP_VERSION, DEMO } from './config.js';
-import { esc, icon, toast, modal, $, $$, RANGE_LABEL, customLabel, range, ymdLocal } from './ui.js';
+import { esc, icon, toast, modal, $, $$, RANGE_LABEL, customLabel, range, ymdLocal, metaDates, tzBeda } from './ui.js';
 
 export const state = {
   user: null, tenants: [], tenant: null, role: 'cs', nama: null, jabatan: null, menus: null, wa: [],
@@ -126,6 +126,7 @@ function renderShell() {
         <button class="icon-btn only-m" id="menuBtn" aria-label="Menu">${icon('menu')}</button>
         <div class="top-title"><h1 id="pageTitle"></h1><small id="pageSub">${esc(state.tenant.nama)}</small></div>
         <div class="top-right">
+          <div class="sync-box" id="syncBox"></div>
           <div class="seg" id="periodSeg">${Object.entries(RANGE_LABEL).map(([k, v]) => `<button data-p="${k}" class="${k === state.period ? 'on' : ''}">${v}</button>`).join('')}<button data-p="custom" class="pickdate ${state.period.startsWith('custom:') ? 'on' : ''}">${icon('calendar')}<span>${esc(customLabel(state.period))}</span></button></div>
         </div>
       </header>
@@ -133,6 +134,7 @@ function renderShell() {
     </div>
   </div>`;
 
+  drawSync();
   $('#meBtn').onclick = () => {
     const m = modal('Nama saya', `<form class="form" id="nf"><label>Nama<input name="nama" required value="${esc(state.nama || '')}" placeholder="mis. Akhmad Janni"></label>
       <p class="muted small">Tampil di pojok kiri bawah dan di daftar Tim & Akses.</p><button class="btn primary block">Simpan</button></form>`);
@@ -177,6 +179,49 @@ function renderShell() {
   if (ts) ts.onchange = async () => { state.tenant = state.tenants.find((t) => t.id === ts.value); await loadTenantData(); renderShell(); route(); };
 }
 
+// ---------------------------------------------------------------- sinkron Meta (pojok kanan atas)
+const lalu = (iso) => {
+  const m = Math.round((Date.now() - Date.parse(iso)) / 60000);
+  return m < 1 ? 'baru saja' : m < 60 ? `${m} mnt lalu` : m < 1440 ? `${Math.round(m / 60)} jam lalu` : `${Math.round(m / 1440)} hari lalu`;
+};
+function drawSync(busy = false) {
+  const box = $('#syncBox'); if (!box) return;
+  const t = state.tenant, info = String(t.last_sync_info || ''), gagal = info.startsWith('GAGAL');
+  const isAdmin = state.role !== 'cs';
+  if (!t.ad_account_id) { box.hidden = !isAdmin; box.innerHTML = `<span class="sync-dot off"></span><div class="sync-txt"><small>Data Meta</small><b>belum terhubung</b></div>${isAdmin ? `<a class="sync-btn" href="#/pengaturan">${icon('gear')}Atur</a>` : ''}`; return; }
+  box.hidden = false;
+  const when = t.last_sync_at ? `${new Date(t.last_sync_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })} · ${lalu(t.last_sync_at)}` : 'belum pernah';
+  box.title = `${info}${tzBeda(t.ad_tz) ? `\nZona akun iklan: ${t.ad_tz}` : ''}${t.auto_sync !== false ? '\nSinkron otomatis tiap 30 menit' : ''}`;
+  box.innerHTML = `<span class="sync-dot ${gagal ? 'err' : ''}"></span>
+    <div class="sync-txt"><small>Sinkron Meta${t.auto_sync !== false ? ' · otomatis' : ''}</small><b class="${gagal ? 'err' : ''}">${gagal ? 'Gagal · ' : ''}${esc(when)}</b></div>
+    ${isAdmin ? `<button class="sync-btn ${busy ? 'spin' : ''}" id="syncBtn" ${busy ? 'disabled' : ''}>${icon('sync')}${busy ? 'Menyinkron…' : 'Sinkron'}</button>` : ''}`;
+  const b = $('#syncBtn');
+  if (b) b.onclick = async () => {
+    drawSync(true);
+    try {
+      const md = metaDates(state.period, t.ad_tz);
+      const r = await api.syncMeta(t.id, md.since, md.until);
+      if (r.tz) t.ad_tz = r.tz;
+      t.last_sync_at = new Date().toISOString(); t.last_sync_info = `${r.baris} baris`;
+      toast(`Sinkron selesai: ${r.baris} baris, spend Rp${Number(r.spend || 0).toLocaleString('id-ID')}`);
+      drawSync(); route();
+    } catch (err) {
+      t.last_sync_info = 'GAGAL: ' + err.message; toast(err.message, 'err'); drawSync();
+    }
+  };
+}
+// ambil ulang status sinkron (jadwal otomatis berjalan di server), paling sering 1x per menit
+let lastPull = 0;
+async function pullTenant() {
+  if (Date.now() - lastPull < 60000) return;
+  lastPull = Date.now();
+  try {
+    const list = await api.tenants();
+    const fresh = list.find((x) => x.id === state.tenant.id);
+    if (fresh) { Object.assign(state.tenant, { last_sync_at: fresh.last_sync_at, last_sync_info: fresh.last_sync_info, ad_tz: fresh.ad_tz, auto_sync: fresh.auto_sync, ad_account_id: fresh.ad_account_id }); drawSync(); }
+  } catch { /* abaikan */ }
+}
+
 let seq = 0;
 async function route() {
   if (!$('#page')) return;
@@ -187,6 +232,7 @@ async function route() {
   $$('.side-nav a').forEach((a) => a.classList.toggle('active', a.dataset.page === page.id));
   $('#pageTitle').textContent = page.label;
   $('#periodSeg').style.visibility = ['ringkasan', 'leads', 'klik', 'funnel'].includes(page.id) ? 'visible' : 'hidden';
+  pullTenant();
   const el = $('#page');
   const my = ++seq;
   el.innerHTML = '<div class="loading">Memuat…</div>';
