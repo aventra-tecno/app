@@ -1,6 +1,6 @@
-import { supa, rpc, fetchAll } from '../supa.js';
+import { supa, rpc } from '../supa.js';
 import { store } from '../store.js';
-import { esc, rp, num, fmtTime, fmtDate, todayStr, addDays, on, toast, toastErr, icon, emptyState, confirmBox, promptBox, statusTag, beep, copyBtn, skuMatch, modal } from '../ui.js';
+import { esc, rp, num, fmtTime, fmtDate, todayStr, addDays, on, toast, toastErr, icon, emptyState, confirmBox, promptBox, statusTag, beep, copyBtn, modal } from '../ui.js';
 import { scanBox, bindScan } from '../scanner.js';
 import { bindProductSearch } from '../daftar-file.js';
 
@@ -118,7 +118,6 @@ export default {
 
     let listDate = todayStr(), listAll = false, rq = '';
     // 2.59 pencarian barang / resi pindah ke atas (samping toko), hasilnya di pop-up
-    let dayItems = null;
     const loadToday = async () => {
       const box = el.querySelector('#today');
       if (!storeId && !listAll && !rq) { box.innerHTML = ''; return; }
@@ -150,49 +149,56 @@ export default {
       const ri = box.querySelector('#rq');
       if (ri && document.activeElement !== ri && box._rqFocus) { ri.focus(); ri.setSelectionRange(ri.value.length, ri.value.length); }
     };
-    // barang yang sudah dicatat di tanggal terpilih (semua toko) -> di resi mana & toko mana
-    async function loadDayItems() {
-      if (dayItems && dayItems.date === listDate && Date.now() - dayItems.at < 20000) return dayItems;
-      const rows = await fetchAll(() => supa.from('order_items').select('qty, product_id, products(id, sku, name), orders!inner(id, resi, order_no, status, created_at, stores(name))')
-        .gte('orders.created_at', listDate + 'T00:00:00+07:00').lt('orders.created_at', addDays(listDate, 1) + 'T00:00:00+07:00').not('product_id', 'is', null).order('id')).catch(() => []);
-      const m = new Map();
-      for (const r of rows) {
-        if (!r.products || r.orders?.status === 'cancel') continue;
-        let g = m.get(r.product_id);
-        if (!g) m.set(r.product_id, g = { id: r.product_id, sku: r.products.sku, name: r.products.name, qty: 0, resi: [] });
-        g.qty += r.qty;
-        const o = g.resi.find((x) => x.id === r.orders.id);
-        if (o) o.qty += r.qty; else g.resi.push({ id: r.orders.id, resi: r.orders.resi || r.orders.order_no, store: r.orders.stores?.name || '-', status: r.orders.status, at: r.orders.created_at, qty: r.qty });
-      }
-      return (dayItems = { date: listDate, at: Date.now(), list: [...m.values()].sort((a, b) => b.qty - a.qty) });
-    }
     const resiRow = (o, extra = '') => `<button class="list-item" data-fopen="${o.id}"><span class="xs muted" style="width:46px">${extra}${fmtTime(o.at)}</span><div class="grow" style="min-width:0"><b class="mono">${esc(o.resi)}</b>${copyBtn(o.resi)} <span class="tag">${esc(o.store)}</span>${o.qty ? `<div class="xs muted">×${o.qty} barang ini</div>` : ''}</div>${statusTag(o.status)}</button>`;
+    // 2.61 pop-up cari: punya pilihan tanggal sendiri (tidak ikut tanggal daftar resi). Tanggal pesanan = sama dengan Rekap harian.
+    let fFrom = todayStr(), fTo = todayStr();
     async function findPopup(text) {
       text = text.trim(); if (!text) return;
-      const k = text.replace(/[,%()*]/g, ''), words = k.toLowerCase().split(/\s+/).filter(Boolean);
-      const [d, id, resiRes] = await Promise.all([
-        loadDayItems(),
-        rpc('find_product', { p_code: text }).catch(() => null),
-        k.length >= 3 ? supa.from('orders').select('id, resi, order_no, status, created_at, stores(name)').or(`resi.ilike.%${k}%,order_no.ilike.%${k}%`).order('created_at', { ascending: false }).limit(20) : Promise.resolve({ data: [] })
-      ]);
-      const hits = id ? d.list.filter((g) => g.id === id) : d.list.filter((g) => words.every((w) => `${g.name} ${g.sku}`.toLowerCase().includes(w) || skuMatch(w, g.sku)));
+      const k = text.replace(/[,%()*]/g, '');
+      const resiRes = k.length >= 3 ? await supa.from('orders').select('id, resi, order_no, status, created_at, stores(name)').or(`resi.ilike.%${k}%,order_no.ilike.%${k}%`).order('created_at', { ascending: false }).limit(20) : { data: [] };
       const resis = (resiRes.data || []).map((o) => ({ id: o.id, resi: o.resi || o.order_no, store: o.stores?.name || '-', status: o.status, at: o.created_at }));
-      let pname = '';
-      if (id && !hits.length) { const { data: pr } = await supa.from('products').select('name, sku').eq('id', id).maybeSingle(); pname = pr ? `${pr.name} (${pr.sku})` : ''; }
-      const tgl = esc(fmtDate(listDate, { day: 'numeric', month: 'long', year: 'numeric' }));
-      const body = `<div class="stack s8">
-        <div class="xs muted">Barang dicari di resi tanggal <b>${tgl}</b> (ganti tanggal di daftar resi bawah). Resi dicari di semua tanggal. Semua toko.</div>
-        ${hits.length ? hits.slice(0, 12).map((g) => `<div style="border:1px solid var(--line);border-radius:12px;overflow:hidden"><div style="padding:10px 12px"><b>${esc(g.name)}</b> <span class="xs muted mono">${esc(g.sku)}</span>
+      const range = (a, b) => a === b ? fmtDate(a, { day: 'numeric', month: 'long', year: 'numeric' }) : `${fmtDate(a, { day: 'numeric', month: 'short' })} – ${fmtDate(b, { day: 'numeric', month: 'short', year: 'numeric' })}`;
+      const paint = async (ov) => {
+        const box = ov.querySelector('#fpres');
+        box.innerHTML = '<div class="small muted">Mencari…</div>';
+        ov.querySelector('#fpr').textContent = range(fFrom, fTo);
+        ov.querySelectorAll('[data-fq]').forEach((b) => b.classList.toggle('on', b.dataset.fq === quick()));
+        let rows = [];
+        try { rows = await rpc('cari_barang_resi', { p_q: text, p_from: fFrom, p_to: fTo }) || []; } catch (e) { box.innerHTML = `<div class="alert red small">${esc(e.message || e)}</div>`; return; }
+        const m = new Map();
+        for (const r of rows) {
+          let g = m.get(r.product_id); if (!g) m.set(r.product_id, g = { id: r.product_id, sku: r.sku, name: r.name, qty: 0, resi: [] });
+          g.qty += r.qty; g.resi.push({ id: r.order_id, resi: r.resi, store: r.store_name || '-', status: r.status, at: r.at, day: r.order_day, qty: r.qty });
+        }
+        const hits = [...m.values()], multi = fFrom !== fTo;
+        box.innerHTML = (hits.length ? hits.slice(0, 15).map((g) => `<div style="border:1px solid var(--line);border-radius:12px;overflow:hidden"><div style="padding:10px 12px"><b>${esc(g.name)}</b> <span class="xs muted mono">${esc(g.sku)}</span>
             <div class="small">${g.qty} pcs di <b>${g.resi.length}</b> resi · toko: ${[...new Set(g.resi.map((r) => r.store))].map((t) => `<span class="tag">${esc(t)}</span>`).join(' ')}</div></div>
-            <div class="list no-page" style="padding:0 12px">${g.resi.map((o) => resiRow(o)).join('')}</div></div>`).join('')
-          : pname ? `<div class="alert yellow small"><b>${esc(pname)}</b> belum dicatat di resi mana pun pada ${tgl}.</div>`
-          : resis.length ? '' : `<div class="alert yellow small">Tidak ada barang atau resi yang cocok dengan “${esc(text)}”.</div>`}
-        ${resis.length ? `<div class="small" style="font-weight:600;margin-top:4px">Resi cocok (${resis.length})</div><div class="list no-page">${resis.map((o) => resiRow(o, fmtDate(o.at, { day: 'numeric', month: 'short' }) + '<br>')).join('')}</div>` : ''}</div>`;
+            <div class="list no-page" style="padding:0 12px">${g.resi.map((o) => resiRow(o, multi ? fmtDate(o.day, { day: 'numeric', month: 'short' }) + '<br>' : '')).join('')}</div></div>`).join('')
+          : `<div class="alert yellow small">Tidak ada barang “${esc(text)}” di pesanan ${esc(range(fFrom, fTo))}. Coba pilih tanggal lain atau <b>7 hari</b>.</div>`)
+          + (resis.length ? `<div class="small" style="font-weight:600;margin-top:4px">Resi cocok, semua tanggal (${resis.length})</div><div class="list no-page">${resis.map((o) => resiRow(o, fmtDate(o.at, { day: 'numeric', month: 'short' }) + '<br>')).join('')}</div>` : '');
+      };
+      const quick = () => fFrom === todayStr() && fTo === todayStr() ? 'today' : fFrom === addDays(todayStr(), -1) && fTo === fFrom ? 'yest' : fFrom === addDays(todayStr(), -6) && fTo === todayStr() ? 'w' : '';
+      const body = `<div class="stack s8">
+        <div class="row wrap" style="gap:6px"><div class="chips">${[['today', 'Hari ini'], ['yest', 'Kemarin'], ['w', '7 hari']].map(([kk, t]) => `<button class="chip" data-fq="${kk}">${t}</button>`).join('')}</div>
+          <span class="row" style="gap:4px;flex-wrap:nowrap"><input type="date" class="input sm" id="ffrom" value="${fFrom}" max="${todayStr()}" aria-label="Dari tanggal" style="max-width:150px"><span class="xs muted">s/d</span><input type="date" class="input sm" id="fto" value="${fTo}" max="${todayStr()}" aria-label="Sampai tanggal" style="max-width:150px"></span></div>
+        <div class="xs muted">Tanggal pesanan sama dengan Rekap harian · <b id="fpr"></b> · semua toko</div>
+        <div class="stack s8" id="fpres"></div></div>`;
       await modal({ title: `Hasil cari “${text}”`, body, wide: true, actions: [{ label: 'Tutup', cls: 'btn-primary', value: null }],
-        onOpen: (ov, close) => ov.addEventListener('click', (e) => {
-          const b = e.target.closest('[data-fopen]'); if (!b || e.target.closest('[data-copy]')) return;
-          close(null); openOrderId(+b.dataset.fopen);
-        }) });
+        onOpen: (ov, close) => {
+          paint(ov);
+          ov.addEventListener('click', (e) => {
+            const q = e.target.closest('[data-fq]');
+            if (q) { const t = todayStr(); [fFrom, fTo] = q.dataset.fq === 'today' ? [t, t] : q.dataset.fq === 'yest' ? [addDays(t, -1), addDays(t, -1)] : [addDays(t, -6), t]; ov.querySelector('#ffrom').value = fFrom; ov.querySelector('#fto').value = fTo; paint(ov); return; }
+            const b = e.target.closest('[data-fopen]'); if (!b || e.target.closest('[data-copy]')) return;
+            close(null); openOrderId(+b.dataset.fopen);
+          });
+          ov.addEventListener('change', (e) => {
+            if (e.target.id === 'ffrom') { fFrom = e.target.value || todayStr(); if (fTo < fFrom) { fTo = fFrom; ov.querySelector('#fto').value = fTo; } }
+            else if (e.target.id === 'fto') { fTo = e.target.value || todayStr(); if (fTo < fFrom) { fFrom = fTo; ov.querySelector('#ffrom').value = fFrom; } }
+            else return;
+            paint(ov);
+          });
+        } });
     }
     on(el, 'submit', '#gqf', (e) => { e.preventDefault(); const i = el.querySelector('#gq'); const t = i.value; i.value = ''; i.blur(); findPopup(t); });
     let rqTimer = null;

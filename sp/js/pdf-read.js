@@ -25,10 +25,30 @@ const COLS = [
 const LABEL = { code: 'Kode', name: 'Nama Barang', warna: 'Warna', price: 'Macallan', category: 'Kategori' };
 const isCode = (s) => /^[A-Z0-9][A-Z0-9.\-\/ ]{2,}$/i.test(s) && /\d/.test(s) && /[-.\/]|^[A-Z0-9]{5,}$/i.test(s.replace(/\s/g, '')) && s.replace(/[^A-Z0-9]/gi, '').length >= 5;
 
+// 2.62 kode pendek tanpa tanda baca (cat semprot WIN "D 01" .. "D 72")
+const SHORT_CODE = /^[A-Z]{1,3}\s?\d{2,3}$/;
+// judul bagian yang nama barangnya sudah lengkap / bukan jenis barang -> tidak ditempel
+const NO_TITLE = /^(AEROSOL|ACCESORIES|ACCESSORIES|AKSESORIS|HONDA|YAMAHA|SUZUKI|KAWASAKI|TVS|VESPA|PIAGGIO|LAIN[- ]?LAIN|SOLID COLOUR|SCOTLITE COLOUR|CANDY COLOUR|METALIC COLOUR|FLUORECENT COLOUR)$/;
+// judul kelompok biasa (halaman sparepart tanpa ***): pendek, bukan daftar motor ("HONDA : PRIMA, GRAND, ...")
+const isGroupTitle = (t) => !/[,:]/.test(t) && (t.match(/\//g) || []).length < 2 && t.split(' ').length <= 6 && /[A-Z]{3}/.test(t)
+  && !/^(PERUBAHAN|HARGA|HAL(AMAN)?\b|NO\b)/.test(t) && !NO_TITLE.test(t);
+// nama lengkap = judul + teks barang, kecuali teksnya sudah memuat judul. "COVER STOP BAWAH" + "BAWAH VARIO" -> "COVER STOP BAWAH VARIO"
+function withTitle(title, name) {
+  if (!title || !name || NO_TITLE.test(title) || /^COMPLETE SET/.test(title)) return name;
+  const T = title.toUpperCase(), N = name.toUpperCase();
+  const first = T.split(' ')[0];
+  if (N.startsWith(first) || N.includes(T)) return name;
+  let t = title;
+  if (/^\(/.test(name)) t = t.replace(/\s*\([^)]*\)\s*$/, '');              // "TUTUP LEGSHIELD DALAM (KANTONG)" + "( KANTONG BESAR ) ..."
+  const tw = t.split(' '), nw = name.split(' ');
+  if (tw.length > 1 && tw[tw.length - 1].toUpperCase() === nw[0].toUpperCase()) nw.shift();
+  return (t + ' ' + nw.join(' ')).replace(/\s+/g, ' ').trim();
+}
 const PART_WORD = /^(COVER|FRONT|REAR|PANEL|LEGSHIELD|FOOTREST|TUTUP|BOX|SPAKBOR|SPAKBOARD|FENDER|GARNIS|BUNTUT|DUDUKAN|STAY|MIKA|LAMPU|STOP|SAYAP|BODY|KONDOM|BEHEL|TAMENG|LIST|CHAIN|SPION|EMBLEM|STRIPING)\b/;
 // pages: [{ items: [{ str, x, y, w, h }] }]  (y = dari bawah halaman, seperti pdf.js)
 export function pdfItemsToRows(pages) {
   const out = []; let cols = null; let headerDone = false;
+  let title = null, starMode = false, lastWasHead = false;   // 2.62 judul kelompok berjalan (lintas halaman)
   for (const pg of pages) {
     const items = pg.items.filter((i) => String(i.str).trim() !== '').map((i) => ({ ...i, str: String(i.str).replace(/\s+/g, ' ').trim(), cx: i.x + (i.w || 0) / 2 }));
     if (!items.length) continue;
@@ -61,7 +81,7 @@ export function pdfItemsToRows(pages) {
       let i = bounds.findIndex((b) => it.cx < b); if (i < 0) i = cols.length - 1;
       let c = cols[i].col;
       // kolom kode hanya untuk teks berbentuk kode; teks lain (nama yang mulai di kiri) masuk kolom nama
-      if (c === 'code' && !isCode(it.str)) c = order.includes('name') ? 'name' : c;
+      if (c === 'code' && !isCode(it.str) && !SHORT_CODE.test(it.str.trim())) c = order.includes('name') ? 'name' : c;
       // kolom harga hanya untuk angka; teks lain milik kolom sebelumnya (warna / nama)
       if (c === 'price' && !isPrice(it.str)) { const prev = cols.slice(0, i).reverse().find((x) => x.col !== 'price' && x.col !== 'no'); c = prev ? prev.col : c; }
       // 2.60 teks di kolom No yang bukan angka = awal nama (mis. "GL 100"); jadi kode hanya kalau berbentuk kode bertanda - . /
@@ -83,7 +103,9 @@ export function pdfItemsToRows(pages) {
       let code = (cells.code || []).join(' ').trim();
       // 2.60 pengaman: kalau ada teks lain menempel di belakang kode (mis. "01-B28-524-00AA 100 ST"), ambil kodenya saja
       if (/\s/.test(code)) { const first = code.split(' ')[0]; if (isCode(first)) { code = first; cells.code = [first]; } }
-      if (code && isCode(code)) rows.push({ y: l.y, h: l.h, cells, extra: [] });
+      // 2.62 kode pendek (mis. cat semprot "D 01") hanya dianggap kode kalau di baris itu ada harganya
+      if (code && !isCode(code) && SHORT_CODE.test(code) && !cells.price) { (cells.name ||= []).unshift(...cells.code); delete cells.code; code = ''; }
+      if (code && (isCode(code) || SHORT_CODE.test(code))) rows.push({ y: l.y, h: l.h, cells, extra: [] });
       else rows.push({ y: l.y, h: l.h, cells, loose: true, heading: !inName && !cells.price && !cells.qty });
     }
     const anchors = rows.filter((r) => !r.loose);
@@ -113,12 +135,22 @@ export function pdfItemsToRows(pages) {
       }
     }
     for (const r of rows) {
-      if (r.section) { out.push([r.section]); continue; }
+      if (r.section) {
+        out.push([r.section]);
+        // 2.62 judul kelompok untuk melengkapi nama barang (format PL WIN Nov 2026: nama = judul bagian + teks barang)
+        const t = r.section.replace(/\s+/g, ' ').trim();
+        if (/^\*+.*\*+$/.test(t)) { title = t.replace(/\*/g, '').trim(); starMode = true; }
+        else if (!starMode && r.heading && isGroupTitle(t) && !lastWasHead) title = t;
+        lastWasHead = !!r.heading;
+        continue;
+      }
       if (r.loose) continue;
+      lastWasHead = false;
       const parts = [...r.extra, r].sort((a, b) => b.y - a.y);   // urut atas -> bawah
       out.push(order.map((c) => {
         if (c === 'code' || c === 'price') return (r.cells[c] || []).join(' ').trim();
-        return parts.map((p) => (p.cells[c] || []).join(' ')).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+        const v = parts.map((p) => (p.cells[c] || []).join(' ')).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+        return c === 'name' ? withTitle(title, v) : v;
       }));
     }
   }
