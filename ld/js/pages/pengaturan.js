@@ -54,6 +54,7 @@ async function pixel(el, { state }) {
     <label class="check"><input type="checkbox" name="pixel_browser" ${t.pixel_browser ? 'checked' : ''}> Pasang Pixel otomatis lewat script (PageView + ViewContent)</label>
     <label class="check"><input type="checkbox" name="lead_event" ${t.lead_event !== false ? 'checked' : ''}><span>Kirim event <b>Lead</b> ke Meta saat chat berkode tercatat (dari CS atau ekstensi WhatsApp)</span></label>
     <p class="muted small" style="margin:-6px 0 0 26px">Bisa dipakai campaign <b>Leads → Website → Lead</b> supaya Meta mencari orang yang benar-benar chat, bukan sekadar klik tombol WA.</p>
+    <div class="backfill" id="backfill"></div>
     <label>Nama konten untuk ViewContent<input name="vc_name" value="${esc(t.vc_name || '')}" placeholder="Pijat Panggilan Surabaya"></label>
     <p class="muted small">Aktifkan kalau landing page <b>belum</b> punya kode Pixel. Kalau sudah ada kode Pixel manual, biarkan mati supaya PageView tidak dobel. Perubahan terasa di landing page paling lambat 5 menit.</p>
     <label>Test event code (opsional)<input name="test_event_code" value="${esc(t.test_event_code || '')}" placeholder="TEST12345"></label>
@@ -82,6 +83,27 @@ async function pixel(el, { state }) {
   };
   const h = $('#hapus', el);
   if (h) h.onclick = async () => { if (!confirm('Hapus token? Event berhenti terkirim ke Meta.')) return; await api.saveToken(t.id, ''); pixel(el, { state }); };
+
+  // kirim susulan event Lead untuk chat lama (maks. 7 hari, batas Meta)
+  const bf = $('#backfill', el);
+  const drawBf = async () => {
+    let list = [];
+    try { list = await api.pendingLeads(t.id); } catch { bf.innerHTML = ''; return; }
+    if (!list.length) { bf.innerHTML = '<span class="ok-text small">✓ Semua chat berkode 7 hari terakhir sudah terkirim sebagai Lead.</span>'; return; }
+    bf.innerHTML = `<div><b>${list.length} chat berkode</b> dalam 7 hari terakhir belum terkirim sebagai Lead.${t.test_event_code ? ' <span class="err-text">Kosongkan Test event code dulu supaya tidak masuk ke Test events.</span>' : ''}</div>
+      <button type="button" class="btn sm primary" id="bfGo">Kirim sekarang</button>`;
+    $('#bfGo', bf).onclick = async (e) => {
+      const b = e.target; b.disabled = true;
+      let ok = 0, lewat = 0, gagal = 0;
+      for (let i = 0; i < list.length; i++) {
+        b.textContent = `Mengirim ${i + 1}/${list.length}…`;
+        try { const r = await api.sendLead(list[i].id); if (r?.terkirim) ok++; else if (r?.lewati) lewat++; else gagal++; } catch { gagal++; }
+      }
+      toast(`Lead terkirim: ${ok}${lewat ? ` · dilewati ${lewat}` : ''}${gagal ? ` · gagal ${gagal} (lihat Log Event Meta)` : ''}`, gagal ? 'warn' : 'ok');
+      drawBf();
+    };
+  };
+  drawBf();
 }
 
 // ---------------------------------------------------------------- Meta Ads (v1.2.0)

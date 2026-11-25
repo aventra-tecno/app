@@ -71,6 +71,12 @@ const real = {
   async leadByClick(clickId) { const c = await client(); return must(await c.from('leads').select('*').eq('click_id', clickId).maybeSingle()); },
   async createLead(row) { const c = await client(); return must(await c.from('leads').insert(row).select('*').single()); },
   async updateLead(id, patch) { const c = await client(); must(await c.from('leads').update(patch).eq('id', id)); },
+  // chat berkode 7 hari terakhir yang event Lead-nya belum terkirim (untuk kirim susulan)
+  async pendingLeads(tid) {
+    const c = await client(); const sejak = new Date(Date.now() - 7 * 864e5 + 3600e3).toISOString();
+    return must(await c.from('leads').select('id, created_at').eq('tenant_id', tid).not('click_id', 'is', null)
+      .is('lead_sent_at', null).gte('created_at', sejak).order('created_at').limit(500));
+  },
   // kirim event Lead ke Meta (hanya chat yang terhubung ke klik iklan; dicek di server)
   async sendLead(leadId) {
     const c = await client(); const s = (await c.auth.getSession()).data.session;
@@ -253,7 +259,8 @@ const demo = {
   async leadByClick(cid) { return D.leads.find((l) => l.click_id === cid) ?? null; },
   async createLead(row) { const l = { id: 'l' + Date.now(), stage: 'A', sumber: 'manual', created_at: new Date().toISOString(), ...row }; D.leads.push(l); return l; },
   async updateLead(id, p) { Object.assign(D.leads.find((l) => l.id === id), p); },
-  async sendLead(id) { const l = D.leads.find((x) => x.id === id); if (l?.click_id) l.lead_sent_at = new Date().toISOString(); return { ok: true }; },
+  async pendingLeads() { return D.leads.filter((l) => l.click_id && !l.lead_sent_at && Date.now() - Date.parse(l.created_at) < 6.9 * 864e5).map((l) => ({ id: l.id, created_at: l.created_at })); },
+  async sendLead(id) { const l = D.leads.find((x) => x.id === id); if (l?.click_id) { l.lead_sent_at = new Date().toISOString(); return { ok: true, terkirim: true }; } return { ok: true, lewati: 'tanpa klik' }; },
   async markPaid(id, nilai) {
     const l = D.leads.find((x) => x.id === id);
     Object.assign(l, { stage: 'E', alasan: null, nilai, paid_at: new Date().toISOString(), purchase_sent_at: new Date().toISOString() });

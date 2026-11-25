@@ -662,3 +662,6 @@ b.lg-logo.brand-text { color: var(--navy-2); font-size: 30px; height: auto; }
 .bar-row.al { grid-template-columns: 0 150px 1fr 30px; }
 .tbl.kin .mchip { display: inline-block; margin: 1px 0; }
 @media (max-width: 900px) { .stbar { min-width: 0; width: 60%; display: inline-flex; } .bar-row.al { grid-template-columns: 0 1fr 70px 26px; } }
+
+/* v1.12.2 — kirim susulan Lead */
+.backfill:not(:empty) { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-left: 26px; padding: 10px 12px; border-radius: 10px; background: var(--blue-bg); font-size: 13px; }
