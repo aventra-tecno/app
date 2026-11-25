@@ -79,6 +79,46 @@ export function range(key) {
   const days = { today: 1, '7d': 7, '14d': 14, '30d': 30 }[key] ?? 7;
   return { from: new Date(end.getTime() - days * 864e5).toISOString(), to: end.toISOString(), days };
 }
+// Nama iklan dari URL kadang tersandi 2x ("Konten+1+Leads+25%2F11") → rapikan
+export function cleanName(v) {
+  if (v == null) return v;
+  let s = String(v);
+  for (let i = 0; i < 3 && /%[0-9A-Fa-f]{2}|\+/.test(s); i++) {
+    try { s = decodeURIComponent(s.replace(/\+/g, ' ')); } catch { s = s.replace(/\+/g, ' '); break; }
+  }
+  return s.trim();
+}
+
+// Tanggal data Meta mengikuti zona waktu akun iklan (mis. America/Los_Angeles).
+const tzYmd = (d, tz) => { try { if (tz) return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d); } catch {} return ymdLocal(d); };
+export function metaDates(key, tz) {
+  if (typeof key === 'string' && key.startsWith('custom:')) { const [, a, b] = key.split(':'); return { since: a, until: b }; }
+  const now = new Date();
+  const back = (n) => tzYmd(new Date(now.getTime() - n * 864e5), tz);
+  if (key === 'today') return { since: back(0), until: back(0) };
+  if (key === 'yesterday') return { since: back(1), until: back(1) };
+  const days = { '7d': 7, '14d': 14, '30d': 30 }[key] ?? 7;
+  return { since: back(days - 1), until: back(0) };
+}
+export const tzBeda = (tz) => !!tz && !['Asia/Jakarta', 'Asia/Bangkok', 'Asia/Ho_Chi_Minh', 'Asia/Pontianak'].includes(tz);
+
+// Isian rupiah: <input data-rp> otomatis jadi 135.000 saat diketik
+export const rpVal = (v) => Number(String(v ?? '').replace(/\D/g, '')) || 0;
+if (typeof document !== 'undefined' && document.addEventListener) {
+  document.addEventListener('input', (e) => {
+    const i = e.target;
+    if (!(i instanceof HTMLInputElement) || !i.hasAttribute('data-rp')) return;
+    const pos = i.selectionStart ?? i.value.length;
+    const digitsBefore = i.value.slice(0, pos).replace(/\D/g, '').length;
+    const d = i.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+    const out = d ? Number(d).toLocaleString('id-ID') : '';
+    i.value = out;
+    let k = 0, p = 0;
+    while (p < out.length && k < digitsBefore) { if (/\d/.test(out[p])) k++; p++; }
+    try { i.setSelectionRange(p, p); } catch {}
+  }, true);
+}
+
 export const ymdLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 export function customLabel(key) {
   if (!key?.startsWith('custom:')) return 'Pilih tanggal';

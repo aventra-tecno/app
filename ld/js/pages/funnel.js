@@ -2,7 +2,7 @@
 // Rumus inti:  CPA = CPM ÷ (1000 × CTR × OCLP × Contact × Chat × Purchase)   (iklan ke website)
 //              CPA = CPM ÷ (1000 × CTR × Chat × Purchase)                    (iklan CTWA)
 import { api } from '../api.js';
-import { esc, rp, num, range, toast, icon, $ } from '../ui.js';
+import { esc, rp, num, range, metaDates, tzBeda, toast, icon, $ } from '../ui.js';
 
 // ---------- nilai awal & penjelasan ----------
 const DEF = {
@@ -50,7 +50,7 @@ const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0
 const p1 = (v) => (Number.isFinite(v) ? (v * 100).toFixed(v < 0.1 ? 2 : 1).replace('.', ',') + '%' : '-');
 const div = (a, b) => (b ? a / b : NaN);
 const rpx = (v) => (Number.isFinite(v) ? rp(v) : '-');
-const fmt = (v, u) => (u === 'Rp' ? String(v) : String(v).replace('.', ','));
+const fmt = (v, u) => (u === 'Rp' ? (Number(v) ? Number(v).toLocaleString('id-ID') : '') : String(v).replace('.', ','));
 
 let sel = { c: '', a: '', d: '' };
 
@@ -64,7 +64,7 @@ export async function render(el, ctx) {
   if (old.wa != null && old.contact == null) T.contact = old.wa;
   if (old.closing != null && old.purchase == null) T.purchase = old.closing;
   const { from, to } = range(state.period);
-  const dFrom = ymd(new Date(from)), dTo = ymd(new Date(Date.parse(to) - 1));
+  const { since: dFrom, until: dTo } = metaDates(state.period, t.ad_tz);
   const isAdmin = state.role !== 'cs';
 
   const [insAll, clicks, leads] = await Promise.all([
@@ -90,7 +90,7 @@ export async function render(el, ctx) {
   <div class="card" style="margin-top:16px">
     <div class="card-head flat">
       <h3>Funnel aktual</h3>
-      <div class="btn-row">${lastSync ? `<small class="${syncInfo.startsWith('GAGAL') ? 'err-text' : 'muted'}" title="${esc(syncInfo)}">sinkron Meta${t.auto_sync !== false ? ' otomatis' : ''}: ${new Date(lastSync).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}${syncInfo.startsWith('GAGAL') ? ' · gagal' : ''}</small>` : ''}
+      <div class="btn-row">${lastSync ? `<small class="${syncInfo.startsWith('GAGAL') ? 'err-text' : 'muted'}" title="${esc(syncInfo)}">sinkron Meta${t.auto_sync !== false ? ' otomatis' : ''}: ${new Date(lastSync).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}${syncInfo.startsWith('GAGAL') ? ' · gagal' : ''}${tzBeda(t.ad_tz) ? ` · tanggal Meta ${dFrom === dTo ? dFrom : dFrom + ' s/d ' + dTo} (zona akun iklan ${esc(t.ad_tz)})` : ''}</small>` : ''}
       ${isAdmin ? `<button class="btn sm" id="sync">${icon('pulse')}Sinkron data Meta</button>` : ''}</div>
     </div>
     <div class="filters" id="filters"></div>
@@ -107,7 +107,7 @@ export async function render(el, ctx) {
   </div>`;
 
   // ---------------------------------------------------------- kalkulator
-  const field = ([k, lbl, u, hint], v) => `<label><span>${lbl}</span><div class="unit"><input name="${k}" inputmode="decimal" value="${fmt(v, u)}"><b>${u}</b></div><small class="hint">${hint}</small></label>`;
+  const field = ([k, lbl, u, hint], v) => `<label><span>${lbl}</span><div class="unit"><input name="${k}" ${u === 'Rp' ? 'data-rp inputmode="numeric"' : 'inputmode="decimal"'} value="${fmt(v, u)}"><b>${u}</b></div><small class="hint">${hint}</small></label>`;
   const drawFields = () => {
     $('#bizF', el).innerHTML = BIZ.map((f) => field(f, T[f[0]])).join('');
     $('#stepF', el).innerHTML = STEPS[T.mode].map(([k, lbl, rumus, hint]) => field([k, `${lbl} = ${rumus}`, '%', hint], T[k])).join('');
@@ -325,6 +325,7 @@ export async function render(el, ctx) {
     sb.disabled = true; sb.lastChild.textContent = 'Menyinkron…';
     try {
       const r = await api.syncMeta(t.id, dFrom, dTo);
+      if (r.tz) t.ad_tz = r.tz;
       toast(`Sinkron selesai: ${num(r.baris)} baris, spend ${rp(r.spend)}`);
       ctx.refresh();
     } catch (err) { toast(err.message, 'err'); sb.disabled = false; sb.lastChild.textContent = 'Sinkron data Meta'; }

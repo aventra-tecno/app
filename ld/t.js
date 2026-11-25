@@ -1,4 +1,4 @@
-/*! Aventra Leads · t.js v1.1.0
+/*! Aventra Leads · t.js v1.1.1
  * Pasang di landing page:
  *   <script src="https://app.aventra.id/app/ld/t.js" data-key="pk_xxx" defer></script>
  * Tombol WA:
@@ -30,6 +30,14 @@
     var d = new Date(Date.now() + days * 864e5);
     document.cookie = n + '=' + encodeURIComponent(v) + '; expires=' + d.toUTCString() + '; path=/; SameSite=Lax';
   }
+  // nama iklan dari Meta kadang tersandi 2x ("Konten+1+25%2F11") → rapikan
+  function rapi(v) {
+    var s = String(v);
+    for (var i = 0; i < 3 && /%[0-9A-Fa-f]{2}|\+/.test(s); i++) {
+      try { s = decodeURIComponent(s.replace(/\+/g, ' ')); } catch (e) { s = s.replace(/\+/g, ' '); break; }
+    }
+    return s.trim();
+  }
   function store(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function load(k) { try { return JSON.parse(sessionStorage.getItem(k) || 'null'); } catch (e) { return null; } }
 
@@ -38,7 +46,7 @@
   var attr = load('av_attr') || {};
   if (qs.get('fbclid') || qs.get('utm_source') || qs.get('ad_id')) {
     attr = {};
-    ATTR_KEYS.forEach(function (k) { if (qs.get(k)) attr[k] = qs.get(k); });
+    ATTR_KEYS.forEach(function (k) { if (qs.get(k)) attr[k] = rapi(qs.get(k)); });
     store('av_attr', attr);
   }
 

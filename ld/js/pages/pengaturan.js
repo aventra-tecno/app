@@ -1,7 +1,7 @@
 // Aventra Leads · Pengaturan
 import { api } from '../api.js';
 import { FUNCTIONS_URL, SCRIPT_URL } from '../config.js';
-import { esc, waktu, jam, modal, toast, icon, copyText, $, $$ } from '../ui.js';
+import { esc, waktu, jam, modal, toast, icon, copyText, metaDates, $, $$ } from '../ui.js';
 import { loadTenantData } from '../app.js';
 
 let tab = 'bisnis';
@@ -121,8 +121,9 @@ async function metaAds(el, { state }) {
     out.innerHTML = '<div class="loading">Menyinkron…</div>';
     try {
       await simpan();
-      const d = (n) => { const x = new Date(Date.now() - n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
-      const r = await api.syncMeta(t.id, d(6), d(0));
+      const md = metaDates('7d', t.ad_tz);
+      const r = await api.syncMeta(t.id, md.since, md.until);
+      if (r.tz) t.ad_tz = r.tz;
       t.last_sync_at = new Date().toISOString(); t.last_sync_info = `${r.baris} baris`;
       out.innerHTML = `<div class="note ok"><div>Berhasil: ${r.baris} baris data, spend ${Number(r.spend).toLocaleString('id-ID')}. Buka menu <b>Funnel & Target</b>.</div></div>`;
     } catch (err) { out.innerHTML = `<div class="note bad"><div>${esc(err.message)}</div></div>`; }

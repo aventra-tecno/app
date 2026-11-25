@@ -1,12 +1,13 @@
 // Aventra Leads · Ringkasan
 import { api } from '../api.js';
-import { esc, rp, num, pct, range, ymdLocal, waktu, TAHAP } from '../ui.js';
+import { esc, rp, num, pct, range, metaDates, tzBeda, waktu, TAHAP } from '../ui.js';
 
 export async function render(el, { state }) {
   const { from, to } = range(state.period);
   const tid = state.tenant.id;
+  const md = metaDates(state.period, state.tenant.ad_tz);
   const [clicks, leads, ins] = await Promise.all([api.clicks(tid, from, to), api.leads(tid, from, to),
-    api.insights(tid, ymdLocal(new Date(from)), ymdLocal(new Date(Date.parse(to) - 1))).catch(() => [])]);
+    api.insights(tid, md.since, md.until).catch(() => [])]);
 
   const paid = leads.filter((l) => l.paid_at);
   const omzet = paid.reduce((s, l) => s + (l.nilai || 0), 0);
@@ -51,8 +52,8 @@ export async function render(el, { state }) {
     <div><small>Omzet dari iklan</small><b>${rp(omzet)}</b><span>${num(paid.length)} closing dari ${num(leads.length)} chat</span></div>
     <div class="hero-spend">
       ${auto
-        ? `<div class="spend-auto"><small>Biaya iklan periode ini</small><b>${rp(spend)}</b><span>dari Meta${t.last_sync_at ? ' · sinkron ' + waktu(t.last_sync_at) : ''}</span></div>`
-        : `<label>Biaya iklan periode ini<input id="spend" inputmode="numeric" value="${spend ? num(spend) : ''}" placeholder="${t.ad_account_id ? 'belum ada data Meta, isi manual' : 'isi dari Ads Manager'}"></label>`}
+        ? `<div class="spend-auto"><small>Biaya iklan periode ini</small><b>${rp(spend)}</b><span>dari Meta${t.last_sync_at ? ' · sinkron ' + waktu(t.last_sync_at) : ''}${tzBeda(t.ad_tz) ? ` · tanggal Meta ${md.since === md.until ? md.since : md.since + ' s/d ' + md.until} (${esc(t.ad_tz)})` : ''}</span></div>`
+        : `<label>Biaya iklan periode ini<input id="spend" data-rp inputmode="numeric" value="${spend ? num(spend) : ''}" placeholder="${t.ad_account_id ? 'belum ada data Meta, isi manual' : 'isi dari Ads Manager'}"></label>`}
       <div class="hero-mini"><span>Biaya per closing<b>${spend && paid.length ? rp(spend / paid.length) : '-'}</b></span>
       <span>ROAS<b>${spend ? (omzet / spend).toFixed(2).replace('.', ',') + 'x' : '-'}</b></span></div>
     </div>

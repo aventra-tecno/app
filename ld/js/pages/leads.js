@@ -199,13 +199,12 @@ export function openPaidModal(lead, leads, onDone) {
   const m = modal('Tandai lunas', `
     <form id="pf" class="form">
       <p class="muted">${esc(lead.nama || lead.phone || 'Pelanggan')} · tekan setelah layanan selesai dan <b>sudah dibayar</b>. Event Purchase langsung dikirim ke Meta.</p>
-      <label>Nilai order (Rp)<input name="nilai" required inputmode="numeric" placeholder="135.000"></label>
+      <label>Nilai order (Rp)<input name="nilai" data-rp required inputmode="numeric" placeholder="135.000"></label>
       <div class="chips">${chips.map((v) => `<button type="button" class="chip" data-v="${v}">${rp(v)}</button>`).join('')}</div>
       <button class="btn green block">${icon('check')}Lunas & kirim ke Meta</button>
     </form>`);
   const f = m.el.querySelector('#pf');
   m.el.querySelector('.chips').onclick = (e) => { const b = e.target.closest('[data-v]'); if (b) f.nilai.value = Number(b.dataset.v).toLocaleString('id-ID'); };
-  f.nilai.oninput = () => { const d = f.nilai.value.replace(/\D/g, ''); f.nilai.value = d ? Number(d).toLocaleString('id-ID') : ''; };
   f.onsubmit = async (e) => {
     e.preventDefault();
     const nilai = Number(f.nilai.value.replace(/\D/g, ''));

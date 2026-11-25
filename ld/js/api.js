@@ -1,7 +1,10 @@
 // Aventra Leads · lapisan data (Supabase asli atau mode demo)
+import { cleanName } from './ui.js';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, FUNCTIONS_URL, DEMO } from './config.js';
 
 let sb = null;
+// rapikan nama iklan/campaign yang tersandi dari URL
+const rapi = (c) => { if (c) for (const k of ['ad_name', 'campaign_name', 'utm_campaign', 'utm_content']) if (c[k]) c[k] = cleanName(c[k]); return c; };
 async function client() {
   if (!sb) {
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
@@ -38,11 +41,11 @@ const real = {
   async clicks(tid, from, to) {
     const c = await client();
     return must(await c.from('clicks').select('*').eq('tenant_id', tid).gte('created_at', from).lt('created_at', to)
-      .order('created_at', { ascending: false }).limit(5000));
+      .order('created_at', { ascending: false }).limit(5000)).map(rapi);
   },
   async clickByKode(tid, kode) {
     const c = await client();
-    return must(await c.from('clicks').select('*').eq('tenant_id', tid).eq('kode', kode.trim().toUpperCase()).maybeSingle());
+    return rapi(must(await c.from('clicks').select('*').eq('tenant_id', tid).eq('kode', kode.trim().toUpperCase()).maybeSingle()));
   },
   async leads(tid, from, to) {
     const c = await client();
@@ -199,7 +202,7 @@ const demo = {
   async waNumbers() { return wait(D.wa.slice()); },
   async saveWa(row) { if (row.id) Object.assign(D.wa.find((w) => w.id === row.id), row); else D.wa.push({ ...row, id: 'w' + Date.now() }); },
   async deleteWa(id) { D.wa.splice(D.wa.findIndex((w) => w.id === id), 1); },
-  async clicks(t, f, to) { return wait(sortDesc(D.clicks.filter((c) => inRange(c.created_at, f, to)))); },
+  async clicks(t, f, to) { return wait(sortDesc(D.clicks.filter((c) => inRange(c.created_at, f, to)).map(rapi))); },
   async clickByKode(t, k) { return D.clicks.find((c) => c.kode === k.trim().toUpperCase()) ?? null; },
   async leads(t, f, to) { return wait(sortDesc(D.leads.filter((l) => inRange(l.created_at, f, to)))); },
   async leadByClick(cid) { return D.leads.find((l) => l.click_id === cid) ?? null; },
