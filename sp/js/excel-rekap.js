@@ -95,7 +95,7 @@ export function buildRekapBook({ rows = [], dateLabel = '', printedAt = '', stor
       items.forEach((i, k) => {
         const q = Number(i.qty || 1);
         sh.set(r, 1, k === 0 ? n : null, S.n); sh.set(r, 2, k === 0 ? String(o.resi || o.order_no || '') : null, S.t); sh.set(r, 3, String(i.sku || ''), S.t);
-        sh.set(r, 4, i.name || '', S.x); sh.set(r, 5, q, S.n);
+        sh.set(r, 4, i.category && !String(i.name || '').toUpperCase().includes(String(i.category).toUpperCase()) ? `${i.category} - ${i.name || ''}` : (i.name || ''), S.x);   // 2.63 kategori ikut di Keterangan sh.set(r, 5, q, S.n);
         sh.set(r, 6, i.rack_qty ? `Rak ${i.rack || ''}${i.source === 'win' ? ' + WIN' : ''}`.trim() : i.source === 'win' ? 'WIN' : 'Gudang', S.n);
         [Number(i.macallan || 0) * q, Number(i.harga_beli || 0) * q, Number(i.harga_jual || 0) * q].forEach((v, j) => sh.set(r, 7 + j, v, S.r));
         sh.set(r, 10, k === 0 ? Number(o.harga_selesai || 0) : null, S.r); sh.set(r, 11, k === 0 ? Number(o.margin || 0) : null, S.r);
