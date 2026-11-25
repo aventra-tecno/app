@@ -97,9 +97,12 @@ const real = {
     if (!r.ok && !j.lead_id) throw new Error(j.error || 'Gagal menghubungi server');
     return j;
   },
-  async events(tid, limit = 200) {
+  async events(tid, from, to, limit = 2000) {
     const c = await client();
-    return must(await c.from('events_log').select('*').eq('tenant_id', tid).order('created_at', { ascending: false }).limit(limit));
+    let q = c.from('events_log').select('*').eq('tenant_id', tid);
+    if (from) q = q.gte('created_at', from);
+    if (to) q = q.lt('created_at', to);
+    return must(await q.order('created_at', { ascending: false }).limit(limit));
   },
   async tokenStatus(tid) { const c = await client(); return must(await c.rpc('status_token', { p_tenant: tid })); },
   async testClicks(tid) {
@@ -267,7 +270,7 @@ const demo = {
     D.events.push({ id: D.events.length + 1, lead_id: id, event_name: 'Purchase', ok: true, response: { events_received: 1 }, created_at: new Date().toISOString() });
     return { ok: true, terkirim: true };
   },
-  async events() { return wait(sortDesc(D.events).slice(0, 200)); },
+  async events(t, f, to) { return wait(sortDesc(D.events.filter((e) => (!f || e.created_at >= f) && (!to || e.created_at < to)))); },
   async tokenStatus() { return D.token; },
   async testClicks() { return sortDesc(D.clicks.filter((c) => (c.fbclid || '').startsWith('TES'))); },
   async leadsForClicks(ids) { return D.leads.filter((l) => ids.includes(l.click_id)); },

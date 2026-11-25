@@ -225,7 +225,8 @@ async function route() {
   const page = ok.find((p) => p.id === id) || ok[0];
   $$('.side-nav a').forEach((a) => a.classList.toggle('active', a.dataset.page === page.id));
   $('#pageTitle').textContent = page.label;
-  $('#periodSeg').style.visibility = ['ringkasan', 'leads', 'klik', 'funnel', 'kinerja'].includes(page.id) ? 'visible' : 'hidden';
+  // menu tanpa filter tanggal: sembunyikan pilihan tanggal, kotak sinkron Meta bergeser ke kanan
+  $('#periodSeg').style.display = ['ringkasan', 'leads', 'klik', 'funnel', 'kinerja', 'log'].includes(page.id) ? '' : 'none';
   pullTenant();
   const el = $('#page');
   const my = ++seq;
