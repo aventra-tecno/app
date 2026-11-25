@@ -523,3 +523,15 @@ b.auth-logo.brand-text { color: var(--navy-2); }
   .sync-box { width: 100%; background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .2); }
   .sync-box .sync-txt { flex: 1; } .sync-box .sync-txt small { color: rgba(255, 255, 255, .7); } .sync-box .sync-txt b { color: #fff; }
 }
+/* v1.9.2 — grafik garis + titik pemberhentian */
+.fxbase { stroke: rgba(255, 255, 255, .12); stroke-width: 2; }
+.fxseg { stroke-width: 3; stroke-linecap: round; }
+.fxseg.ok { stroke: #3BF08A; } .fxseg.bad { stroke: #FF6B6B; } .fxseg.na { stroke: rgba(255, 255, 255, .25); stroke-dasharray: 4 6; }
+.fxseg.worst { stroke: #FF4D4D; stroke-width: 4; animation: fxBeat 1.6s ease-in-out infinite; }
+.fxstop { fill: #0A332D; stroke-width: 2.5; stroke: rgba(255, 255, 255, .35); }
+.fxstop.ok { stroke: #3BF08A; } .fxstop.bad { stroke: #FF6B6B; } .fxstop.start { stroke: #fff; }
+.fxstop.worst { stroke: #FF4D4D; fill: #3A1414; }
+.fxcore { fill: #fff; } .fxcore.worst { fill: #FF4D4D; }
+.fxdot.ok { fill: #B9FFD6; } .fxdot.bad { fill: #FFB0B0; }
+.fxglow { stroke: #FF4D4D; stroke-width: 12; stroke-linecap: round; opacity: .22; animation: fxGlow 1.6s ease-in-out infinite; }
+@keyframes fxGlow { 50% { opacity: .5; stroke-width: 16; } }
