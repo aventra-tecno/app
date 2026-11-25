@@ -5,7 +5,7 @@ import { api } from '../api.js';
 import { esc, rp, num, range, metaDates, tzBeda, toast, icon, $ } from '../ui.js';
 
 // ---------- nilai awal & penjelasan ----------
-const DEF = {
+export const DEF = {
   mode: 'web', harga: 135000, margin: 45, porsi: 60, budget: 100000, cpm: 25000,
   ctr: 1.2, oclp: 70, contact: 25, chat: 80, purchase: 25,
   wctr: 1.5, wchat: 60, wpurchase: 15,
@@ -75,19 +75,10 @@ export async function render(el, ctx) {
   const syncInfo = String(t.last_sync_info || '');
 
   el.innerHTML = `
-  <div class="grid2 g-top">
-    <form class="card" id="calc">
-      <div class="card-head flat"><h3>Kalkulator patokan</h3>
-        <div class="seg" id="mode"><button type="button" data-m="web">Iklan ke website</button><button type="button" data-m="ctwa">Iklan CTWA</button></div></div>
-      <div class="calc-grid" id="bizF"></div>
-      <h4 class="sub">Rasio tiap tahap funnel</h4>
-      <div class="calc-grid" id="stepF"></div>
-      ${isAdmin ? '<button class="btn primary" style="margin-top:12px">Simpan sebagai patokan</button>' : ''}
-    </form>
-    <div class="card" id="target"></div>
-  </div>
-
-  <div class="card" style="margin-top:16px">
+  <div class="fz">
+    <div class="fz-main">
+      <div class="hasil" id="hasil"></div>
+  <div class="card">
     <div class="card-head flat">
       <h3>Funnel aktual</h3>
       <div class="btn-row">${lastSync ? `<small class="${syncInfo.startsWith('GAGAL') ? 'err-text' : 'muted'}" title="${esc(syncInfo)}">sinkron Meta${t.auto_sync !== false ? ' otomatis' : ''}: ${new Date(lastSync).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}${syncInfo.startsWith('GAGAL') ? ' · gagal' : ''}${tzBeda(t.ad_tz) ? ` · tanggal Meta ${dFrom === dTo ? dFrom : dFrom + ' s/d ' + dTo} (zona akun iklan ${esc(t.ad_tz)})` : ''}</small>` : ''}
@@ -99,11 +90,23 @@ export async function render(el, ctx) {
     <div id="diag"></div>
   </div>
 
-  <div class="card flush" style="margin-top:16px">
+  <div class="card flush">
     <div class="card-head"><h3>Per iklan vs patokan</h3></div>
     <table class="tbl"><thead><tr><th>Iklan</th><th class="r">Spend</th><th class="r">CTR</th><th class="r">OCLP</th><th class="r">Contact</th>
       <th class="r">Chat</th><th class="r">Purchase</th><th class="r">CPA</th><th class="r">ROAS</th><th>Status</th></tr></thead>
     <tbody id="perAd"></tbody><tfoot id="perAdTot"></tfoot></table>
+  </div>    </div>
+    <aside class="fz-side">
+      <div class="card" id="target"></div>
+    <form class="card" id="calc">
+      <div class="card-head flat"><h3>Kalkulator patokan</h3>
+        <div class="seg" id="mode"><button type="button" data-m="web">Iklan ke website</button><button type="button" data-m="ctwa">Iklan CTWA</button></div></div>
+      <div class="calc-grid" id="bizF"></div>
+      <h4 class="sub">Rasio tiap tahap funnel</h4>
+      <div class="calc-grid" id="stepF"></div>
+      ${isAdmin ? '<button class="btn primary" style="margin-top:12px">Simpan sebagai patokan</button>' : ''}
+    </form>
+    </aside>
   </div>`;
 
   // ---------------------------------------------------------- kalkulator
@@ -130,12 +133,6 @@ export async function render(el, ctx) {
       : ['Maks CPC (link)', 'Maks biaya per chat', 'CPA target'];
     $('#target', el).innerHTML = `
       <div class="card-head flat"><h3>Hasil & patokan Ads Manager</h3></div>
-      <div class="targets">
-        ${tgt('Laba kotor per order', rp(H.laba), 'sebelum biaya iklan')}
-        ${tgt('CPA impas', rp(H.laba), 'di atas ini rugi', 'bad')}
-        ${tgt('CPA target', rp(H.cpaT), `laba bersih ${rp(H.laba - H.cpaT)}/order`, 'ok')}
-        ${tgt('CPA perkiraan', rpx(H.cpaEst), `${(H.perK).toFixed(2).replace('.', ',')} closing per 1.000 tayangan`, ok ? 'ok' : 'bad')}
-      </div>
       <div class="formula">CPA = CPM ÷ (1.000 × ${st.map(([, l]) => l).join(' × ')})<br>
         = ${rp(T.cpm)} ÷ (1.000 × ${H.rates.map((r) => p1(r)).join(' × ')}) = <b>${rpx(H.cpaEst)}</b></div>
       <h4 class="sub">Batas biaya per tahap (dari CPA target)</h4>
@@ -194,47 +191,16 @@ export async function render(el, ctx) {
 
   // ---------------------------------------------------------- funnel aktual
   function drawActual() {
-    const H = hitung(T);
-    const filtered = !!(sel.c || sel.a || sel.d);
-    const insSel = insAll.filter((r) => {
-      const m = adsMap[r.ad_id];
-      return (!sel.c || m.c === sel.c) && (!sel.a || m.a === sel.a) && (!sel.d || r.ad_id === sel.d);
-    });
-    // Tanpa filter: funnel website saja (campaign CTWA punya alur berbeda, lihat dengan memilih campaign-nya)
-    const ins = filtered ? insSel : insSel.filter((r) => !ctwaCamp.has(adsMap[r.ad_id].c));
-    const adIds = new Set(ins.map((r) => r.ad_id));
-    const adClicks = clicks.filter((c) => (filtered ? c.ad_id && adIds.has(c.ad_id) : c.ad_id || c.fbc));
-    const ids = new Set(adClicks.map((c) => c.id));
-    const adLeads = leads.filter((l) => ids.has(l.click_id));
-    const paid = adLeads.filter((l) => l.paid_at);
-    // chat dari iklan CTWA yang dicatat CS di Aventra
-    const insIds = new Set(insSel.map((r) => r.ad_id));
-    const ctwaLeads = leads.filter((l) => l.sumber === 'ctwa' && l.ad_id && adIds.has(l.ad_id));
-    const ctwaPaid = ctwaLeads.filter((l) => l.paid_at);
-    const S = (k) => ins.reduce((s, r) => s + Number(r[k] || 0), 0);
-    const A = { S: S('spend'), I: S('impressions'), K: S('link_clicks'), L: S('lpv'), V: S('view_content'), MC: S('contact'),
-      MS: S('msg_started'), MP: S('purchase'), W: adClicks.length, C: adLeads.length, P: paid.length, O: paid.reduce((s, l) => s + (l.nilai || 0), 0),
-      CC: ctwaLeads.length, CP: ctwaPaid.length, CO: ctwaPaid.reduce((s, l) => s + (l.nilai || 0), 0) };
-    const isCtwa = A.MS > 0 && A.L === 0 && A.W === 0;
-    if (isCtwa) { A.O = A.CO; }
-    const PC = Math.max(A.CP, A.MP); // purchase CTWA: dari Aventra, atau label WA bila lebih banyak
-    const Tm = { ...T, mode: isCtwa ? 'ctwa' : 'web' };
-    const Hm = hitung(Tm);
-    const P = isCtwa ? PC : A.P;
-    const steps = isCtwa ? [
-      { k: 'Impresi', n: A.I, src: 'Meta' },
-      { k: 'Klik link', n: A.K, src: 'Meta', l: 'CTR', r: div(A.K, A.I), t: Tm.wctr / 100, cost: div(A.S, A.K), max: Hm.max[1], cl: 'CPC' },
-      { k: 'Chat dimulai', n: A.MS, src: 'Meta', l: 'Chat', r: div(A.MS, A.K), t: Tm.wchat / 100, cost: div(A.S, A.MS), max: Hm.max[2], cl: 'per chat' },
-      { k: 'Purchase', n: PC, src: `Aventra ${num(A.CP)} · label WA ${num(A.MP)}`, l: 'Purchase', r: div(PC, A.MS), t: Tm.wpurchase / 100, cost: div(A.S, PC), max: Hm.cpaT, cl: 'CPA' },
-    ] : [
-      { k: 'Impresi', n: A.I, src: 'Meta' },
-      { k: 'Klik link', n: A.K, src: 'Meta', l: 'CTR', r: div(A.K, A.I), t: Tm.ctr / 100, cost: div(A.S, A.K), max: Hm.max[1], cl: 'CPC' },
-      { k: 'Landing page view', n: A.L, src: 'Meta', l: 'OCLP', r: div(A.L, A.K), t: Tm.oclp / 100, cost: div(A.S, A.L), max: Hm.max[2], cl: 'per LPV' },
-      { k: 'Contact (klik WA)', n: A.W, src: `Aventra${A.MC ? ` · Meta ${num(A.MC)}` : ''}`, l: 'Contact', r: div(A.W, A.L), t: Tm.contact / 100, cost: div(A.S, A.W), max: Hm.max[3], cl: 'per klik WA' },
-      { k: 'Chat masuk', n: A.C, src: 'Aventra', l: 'Chat', r: div(A.C, A.W), t: Tm.chat / 100, cost: div(A.S, A.C), max: Hm.max[4], cl: 'per chat' },
-      { k: 'Purchase', n: A.P, src: 'Aventra', l: 'Purchase', r: div(A.P, A.C), t: Tm.purchase / 100, cost: div(A.S, A.P), max: Hm.cpaT, cl: 'CPA' },
-    ];
+    const { H, filtered, ctwaCamp, insSel, insIds, adClicks, adLeads, A, isCtwa, P, steps, bad } = aktual(insAll, clicks, leads, T, sel);
     const top = Math.max(1, ...steps.map((s) => s.n));
+    // ---- hasil (paling atas): patokan dari kalkulator + CPA aktual
+    const cpaA = div(A.S, P), okEst = H.cpaEst <= H.cpaT;
+    $('#hasil', el).innerHTML = `
+      ${tile('Laba kotor per order', rp(H.laba), 'sebelum biaya iklan', '', 'store')}
+      ${tile('CPA impas', rp(H.laba), 'di atas ini rugi', 'bad', 'x')}
+      ${tile('CPA target', rp(H.cpaT), `laba bersih ${rp(H.laba - H.cpaT)}/order`, 'ok', 'check')}
+      ${tile('CPA perkiraan', rpx(H.cpaEst), `${H.perK.toFixed(2).replace('.', ',')} closing / 1.000 tayangan`, okEst ? 'ok' : 'bad', 'funnel')}
+      ${tile('CPA aktual', rpx(cpaA), P ? `${num(P)} purchase · spend ${rp(A.S)}` : A.S ? `spend ${rp(A.S)}, belum purchase` : 'belum ada data', !Number.isFinite(cpaA) ? (A.S ? 'warn' : '') : cpaA <= H.cpaT ? 'ok' : cpaA <= H.laba ? 'warn' : 'bad', 'pulse', true)}`;
     $('#funnel', el).innerHTML = `
       <div class="fn-sum">
         ${sum('Jenis funnel', isCtwa ? 'CTWA' : 'Website')}${sum('Spend', A.S ? rp(A.S) : '-')}
@@ -250,8 +216,7 @@ export async function render(el, ctx) {
           <div class="fn-lbl"><b>${s.k}</b><small class="muted">${s.src}</small></div>
           <b class="fn-n">${num(s.n)}</b>
           <div class="fn-bar"><i style="width:${w}%"></i></div>
-          <div class="fn-m">${s.l ? `<span class="badge ${rOk === null ? '' : rOk ? 'ok' : 'bad'}">${s.l} ${p1(s.r)} <small>/ ${p1(s.t)}</small></span>` : ''}</div>
-          <div class="fn-m">${s.cl ? `<span class="badge ${cOk === null ? '' : cOk ? 'ok' : 'bad'}">${s.cl} ${rpx(s.cost)} <small>/ ${rp(s.max)}</small></span>` : ''}</div>
+          <div class="fn-m">${s.l ? `<span class="badge ${rOk === null ? '' : rOk ? 'ok' : 'bad'}">${s.l} ${p1(s.r)} <small>/ ${p1(s.t)}</small></span>` : ''}${s.cl ? `<span class="badge ${cOk === null ? '' : cOk ? 'ok' : 'bad'}">${s.cl} ${rpx(s.cost)} <small>/ ${rp(s.max)}</small></span>` : ''}</div>
         </div>`;
       }).join('')}</div>
       ${!filtered && ctwaCamp.size ? `<div class="note warn" style="margin-bottom:8px"><div>${ctwaCamp.size} campaign CTWA tidak dimasukkan ke funnel website ini. Pilih campaign CTWA di filter untuk melihat funnelnya sendiri.</div></div>` : ''}
@@ -264,16 +229,14 @@ export async function render(el, ctx) {
       Chat: isCtwa ? 'Chat dimulai rendah → pesan sambutan/ice breaker kurang menarik.' : 'Chat rendah → pelanggan batal kirim di WA, atau CS belum mencatat semua chat di Aventra.',
       Purchase: 'Purchase rendah → CS: kecepatan balas, script, follow up, dan ketersediaan jadwal.',
     };
-    // titik bocor = tahap dengan rasio paling jauh di bawah patokan
-    const bad = steps.filter((s) => Number.isFinite(s.r) && s.t != null && s.r < s.t).sort((a, b) => a.r / a.t - b.r / b.t)[0];
     const fx = $('#fx', el);
     if (fx) {
       const box = fx.parentElement;
       let vert = null;
       const draw = () => {
-        const v = box.clientWidth < 640;
-        if (v === vert && fx.innerHTML) return;
-        vert = v; fx.innerHTML = (A.I || A.W) ? flowSvg(steps, bad, v) : '';
+        const w = box.clientWidth, v = w < 560, key = v + ':' + Math.round(w / 60);
+        if (key === vert && fx.innerHTML) return;
+        vert = key; fx.innerHTML = (A.I || A.W) ? flowSvg(steps, bad, v, w) : '';
       };
       draw();
       new ResizeObserver(draw).observe(box);
@@ -346,18 +309,72 @@ export async function render(el, ctx) {
   };
 }
 
+const tile = (l, v, s, c, ic, main) => `<div class="htile ${c} ${main ? 'main' : ''}"><span class="h-ic">${icon(ic)}</span><div><small>${l}</small><b>${v}</b><span>${s}</span></div></div>`;
 const tgt = (l, v, s, c = '') => `<div class="tg ${c}"><small>${l}</small><b>${v}</b><span>${s}</span></div>`;
 const sum = (l, v) => `<div><small>${l}</small><b>${v}</b></div>`;
 
+// ---------- hitung funnel aktual (dipakai juga di Ringkasan) ----------
+export function aktual(insAll, clicks, leads, T, sel = { c: '', a: '', d: '' }) {
+  const adsMap = {};
+  insAll.forEach((r) => { adsMap[r.ad_id] = { a: r.adset_id || r.adset_name || '-', c: r.campaign_id || r.campaign_name || '-' }; });
+  const agg = {};
+  insAll.forEach((r) => { const c = adsMap[r.ad_id].c; const a = (agg[c] ??= { ms: 0, lpv: 0 }); a.ms += r.msg_started || 0; a.lpv += r.lpv || 0; });
+  const ctwaCamp = new Set(Object.entries(agg).filter(([, a]) => a.ms > 0 && a.lpv === 0).map(([c]) => c));
+  const H = hitung(T);
+  const filtered = !!(sel.c || sel.a || sel.d);
+  const insSel = insAll.filter((r) => {
+    const m = adsMap[r.ad_id];
+    return (!sel.c || m.c === sel.c) && (!sel.a || m.a === sel.a) && (!sel.d || r.ad_id === sel.d);
+  });
+  // Tanpa filter: funnel website saja (campaign CTWA punya alur berbeda, lihat dengan memilih campaign-nya)
+  const ins = filtered ? insSel : insSel.filter((r) => !ctwaCamp.has(adsMap[r.ad_id].c));
+  const adIds = new Set(ins.map((r) => r.ad_id));
+  const adClicks = clicks.filter((c) => (filtered ? c.ad_id && adIds.has(c.ad_id) : c.ad_id || c.fbc));
+  const ids = new Set(adClicks.map((c) => c.id));
+  const adLeads = leads.filter((l) => ids.has(l.click_id));
+  const paid = adLeads.filter((l) => l.paid_at);
+  // chat dari iklan CTWA yang dicatat CS di Aventra
+  const insIds = new Set(insSel.map((r) => r.ad_id));
+  const ctwaLeads = leads.filter((l) => l.sumber === 'ctwa' && l.ad_id && adIds.has(l.ad_id));
+  const ctwaPaid = ctwaLeads.filter((l) => l.paid_at);
+  const S = (k) => ins.reduce((s, r) => s + Number(r[k] || 0), 0);
+  const A = { S: S('spend'), I: S('impressions'), K: S('link_clicks'), L: S('lpv'), V: S('view_content'), MC: S('contact'),
+    MS: S('msg_started'), MP: S('purchase'), W: adClicks.length, C: adLeads.length, P: paid.length, O: paid.reduce((s, l) => s + (l.nilai || 0), 0),
+    CC: ctwaLeads.length, CP: ctwaPaid.length, CO: ctwaPaid.reduce((s, l) => s + (l.nilai || 0), 0) };
+  const isCtwa = A.MS > 0 && A.L === 0 && A.W === 0;
+  if (isCtwa) { A.O = A.CO; }
+  const PC = Math.max(A.CP, A.MP); // purchase CTWA: dari Aventra, atau label WA bila lebih banyak
+  const Tm = { ...T, mode: isCtwa ? 'ctwa' : 'web' };
+  const Hm = hitung(Tm);
+  const P = isCtwa ? PC : A.P;
+  const steps = isCtwa ? [
+    { k: 'Impresi', n: A.I, src: 'Meta' },
+    { k: 'Klik link', n: A.K, src: 'Meta', l: 'CTR', r: div(A.K, A.I), t: Tm.wctr / 100, cost: div(A.S, A.K), max: Hm.max[1], cl: 'CPC' },
+    { k: 'Chat dimulai', n: A.MS, src: 'Meta', l: 'Chat', r: div(A.MS, A.K), t: Tm.wchat / 100, cost: div(A.S, A.MS), max: Hm.max[2], cl: 'per chat' },
+    { k: 'Purchase', n: PC, src: `Aventra ${num(A.CP)} · label WA ${num(A.MP)}`, l: 'Purchase', r: div(PC, A.MS), t: Tm.wpurchase / 100, cost: div(A.S, PC), max: Hm.cpaT, cl: 'CPA' },
+  ] : [
+    { k: 'Impresi', n: A.I, src: 'Meta' },
+    { k: 'Klik link', n: A.K, src: 'Meta', l: 'CTR', r: div(A.K, A.I), t: Tm.ctr / 100, cost: div(A.S, A.K), max: Hm.max[1], cl: 'CPC' },
+    { k: 'Landing page view', n: A.L, src: 'Meta', l: 'OCLP', r: div(A.L, A.K), t: Tm.oclp / 100, cost: div(A.S, A.L), max: Hm.max[2], cl: 'per LPV' },
+    { k: 'Contact (klik WA)', n: A.W, src: `Aventra${A.MC ? ` · Meta ${num(A.MC)}` : ''}`, l: 'Contact', r: div(A.W, A.L), t: Tm.contact / 100, cost: div(A.S, A.W), max: Hm.max[3], cl: 'per klik WA' },
+    { k: 'Chat masuk', n: A.C, src: 'Aventra', l: 'Chat', r: div(A.C, A.W), t: Tm.chat / 100, cost: div(A.S, A.C), max: Hm.max[4], cl: 'per chat' },
+    { k: 'Purchase', n: A.P, src: 'Aventra', l: 'Purchase', r: div(A.P, A.C), t: Tm.purchase / 100, cost: div(A.S, A.P), max: Hm.cpaT, cl: 'CPA' },
+  ];
+  // titik bocor = tahap dengan rasio paling jauh di bawah patokan
+  const bad = steps.filter((s) => Number.isFinite(s.r) && s.t != null && s.r < s.t).sort((a, b) => a.r / a.t - b.r / b.t)[0];
+  return { H, filtered, ctwaCamp, insSel, insIds, adClicks, adLeads, A, isCtwa, P, steps, bad, Hm, Tm };
+}
+
 // ---------- grafik alur funnel: garis berdenyut di titik bocor ----------
-function flowSvg(steps, bad, vertical) {
+const SHORT = { 'Landing page view': 'Landing page', 'Contact (klik WA)': 'Klik WA' };
+export function flowSvg(steps, bad, vertical, boxW = 1000) {
   const n = steps.length, top = Math.max(1, ...steps.map((s) => s.n));
   const st = (s) => (!Number.isFinite(s.r) || s.t == null ? 'na' : s.r >= s.t ? 'ok' : 'bad');
   const thick = (s) => 10 + 46 * Math.sqrt((s.n || 0) / top);
   const short = (v) => (v >= 1e6 ? (v / 1e6).toFixed(1).replace('.', ',') + ' jt' : v >= 1e4 ? Math.round(v / 1e3) + ' rb' : num(v));
   const pill = (x, y, s, worst) => {
     if (!s.l) return '';
-    const t = `${s.l} ${p1(s.r)}`, w = t.length * 6.6 + 18;
+    const t = `${s.l} ${p1(s.r)}`, w = t.length * (vertical ? 6.6 : 7.2) + 18;
     return `<g class="fx-pill ${st(s)} ${worst ? 'worst' : ''}"><rect x="${x - w / 2}" y="${y - 12}" width="${w}" height="24" rx="12"/><text x="${x}" y="${y + 4}">${esc(t)}</text></g>`;
   };
   const defs = `<defs>
@@ -366,7 +383,7 @@ function flowSvg(steps, bad, vertical) {
   </defs>`;
   let out = '';
   if (!vertical) {
-    const W = 1000, H = 250, cy = 112, x0 = 70, gap = (W - 2 * x0) / (n - 1), R = 26;
+    const W = Math.round(Math.max(760, Math.min(1000, boxW * 1.15))), H = 250, cy = 112, x0 = 66, gap = (W - 2 * x0) / (n - 1), R = 26;
     const X = (i) => x0 + i * gap;
     // pita funnel (tebal = volume)
     let up = '', dn = '';
@@ -383,7 +400,7 @@ function flowSvg(steps, bad, vertical) {
       const worst = s === bad, k = i ? st(s) : 'na';
       if (worst) out += `<circle class="fx-ring" cx="${X(i)}" cy="${cy}" r="${R}"/><circle class="fx-ring d2" cx="${X(i)}" cy="${cy}" r="${R}"/>`;
       out += `<circle class="fx-node ${k} ${worst ? 'worst' : ''}" cx="${X(i)}" cy="${cy}" r="${R}"/><text class="fx-n" x="${X(i)}" y="${cy + 5}">${short(s.n || 0)}</text>`;
-      out += `<text class="fx-k" x="${X(i)}" y="${cy + 64}">${esc(s.k)}</text>`;
+      out += `<text class="fx-k" x="${X(i)}" y="${cy + 64}">${esc(gap < 150 ? (SHORT[s.k] || s.k) : s.k)}</text>`;
       if (worst) out += `<text class="fx-fix" x="${X(i)}" y="${cy + 84}">▲ perbaiki di sini</text>`;
     });
     return `<svg viewBox="0 0 ${W} ${H}" class="fx-svg" role="img" aria-label="Grafik funnel">${defs}${out}</svg>${legend(bad)}`;

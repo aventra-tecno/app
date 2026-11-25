@@ -4,7 +4,7 @@ import { APP_VERSION, DEMO } from './config.js';
 import { esc, icon, toast, modal, $, $$, RANGE_LABEL, customLabel, range, ymdLocal } from './ui.js';
 
 export const state = {
-  user: null, tenants: [], tenant: null, role: 'cs', jabatan: null, menus: null, wa: [],
+  user: null, tenants: [], tenant: null, role: 'cs', nama: null, jabatan: null, menus: null, wa: [],
   period: localStorage.getItem('ld_period') || '7d',
 };
 
@@ -54,7 +54,7 @@ async function boot() {
 export async function loadTenantData() {
   localStorage.setItem('ld_tenant', state.tenant.id);
   const [me, wa] = await Promise.all([api.myMember(state.tenant.id), api.waNumbers(state.tenant.id)]);
-  Object.assign(state, { role: me.role, jabatan: me.jabatan, menus: me.menus, wa });
+  Object.assign(state, { role: me.role, nama: me.nama, jabatan: me.jabatan, menus: me.menus, wa });
 }
 
 // ------------------------------------------------------------------ LOGIN
@@ -96,7 +96,7 @@ function showOnboarding() {
 // ------------------------------------------------------------------ KERANGKA
 function renderShell() {
   const pages = PAGES.filter(allowed);
-  const initial = (state.user?.email || '?')[0].toUpperCase();
+  const initial = (state.nama || state.user?.email || '?').trim()[0].toUpperCase();
   const roleLbl = { owner: 'Owner', admin: 'Admin', cs: 'CS' }[state.role] || state.role;
   root.innerHTML = `<div class="shell">
     <aside class="side" id="side">
@@ -114,7 +114,9 @@ function renderShell() {
         ${pages.map((p) => `<a href="#/${p.id}" data-page="${p.id}"><i class="nav-ic">${icon(p.icon)}</i><span>${p.label}</span><em class="nav-go">${icon('chev')}</em></a>`).join('')}
       </nav>
       <div class="side-foot">
-        <div class="me"><span class="avatar">${esc(initial)}</span><div><b>${esc(state.user?.email ?? '')}</b><small>${esc(state.jabatan || roleLbl)} · v${APP_VERSION}${DEMO ? ' · DEMO' : ''}</small></div></div>
+        <button class="me" id="meBtn" title="Ganti nama"><span class="avatar">${esc(initial)}</span><div>
+          <b>${esc(state.nama || 'Tanpa nama')}</b><small>${esc(state.user?.email ?? '')}</small>
+          <small class="me-role">${esc(state.jabatan || roleLbl)} · v${APP_VERSION}${DEMO ? ' · DEMO' : ''}</small></div></button>
         <button class="btn out block" id="logout">${icon('out')}Keluar</button>
       </div>
     </aside>
@@ -131,6 +133,16 @@ function renderShell() {
     </div>
   </div>`;
 
+  $('#meBtn').onclick = () => {
+    const m = modal('Nama saya', `<form class="form" id="nf"><label>Nama<input name="nama" required value="${esc(state.nama || '')}" placeholder="mis. Akhmad Janni"></label>
+      <p class="muted small">Tampil di pojok kiri bawah dan di daftar Tim & Akses.</p><button class="btn primary block">Simpan</button></form>`);
+    const f = m.el.querySelector('#nf');
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      try { await api.renameMe(state.tenant.id, f.nama.value.trim()); state.nama = f.nama.value.trim(); m.close(); renderShell(); route(); } catch (err) { toast(err.message, 'err'); }
+    };
+    setTimeout(() => f.nama.focus(), 50);
+  };
   $('#logout').onclick = async () => { await api.signOut(); location.hash = ''; boot(); };
   const side = $('#side'), scrim = $('#scrim');
   const toggle = (open) => { side.classList.toggle('open', open); scrim.classList.toggle('show', open); };

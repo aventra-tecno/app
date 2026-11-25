@@ -422,3 +422,48 @@ b.auth-logo.brand-text { color: var(--navy-2); }
   .role-pick, .menu-grid { grid-template-columns: 1fr; }
   .fx-legend .fx-alert, .fx-legend .fx-good { margin-left: 0; width: 100%; text-align: center; }
 }
+
+/* =====================================================================
+   v1.8.0 — nama tim, susunan Funnel & Target baru, funnel di Ringkasan
+   ===================================================================== */
+.me { width: 100%; background: none; border: 0; padding: 4px; margin: -4px; border-radius: 10px; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.me:hover { background: rgba(255, 255, 255, .08); }
+.me > div { min-width: 0; }
+.me .me-role { color: #7CF2A8; opacity: .9; }
+.person-top small + small { opacity: .8; }
+
+.fz { display: grid; grid-template-columns: minmax(0, 1fr) 370px; gap: 18px; align-items: start; }
+.fz-main, .fz-side { display: grid; gap: 18px; min-width: 0; }
+.fz-side .calc-grid { grid-template-columns: 1fr; }
+.fz-side .card-head.flat { flex-wrap: wrap; gap: 10px; }
+.hasil { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.htile { position: relative; overflow: hidden; display: grid; gap: 8px; align-content: start; padding: 14px; border-radius: 16px; background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow); }
+.htile > div { min-width: 0; }
+.htile small { display: block; color: var(--muted); font-weight: 600; font-size: 12px; }
+.htile b { display: block; font-size: 19px; letter-spacing: -.02em; margin: 2px 0; white-space: nowrap; }
+.htile span:not(.h-ic) { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+.h-ic { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--bg); color: var(--muted); }
+.h-ic .ic { width: 17px; height: 17px; }
+.htile.ok { background: linear-gradient(160deg, #EFFBF4, #fff); border-color: #BFE6CD; } .htile.ok .h-ic { background: #D3F3E0; color: #0E7C3A; }
+.htile.bad { background: linear-gradient(160deg, #FFF3F3, #fff); border-color: #F2C4C4; } .htile.bad .h-ic { background: #FBDADA; color: var(--red); }
+.htile.warn { background: linear-gradient(160deg, #FFF8EA, #fff); border-color: #F1D9A8; } .htile.warn .h-ic { background: #FBEBC8; color: var(--amber); }
+.htile.main { box-shadow: 0 0 0 2px rgba(18, 140, 126, .25), var(--shadow); }
+.htile.main::after { content: "AKTUAL"; position: absolute; top: 8px; right: 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .08em; color: var(--navy); }
+.fn-row { grid-template-columns: 150px 64px minmax(60px, 1fr) 230px; }
+.fn-m { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.fn-sum.four { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+.fz-ring .fx { margin-bottom: 0; }
+@media (max-width: 1280px) and (min-width: 901px) { .fz { grid-template-columns: minmax(0, 1fr) 330px; } }
+.fz-main .fn-sum { grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)) !important; }
+.fz-main .fn-sum b { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fz-main .filters select { min-width: 0; flex: 1 1 180px; }
+@media (max-width: 900px) {
+  .fz { grid-template-columns: 1fr; }
+  .hasil { grid-template-columns: 1fr 1fr; }
+  .htile.main { grid-column: 1 / -1; }
+  .fn-row { grid-template-columns: 1fr auto; }
+  .fn-m { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .fn-sum.four { grid-template-columns: 1fr 1fr !important; }
+}
+@media (min-width: 1281px) { .hasil { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.fx-svg:not(.v) .fx-n { font-size: 14px; } .fx-svg:not(.v) .fx-k { font-size: 14.5px; } .fx-svg:not(.v) .fx-pill text { font-size: 13px; }

@@ -1,6 +1,7 @@
 // Aventra Leads · Ringkasan
 import { api } from '../api.js';
-import { esc, rp, num, pct, range, metaDates, tzBeda, waktu, TAHAP } from '../ui.js';
+import { esc, rp, num, pct, range, metaDates, tzBeda, waktu, icon, TAHAP } from '../ui.js';
+import { aktual, flowSvg, DEF } from './funnel.js';
 
 export async function render(el, { state }) {
   const { from, to } = range(state.period);
@@ -44,6 +45,16 @@ export async function render(el, { state }) {
     r.lead++; if (l.paid_at) { r.closing++; r.omzet += l.nilai || 0; }
   });
 
+  // funnel aktual (sama dengan menu Funnel & Target, tanpa filter)
+  const old = t.target || {};
+  const T = { ...DEF, ...old };
+  if (old.lpv != null && old.oclp == null) T.oclp = old.lpv;
+  if (old.wa != null && old.contact == null) T.contact = old.wa;
+  if (old.closing != null && old.purchase == null) T.purchase = old.closing;
+  let R = null;
+  try { R = aktual(ins, clicks, leads, T); } catch { R = null; }
+  const cpaR = R ? (R.P ? R.A.S / R.P : NaN) : NaN;
+
   const tahap = Object.fromEntries(Object.keys(TAHAP).map((k) => [k, leads.filter((l) => l.stage === k).length]));
   const maxT = Math.max(1, ...Object.values(tahap));
 
@@ -69,6 +80,17 @@ export async function render(el, { state }) {
   ${gagal || belum ? `<div class="alert-row">
     ${gagal ? `<a class="alert bad" href="#/log">${num(gagal)} Purchase gagal terkirim ke Meta. Cek Log Event.</a>` : ''}
     ${belum ? `<a class="alert warn" href="#/klik">${num(belum)} klik 24 jam terakhir belum terhubung ke chat.</a>` : ''}
+  </div>` : ''}
+
+  ${R && (R.A.I || R.A.W) ? `<div class="card fz-ring">
+    <div class="card-head flat"><h3>Funnel aktual ${R.isCtwa ? 'CTWA' : 'iklan website'}</h3><a class="btn sm" href="#/funnel">Detail & patokan ${icon('chev')}</a></div>
+    <div class="fn-sum four">
+      <div><small>Spend</small><b>${R.A.S ? rp(R.A.S) : '-'}</b></div>
+      <div><small>Purchase</small><b>${num(R.P)}</b></div>
+      <div><small>CPA</small><b class="${Number.isFinite(cpaR) ? (cpaR <= R.H.cpaT ? 'ok-text' : 'err-text') : ''}">${Number.isFinite(cpaR) ? rp(cpaR) : '-'}</b></div>
+      <div><small>CPA target</small><b>${rp(R.H.cpaT)}</b></div>
+    </div>
+    <div class="fx" id="fxR"></div>
   </div>` : ''}
 
   <div class="grid2">
@@ -98,6 +120,13 @@ export async function render(el, { state }) {
       </div>
     </div>
   </div>`;
+
+  const fx = el.querySelector('#fxR');
+  if (fx) {
+    const box = fx.parentElement; let vert = null;
+    const draw = () => { const w = box.clientWidth, v = w < 560, key = v + ':' + Math.round(w / 60); if (key === vert && fx.innerHTML) return; vert = key; fx.innerHTML = flowSvg(R.steps, R.bad, v, w); };
+    draw(); new ResizeObserver(draw).observe(box);
+  }
 
   const sp = el.querySelector('#spend');
   if (sp) sp.onchange = () => {
