@@ -1,7 +1,7 @@
 // Aventra Leads · service worker (network-first, cadangan cache saat offline)
-const VERSION = 'ld-1.9.2';
+const VERSION = 'ld-1.10.0';
 const SHELL = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/api.js', 'js/ui.js', 'js/config.js',
-  'js/pages/ringkasan.js', 'js/pages/funnel.js', 'js/pages/leads.js', 'js/pages/klik.js', 'js/pages/log.js', 'js/pages/pengaturan.js', 'js/pages/tim.js'];
+  'js/pages/ringkasan.js', 'js/pages/funnel.js', 'js/pages/leads.js', 'js/pages/klik.js', 'js/pages/log.js', 'js/pages/pengaturan.js', 'js/pages/tim.js', 'js/login.js'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));

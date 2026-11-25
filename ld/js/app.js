@@ -1,5 +1,6 @@
 // Aventra Leads · kerangka aplikasi, login, router
 import { api } from './api.js';
+import { showLogin as loginPage, stopLogin } from './login.js';
 import { APP_VERSION, DEMO } from './config.js';
 import { esc, icon, toast, modal, $, $$, RANGE_LABEL, customLabel, range, ymdLocal, metaDates, tzBeda } from './ui.js';
 
@@ -32,10 +33,20 @@ export function allowed(p) {
 
 const root = document.getElementById('app');
 
+// link reset password dari email: #access_token=...&type=recovery
+const RECOVERY = /type=recovery/.test(location.hash);
+let recoveryShown = false;
+
 async function boot() {
   try {
     const s = await api.session();
+    if (RECOVERY && s && !recoveryShown) {
+      recoveryShown = true;
+      history.replaceState(null, '', location.pathname + location.search);
+      return showLogin('baru');
+    }
     if (!s) return showLogin();
+    stopLogin();
     state.user = s.user;
     await api.klaimUndangan();
     state.tenants = await api.tenants();
@@ -57,31 +68,13 @@ export async function loadTenantData() {
   Object.assign(state, { role: me.role, nama: me.nama, jabatan: me.jabatan, menus: me.menus, wa });
 }
 
-// ------------------------------------------------------------------ LOGIN
-function showLogin() {
-  root.innerHTML = `<div class="center-screen hero-bg">
-    <form class="auth-card" id="f">
-      <div class="auth-brand">${logo(LOGO_COLOR, 'auth-logo')}<div><b>Aventra Leads</b><small>Lacak klik WA sampai closing</small></div></div>
-      <label>Email<input name="email" type="email" required autocomplete="email"></label>
-      <label>Password<input name="password" type="password" required minlength="6" autocomplete="current-password"></label>
-      <button class="btn primary block" name="masuk">Masuk</button>
-      <button class="btn ghost block" type="button" id="daftar">Buat akun baru</button>
-    </form></div>`;
-  const f = $('#f');
-  f.onsubmit = async (e) => {
-    e.preventDefault();
-    try { await api.signIn(f.email.value, f.password.value); boot(); } catch (err) { toast(err.message, 'err'); }
-  };
-  $('#daftar').onclick = async () => {
-    if (!f.reportValidity()) return;
-    try { await api.signUp(f.email.value, f.password.value); toast('Akun dibuat. Cek email untuk konfirmasi, lalu masuk.'); } catch (err) { toast(err.message, 'err'); }
-  };
-}
+// ------------------------------------------------------------------ LOGIN (lihat login.js)
+function showLogin(mode) { loginPage(root, boot, mode); }
 
 function showOnboarding() {
   root.innerHTML = `<div class="center-screen hero-bg">
     <form class="auth-card" id="f">
-      <div class="brand-row"><span class="logo">A</span><div><b>Daftarkan bisnis</b><small>Satu akun bisa punya beberapa bisnis</small></div></div>
+      <div class="brand-row">${logo(LOGO_COLOR, 'auth-logo')}<div><b>Daftarkan bisnis</b><small>Satu akun bisa punya beberapa bisnis</small></div></div>
       <label>Nama bisnis<input name="nama" required placeholder="Mahyra Relaksia"></label>
       <label>Awalan kode promo (2–4 huruf)<input name="prefix" required pattern="[A-Za-z]{2,4}" maxlength="4" placeholder="MR"></label>
       <button class="btn primary block">Simpan</button>

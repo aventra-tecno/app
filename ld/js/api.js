@@ -20,6 +20,11 @@ const real = {
   async signIn(email, password) { const c = await client(); must(await c.auth.signInWithPassword({ email, password })); },
   async signUp(email, password) { const c = await client(); must(await c.auth.signUp({ email, password })); },
   async signOut() { const c = await client(); await c.auth.signOut(); },
+  async resetPassword(email) {
+    const c = await client();
+    must(await c.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }));
+  },
+  async updatePassword(pw) { const c = await client(); must(await c.auth.updateUser({ password: pw })); },
 
   async tenants() { const c = await client(); return must(await c.from('tenants').select('*').order('created_at')); },
   async createTenant(nama, prefix) { const c = await client(); return must(await c.rpc('buat_tenant', { p_nama: nama, p_prefix: prefix })); },
@@ -211,6 +216,8 @@ const demo = {
   async signIn() { D.session = { user: { email: 'akhmad@contoh.id' } }; },
   async signUp() {},
   async signOut() { D.session = null; },
+  async resetPassword() { await wait(); },
+  async updatePassword() { await wait(); },
   async tenants() { return [D.tenant]; },
   async createTenant() { return D.tenant.id; },
   async updateTenant(id, p) { Object.assign(D.tenant, p); },
