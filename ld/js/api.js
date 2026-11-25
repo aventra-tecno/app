@@ -24,11 +24,20 @@ const real = {
   async tenants() { const c = await client(); return must(await c.from('tenants').select('*').order('created_at')); },
   async createTenant(nama, prefix) { const c = await client(); return must(await c.rpc('buat_tenant', { p_nama: nama, p_prefix: prefix })); },
   async updateTenant(id, patch) { const c = await client(); must(await c.from('tenants').update(patch).eq('id', id)); },
-  async myRole(tid) {
+  async myRole(tid) { return (await this.myMember(tid)).role; },
+  async myMember(tid) {
     const c = await client(); const uid = (await c.auth.getUser()).data.user?.id;
-    const r = must(await c.from('members').select('role').eq('tenant_id', tid).eq('user_id', uid).maybeSingle());
-    return r?.role ?? 'cs';
+    const r = must(await c.from('members').select('*').eq('tenant_id', tid).eq('user_id', uid).maybeSingle());
+    return { role: r?.role ?? 'cs', jabatan: r?.jabatan ?? null, menus: r?.menus ?? null };
   },
+  // ----- tim & akses -----
+  async klaimUndangan() { const c = await client(); try { return must(await c.rpc('klaim_undangan')); } catch { return 0; } },
+  async members(tid) { const c = await client(); return must(await c.rpc('daftar_anggota', { p_tenant: tid })); },
+  async addMember(tid, email, role, jabatan, menus) { const c = await client(); return must(await c.rpc('tambah_anggota', { p_tenant: tid, p_email: email, p_role: role, p_jabatan: jabatan, p_menus: menus })); },
+  async updateMember(tid, uid, role, jabatan, menus) { const c = await client(); must(await c.rpc('ubah_anggota', { p_tenant: tid, p_user: uid, p_role: role, p_jabatan: jabatan, p_menus: menus })); },
+  async updateInvite(id, role, jabatan, menus) { const c = await client(); must(await c.rpc('ubah_undangan', { p_id: id, p_role: role, p_jabatan: jabatan, p_menus: menus })); },
+  async removeMember(tid, uid) { const c = await client(); must(await c.rpc('hapus_anggota', { p_tenant: tid, p_user: uid })); },
+  async removeInvite(id) { const c = await client(); must(await c.rpc('hapus_undangan', { p_id: id })); },
 
   async waNumbers(tid) { const c = await client(); return must(await c.from('wa_numbers').select('*').eq('tenant_id', tid).order('label')); },
   async saveWa(row) {
@@ -184,7 +193,13 @@ const D = (() => {
   }
   tenant.ad_account_id = '1234567890';
   tenant.auto_sync = true; tenant.last_sync_at = new Date(now - 12 * 60e3).toISOString(); tenant.last_sync_info = '96 baris · otomatis';
-  return { tenant, wa, clicks, leads, events, keys, insights, adsToken: new Date(now - 3 * 864e5).toISOString(), token: new Date(now - 5 * 864e5).toISOString(), session: { user: { email: 'akhmad@contoh.id' } } };
+  const team = [
+    { user_id: 'u1', email: 'akhmad@contoh.id', role: 'owner', jabatan: 'Pemilik', menus: null, status: 'aktif' },
+    { user_id: 'u2', email: 'cs.surabaya@contoh.id', role: 'cs', jabatan: 'CS Surabaya', menus: ['leads', 'klik'], status: 'aktif' },
+    { user_id: 'u3', email: 'marketing@contoh.id', role: 'admin', jabatan: 'Marketing', menus: ['ringkasan', 'funnel', 'klik', 'log'], status: 'aktif' },
+    { user_id: null, undangan_id: 'i1', email: 'cs.malang@contoh.id', role: 'cs', jabatan: 'CS Malang', menus: ['leads'], status: 'diundang' },
+  ];
+  return { tenant, wa, clicks, leads, events, keys, insights, team, adsToken: new Date(now - 3 * 864e5).toISOString(), token: new Date(now - 5 * 864e5).toISOString(), session: { user: { email: 'akhmad@contoh.id' } } };
 })();
 const inRange = (iso, f, t) => iso >= f && iso < t;
 const sortDesc = (a) => a.slice().sort((x, y) => (x.created_at < y.created_at ? 1 : -1));
@@ -199,6 +214,14 @@ const demo = {
   async createTenant() { return D.tenant.id; },
   async updateTenant(id, p) { Object.assign(D.tenant, p); },
   async myRole() { return 'owner'; },
+  async myMember() { return { role: 'owner', jabatan: 'Pemilik', menus: null }; },
+  async klaimUndangan() { return 0; },
+  async members() { return wait(D.team.slice()); },
+  async addMember(t, email, role, jabatan, menus) { D.team.push({ user_id: null, undangan_id: 'u' + Date.now(), email, role, jabatan, menus, status: 'diundang' }); return 'diundang'; },
+  async updateMember(t, uid, role, jabatan, menus) { Object.assign(D.team.find((m) => m.user_id === uid), { role, jabatan, menus }); },
+  async updateInvite(id, role, jabatan, menus) { Object.assign(D.team.find((m) => m.undangan_id === id), { role, jabatan, menus }); },
+  async removeMember(t, uid) { D.team = D.team.filter((m) => m.user_id !== uid); },
+  async removeInvite(id) { D.team = D.team.filter((m) => m.undangan_id !== id); },
   async waNumbers() { return wait(D.wa.slice()); },
   async saveWa(row) { if (row.id) Object.assign(D.wa.find((w) => w.id === row.id), row); else D.wa.push({ ...row, id: 'w' + Date.now() }); },
   async deleteWa(id) { D.wa.splice(D.wa.findIndex((w) => w.id === id), 1); },

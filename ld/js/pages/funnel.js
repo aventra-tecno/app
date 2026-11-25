@@ -241,6 +241,7 @@ export async function render(el, ctx) {
         ${sum('Purchase', num(P))}${sum('CPA', rpx(div(A.S, P)))}${sum('ROAS', A.S && A.O ? (A.O / A.S).toFixed(2).replace('.', ',') + 'x' : '-')}
         ${sum('CPM', A.I ? rp(A.S / A.I * 1000) : '-')}${sum('Klik → purchase', p1(div(P, A.K)))}
       </div>
+      <div class="fx" id="fx"></div>
       <div class="fn">${steps.map((s) => {
         const w = s.n ? Math.max(2, Math.sqrt(s.n / top) * 100) : 0;
         const rOk = Number.isFinite(s.r) && s.t != null ? s.r >= s.t : null;
@@ -263,7 +264,20 @@ export async function render(el, ctx) {
       Chat: isCtwa ? 'Chat dimulai rendah → pesan sambutan/ice breaker kurang menarik.' : 'Chat rendah → pelanggan batal kirim di WA, atau CS belum mencatat semua chat di Aventra.',
       Purchase: 'Purchase rendah → CS: kecepatan balas, script, follow up, dan ketersediaan jadwal.',
     };
-    const bad = steps.find((s) => Number.isFinite(s.r) && s.t != null && s.r < s.t);
+    // titik bocor = tahap dengan rasio paling jauh di bawah patokan
+    const bad = steps.filter((s) => Number.isFinite(s.r) && s.t != null && s.r < s.t).sort((a, b) => a.r / a.t - b.r / b.t)[0];
+    const fx = $('#fx', el);
+    if (fx) {
+      const box = fx.parentElement;
+      let vert = null;
+      const draw = () => {
+        const v = box.clientWidth < 640;
+        if (v === vert && fx.innerHTML) return;
+        vert = v; fx.innerHTML = (A.I || A.W) ? flowSvg(steps, bad, v) : '';
+      };
+      draw();
+      new ResizeObserver(draw).observe(box);
+    }
     $('#diag', el).innerHTML = !A.I && !A.W ? '' : bad
       ? `<div class="note bad"><div><b>Titik bocor terbesar: ${esc(bad.l)} (${p1(bad.r)} dari patokan ${p1(bad.t)})</b><br>${tips[bad.l] || ''}</div></div>`
       : '<div class="note ok"><div><b>Semua tahap memenuhi patokan.</b> Kalau CPA juga di bawah target, siap di-scale 20–30% per 2–3 hari.</div></div>';
@@ -334,3 +348,68 @@ export async function render(el, ctx) {
 
 const tgt = (l, v, s, c = '') => `<div class="tg ${c}"><small>${l}</small><b>${v}</b><span>${s}</span></div>`;
 const sum = (l, v) => `<div><small>${l}</small><b>${v}</b></div>`;
+
+// ---------- grafik alur funnel: garis berdenyut di titik bocor ----------
+function flowSvg(steps, bad, vertical) {
+  const n = steps.length, top = Math.max(1, ...steps.map((s) => s.n));
+  const st = (s) => (!Number.isFinite(s.r) || s.t == null ? 'na' : s.r >= s.t ? 'ok' : 'bad');
+  const thick = (s) => 10 + 46 * Math.sqrt((s.n || 0) / top);
+  const short = (v) => (v >= 1e6 ? (v / 1e6).toFixed(1).replace('.', ',') + ' jt' : v >= 1e4 ? Math.round(v / 1e3) + ' rb' : num(v));
+  const pill = (x, y, s, worst) => {
+    if (!s.l) return '';
+    const t = `${s.l} ${p1(s.r)}`, w = t.length * 6.6 + 18;
+    return `<g class="fx-pill ${st(s)} ${worst ? 'worst' : ''}"><rect x="${x - w / 2}" y="${y - 12}" width="${w}" height="24" rx="12"/><text x="${x}" y="${y + 4}">${esc(t)}</text></g>`;
+  };
+  const defs = `<defs>
+    <linearGradient id="fxBand" ${vertical ? 'x1="0" y1="0" x2="0" y2="1"' : 'x1="0" y1="0" x2="1" y2="0"'}><stop offset="0" stop-color="#25D366" stop-opacity=".32"/><stop offset="1" stop-color="#128C7E" stop-opacity=".14"/></linearGradient>
+    <filter id="fxGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>`;
+  let out = '';
+  if (!vertical) {
+    const W = 1000, H = 250, cy = 112, x0 = 70, gap = (W - 2 * x0) / (n - 1), R = 26;
+    const X = (i) => x0 + i * gap;
+    // pita funnel (tebal = volume)
+    let up = '', dn = '';
+    steps.forEach((s, i) => { const h = thick(s) / 2; up += `${i ? 'L' : 'M'}${X(i)},${cy - h} `; });
+    for (let i = n - 1; i >= 0; i--) dn += `L${X(i)},${cy + thick(steps[i]) / 2} `;
+    out += `<path class="fx-band" d="${up}${dn}Z"/>`;
+    steps.forEach((s, i) => {
+      if (!i) return;
+      const worst = s === bad, k = st(s);
+      out += `<line class="fx-line ${k} ${worst ? 'worst' : ''}" x1="${X(i - 1) + R}" y1="${cy}" x2="${X(i) - R}" y2="${cy}" ${worst ? 'filter="url(#fxGlow)"' : ''}/>`;
+      out += pill((X(i - 1) + X(i)) / 2, cy - Math.max(thick(steps[i - 1]), thick(s)) / 2 - 18, s, worst);
+    });
+    steps.forEach((s, i) => {
+      const worst = s === bad, k = i ? st(s) : 'na';
+      if (worst) out += `<circle class="fx-ring" cx="${X(i)}" cy="${cy}" r="${R}"/><circle class="fx-ring d2" cx="${X(i)}" cy="${cy}" r="${R}"/>`;
+      out += `<circle class="fx-node ${k} ${worst ? 'worst' : ''}" cx="${X(i)}" cy="${cy}" r="${R}"/><text class="fx-n" x="${X(i)}" y="${cy + 5}">${short(s.n || 0)}</text>`;
+      out += `<text class="fx-k" x="${X(i)}" y="${cy + 64}">${esc(s.k)}</text>`;
+      if (worst) out += `<text class="fx-fix" x="${X(i)}" y="${cy + 84}">▲ perbaiki di sini</text>`;
+    });
+    return `<svg viewBox="0 0 ${W} ${H}" class="fx-svg" role="img" aria-label="Grafik funnel">${defs}${out}</svg>${legend(bad)}`;
+  }
+  // HP: vertikal
+  const W = 360, gapY = 92, y0 = 40, cx = 64, R = 24, H = y0 * 2 + gapY * (n - 1) + 10;
+  const Y = (i) => y0 + i * gapY;
+  let l = '', r = '';
+  steps.forEach((s, i) => { l += `${i ? 'L' : 'M'}${cx - thick(s) / 2},${Y(i)} `; });
+  for (let i = n - 1; i >= 0; i--) r += `L${cx + thick(steps[i]) / 2},${Y(i)} `;
+  out += `<path class="fx-band" d="${l}${r}Z"/>`;
+  steps.forEach((s, i) => {
+    if (!i) return;
+    const worst = s === bad;
+    out += `<line class="fx-line ${st(s)} ${worst ? 'worst' : ''}" x1="${cx}" y1="${Y(i - 1) + R}" x2="${cx}" y2="${Y(i) - R}" ${worst ? 'filter="url(#fxGlow)"' : ''}/>`;
+    out += pill(250, (Y(i - 1) + Y(i)) / 2, s, worst);
+  });
+  steps.forEach((s, i) => {
+    const worst = s === bad, k = i ? st(s) : 'na';
+    if (worst) out += `<circle class="fx-ring" cx="${cx}" cy="${Y(i)}" r="${R}"/><circle class="fx-ring d2" cx="${cx}" cy="${Y(i)}" r="${R}"/>`;
+    out += `<circle class="fx-node ${k} ${worst ? 'worst' : ''}" cx="${cx}" cy="${Y(i)}" r="${R}"/><text class="fx-n" x="${cx}" y="${Y(i) + 5}">${short(s.n || 0)}</text>`;
+    out += `<text class="fx-k left" x="${cx + 40}" y="${Y(i) + 5}">${esc(s.k)}${worst ? ' ◀' : ''}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" class="fx-svg v" role="img" aria-label="Grafik funnel">${defs}${out}</svg>${legend(bad)}`;
+}
+const legend = (bad) => `<div class="fx-legend">
+  <span><i class="ok"></i>sesuai patokan</span><span><i class="bad"></i>di bawah patokan</span><span><i class="na"></i>belum ada data</span>
+  ${bad ? `<b class="fx-alert">Perbaiki dulu: ${esc(bad.l)} ${p1(bad.r)} (patokan ${p1(bad.t)})</b>` : '<b class="fx-good">Semua tahap aman</b>'}
+</div>`;

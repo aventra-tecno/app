@@ -4,7 +4,7 @@ import { APP_VERSION, DEMO } from './config.js';
 import { esc, icon, toast, modal, $, $$, RANGE_LABEL, customLabel, range, ymdLocal } from './ui.js';
 
 export const state = {
-  user: null, tenants: [], tenant: null, role: 'cs', wa: [],
+  user: null, tenants: [], tenant: null, role: 'cs', jabatan: null, menus: null, wa: [],
   period: localStorage.getItem('ld_period') || '7d',
 };
 
@@ -14,8 +14,21 @@ const PAGES = [
   { id: 'funnel', label: 'Funnel & Target', icon: 'funnel', load: () => import('./pages/funnel.js') },
   { id: 'klik', label: 'Klik Tombol WA', icon: 'click', load: () => import('./pages/klik.js') },
   { id: 'log', label: 'Log Event Meta', icon: 'pulse', load: () => import('./pages/log.js') },
+  { id: 'tim', label: 'Tim & Akses', icon: 'team', load: () => import('./pages/tim.js'), admin: true },
   { id: 'pengaturan', label: 'Pengaturan', icon: 'gear', load: () => import('./pages/pengaturan.js'), admin: true },
 ];
+export const MENU_LIST = PAGES.map(({ id, label, admin }) => ({ id, label, admin: !!admin }));
+const LOGO_LIGHT = 'https://aventra.id/logo-full-light.png';
+const LOGO_COLOR = 'https://aventra.id/logo-lockup.png';
+// logo resmi; bila gagal dimuat, tampilkan teks
+const logo = (src, cls) => `<img class="${cls}" src="${src}" alt="Aventra" onerror="this.outerHTML='<b class=&quot;${cls} brand-text&quot;>aventra</b>'">`;
+
+// menu yang boleh dibuka orang ini
+export function allowed(p) {
+  if (p.admin && state.role === 'cs') return false;
+  if (state.role === 'owner' || !Array.isArray(state.menus)) return true;
+  return state.menus.includes(p.id);
+}
 
 const root = document.getElementById('app');
 
@@ -24,6 +37,7 @@ async function boot() {
     const s = await api.session();
     if (!s) return showLogin();
     state.user = s.user;
+    await api.klaimUndangan();
     state.tenants = await api.tenants();
     if (!state.tenants.length) return showOnboarding();
     const saved = localStorage.getItem('ld_tenant');
@@ -39,14 +53,15 @@ async function boot() {
 
 export async function loadTenantData() {
   localStorage.setItem('ld_tenant', state.tenant.id);
-  [state.role, state.wa] = await Promise.all([api.myRole(state.tenant.id), api.waNumbers(state.tenant.id)]);
+  const [me, wa] = await Promise.all([api.myMember(state.tenant.id), api.waNumbers(state.tenant.id)]);
+  Object.assign(state, { role: me.role, jabatan: me.jabatan, menus: me.menus, wa });
 }
 
 // ------------------------------------------------------------------ LOGIN
 function showLogin() {
   root.innerHTML = `<div class="center-screen hero-bg">
     <form class="auth-card" id="f">
-      <div class="brand-row"><span class="logo">A</span><div><b>Aventra Leads</b><small>Lacak klik WA sampai closing</small></div></div>
+      <div class="auth-brand">${logo(LOGO_COLOR, 'auth-logo')}<div><b>Aventra Leads</b><small>Lacak klik WA sampai closing</small></div></div>
       <label>Email<input name="email" type="email" required autocomplete="email"></label>
       <label>Password<input name="password" type="password" required minlength="6" autocomplete="current-password"></label>
       <button class="btn primary block" name="masuk">Masuk</button>
@@ -80,26 +95,36 @@ function showOnboarding() {
 
 // ------------------------------------------------------------------ KERANGKA
 function renderShell() {
-  const isAdmin = state.role !== 'cs';
+  const pages = PAGES.filter(allowed);
+  const initial = (state.user?.email || '?')[0].toUpperCase();
+  const roleLbl = { owner: 'Owner', admin: 'Admin', cs: 'CS' }[state.role] || state.role;
   root.innerHTML = `<div class="shell">
     <aside class="side" id="side">
-      <div class="side-brand"><span class="logo">A</span><div><b>Aventra Leads</b><small>${esc(state.tenant.nama)}</small></div></div>
+      <div class="side-brand">
+        <div class="brand-frame">${logo(LOGO_LIGHT, 'brand-logo')}<span class="brand-app">Leads</span></div>
+        <div class="biz">
+          <span class="biz-ic">${icon('store')}</span>
+          ${state.tenants.length > 1
+            ? `<select id="tenantSel" class="biz-select">${state.tenants.map((t) => `<option value="${t.id}" ${t.id === state.tenant.id ? 'selected' : ''}>${esc(t.nama)}</option>`).join('')}</select>`
+            : `<div class="biz-name"><small>Bisnis</small><b>${esc(state.tenant.nama)}</b></div>`}
+        </div>
+      </div>
+      <div class="nav-label">Menu</div>
       <nav class="side-nav">
-        ${PAGES.filter((p) => !p.admin || isAdmin).map((p) => `<a href="#/${p.id}" data-page="${p.id}">${icon(p.icon)}<span>${p.label}</span></a>`).join('')}
+        ${pages.map((p) => `<a href="#/${p.id}" data-page="${p.id}"><i class="nav-ic">${icon(p.icon)}</i><span>${p.label}</span><em class="nav-go">${icon('chev')}</em></a>`).join('')}
       </nav>
       <div class="side-foot">
-        ${state.tenants.length > 1 ? `<select id="tenantSel" class="dark-select">${state.tenants.map((t) => `<option value="${t.id}" ${t.id === state.tenant.id ? 'selected' : ''}>${esc(t.nama)}</option>`).join('')}</select>` : ''}
-        <div class="who">${esc(state.user?.email ?? '')}<small>${state.role} · v${APP_VERSION}${DEMO ? ' · DEMO' : ''}</small></div>
-        <button class="btn danger block" id="logout">${icon('out')}Keluar</button>
+        <div class="me"><span class="avatar">${esc(initial)}</span><div><b>${esc(state.user?.email ?? '')}</b><small>${esc(state.jabatan || roleLbl)} · v${APP_VERSION}${DEMO ? ' · DEMO' : ''}</small></div></div>
+        <button class="btn out block" id="logout">${icon('out')}Keluar</button>
       </div>
     </aside>
     <div class="scrim" id="scrim"></div>
     <div class="main">
       <header class="top">
         <button class="icon-btn only-m" id="menuBtn" aria-label="Menu">${icon('menu')}</button>
-        <h1 id="pageTitle"></h1>
+        <div class="top-title"><h1 id="pageTitle"></h1><small id="pageSub">${esc(state.tenant.nama)}</small></div>
         <div class="top-right">
-          <div class="seg" id="periodSeg">${Object.entries(RANGE_LABEL).map(([k, v]) => `<button data-p="${k}" class="${k === state.period ? 'on' : ''}">${v}</button>`).join('')}<button data-p="custom" class="pick ${state.period.startsWith('custom:') ? 'on' : ''}">${icon('calendar')}<span>${esc(customLabel(state.period))}</span></button></div>
+          <div class="seg" id="periodSeg">${Object.entries(RANGE_LABEL).map(([k, v]) => `<button data-p="${k}" class="${k === state.period ? 'on' : ''}">${v}</button>`).join('')}<button data-p="custom" class="pickdate ${state.period.startsWith('custom:') ? 'on' : ''}">${icon('calendar')}<span>${esc(customLabel(state.period))}</span></button></div>
         </div>
       </header>
       <main id="page" class="page"></main>
@@ -115,7 +140,7 @@ function renderShell() {
   const setPeriod = (p) => {
     state.period = p; localStorage.setItem('ld_period', p);
     $$('#periodSeg button').forEach((x) => x.classList.toggle('on', x.dataset.p === p || (x.dataset.p === 'custom' && p.startsWith('custom:'))));
-    $('#periodSeg .pick span').textContent = customLabel(p);
+    $('#periodSeg .pickdate span').textContent = customLabel(p);
     route();
   };
   $('#periodSeg').onclick = (e) => {
@@ -144,7 +169,9 @@ let seq = 0;
 async function route() {
   if (!$('#page')) return;
   const id = (location.hash.replace(/^#\/?/, '').split('?')[0]) || 'ringkasan';
-  const page = PAGES.find((p) => p.id === id && (!p.admin || state.role !== 'cs')) || PAGES[0];
+  const ok = PAGES.filter(allowed);
+  if (!ok.length) { $('#page').innerHTML = '<div class="card"><b>Belum ada menu untuk akun ini</b><p class="muted">Minta owner/admin membuka akses menu di Tim & Akses.</p></div>'; return; }
+  const page = ok.find((p) => p.id === id) || ok[0];
   $$('.side-nav a').forEach((a) => a.classList.toggle('active', a.dataset.page === page.id));
   $('#pageTitle').textContent = page.label;
   $('#periodSeg').style.visibility = ['ringkasan', 'leads', 'klik', 'funnel'].includes(page.id) ? 'visible' : 'hidden';
