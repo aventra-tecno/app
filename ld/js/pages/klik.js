@@ -73,7 +73,7 @@ export async function render(el, ctx) {
         <td data-l="Kode"><code>${esc(c.kode)}</code></td>
         <td data-l="Nomor">${esc(waLabel[c.wa_number_id] || '-')}</td>
         <td data-l="Iklan" class="ad">${esc(c._m.dn)}<small class="muted block">${esc(c._m.cn)}${c._m.a !== '-' ? ' › ' + esc(c._m.an) : ''}</small></td>
-        <td data-l="Jejak iklan">${c.fbc ? '<span class="badge ok">fbc</span>' : '<span class="badge">organik</span>'}</td>
+        <td data-l="Jejak iklan">${c.fbc ? '<span class="badge ok">fbc</span>' : (c.ad_id || c.ad_name || c.utm_source) ? '<span class="badge warn" title="Dari iklan, tapi tanpa fbclid. Contact tetap terkirim, pencocokan Meta lebih lemah.">iklan, tanpa fbclid</span>' : '<span class="badge">organik</span>'}</td>
         <td data-l="Contact">${c.contact_sent ? '<span class="badge ok">Terkirim</span>' : '<span class="badge bad">Belum</span>'}</td>
         <td data-l="Status">${ok ? '<span class="badge ok">Sudah chat</span>' : '<span class="badge warn">Belum</span>'}</td>
         <td class="act">${ok ? '' : '<button class="btn sm" data-a="link">Hubungkan</button>'}</td></tr>`;
