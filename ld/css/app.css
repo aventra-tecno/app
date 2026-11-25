@@ -264,3 +264,9 @@ h4.sub { margin: 16px 0 8px; font-size: 13px; color: var(--muted); text-transfor
   .top .seg button { flex: 1 1 30%; font-size: 13px; }
   .top .seg button.pick { flex: 1 1 100%; justify-content: center; }
 }
+
+/* v1.5.0 — biaya iklan otomatis */
+.spend-auto { display: grid; gap: 2px; }
+.spend-auto small { font-size: 12px; opacity: .9; }
+.spend-auto b { font-size: 22px; }
+.spend-auto span { font-size: 12px; opacity: .75; }

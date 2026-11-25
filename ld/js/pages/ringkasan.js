@@ -1,11 +1,12 @@
 // Aventra Leads · Ringkasan
 import { api } from '../api.js';
-import { esc, rp, num, pct, range, TAHAP } from '../ui.js';
+import { esc, rp, num, pct, range, ymdLocal, waktu, TAHAP } from '../ui.js';
 
 export async function render(el, { state }) {
   const { from, to } = range(state.period);
   const tid = state.tenant.id;
-  const [clicks, leads] = await Promise.all([api.clicks(tid, from, to), api.leads(tid, from, to)]);
+  const [clicks, leads, ins] = await Promise.all([api.clicks(tid, from, to), api.leads(tid, from, to),
+    api.insights(tid, ymdLocal(new Date(from)), ymdLocal(new Date(Date.parse(to) - 1))).catch(() => [])]);
 
   const paid = leads.filter((l) => l.paid_at);
   const omzet = paid.reduce((s, l) => s + (l.nilai || 0), 0);
@@ -15,7 +16,10 @@ export async function render(el, { state }) {
   const belum = clicks.filter((c) => !linked.has(c.id) && Date.now() - new Date(c.created_at) < 864e5).length;
 
   const spendKey = `ld_spend_${tid}_${state.period}`;
-  const spend = Number(localStorage.getItem(spendKey) || 0);
+  const metaSpend = ins.reduce((a, r) => a + Number(r.spend || 0), 0);
+  const auto = ins.length > 0; // ada data hasil sinkron Meta di periode ini
+  const spend = auto ? metaSpend : Number(localStorage.getItem(spendKey) || 0);
+  const t = state.tenant;
 
   // per iklan
   const clickById = Object.fromEntries(clicks.map((c) => [c.id, c]));
@@ -46,7 +50,9 @@ export async function render(el, { state }) {
   <section class="hero">
     <div><small>Omzet dari iklan</small><b>${rp(omzet)}</b><span>${num(paid.length)} closing dari ${num(leads.length)} chat</span></div>
     <div class="hero-spend">
-      <label>Biaya iklan periode ini<input id="spend" inputmode="numeric" value="${spend ? num(spend) : ''}" placeholder="isi dari Ads Manager"></label>
+      ${auto
+        ? `<div class="spend-auto"><small>Biaya iklan periode ini</small><b>${rp(spend)}</b><span>dari Meta${t.last_sync_at ? ' · sinkron ' + waktu(t.last_sync_at) : ''}</span></div>`
+        : `<label>Biaya iklan periode ini<input id="spend" inputmode="numeric" value="${spend ? num(spend) : ''}" placeholder="${t.ad_account_id ? 'belum ada data Meta, isi manual' : 'isi dari Ads Manager'}"></label>`}
       <div class="hero-mini"><span>Biaya per closing<b>${spend && paid.length ? rp(spend / paid.length) : '-'}</b></span>
       <span>ROAS<b>${spend ? (omzet / spend).toFixed(2).replace('.', ',') + 'x' : '-'}</b></span></div>
     </div>
@@ -93,7 +99,7 @@ export async function render(el, { state }) {
   </div>`;
 
   const sp = el.querySelector('#spend');
-  sp.onchange = () => {
+  if (sp) sp.onchange = () => {
     const v = Number(sp.value.replace(/\D/g, ''));
     localStorage.setItem(spendKey, String(v || ''));
     render(el, { state });
