@@ -1,4 +1,4 @@
-/*! Aventra Leads · t.js v1.1.1
+/*! Aventra Leads · t.js v1.1.2
  * Pasang di landing page:
  *   <script src="https://app.aventra.id/app/ld/t.js" data-key="pk_xxx" defer></script>
  * Tombol WA:
@@ -46,12 +46,16 @@
   var attr = load('av_attr') || {};
   if (qs.get('fbclid') || qs.get('utm_source') || qs.get('ad_id')) {
     attr = {};
-    ATTR_KEYS.forEach(function (k) { if (qs.get(k)) attr[k] = rapi(qs.get(k)); });
+    // fbclid disimpan PERSIS seperti dari Meta (tidak boleh diubah/dipotong); nama iklan dirapikan
+    ATTR_KEYS.forEach(function (k) { if (qs.get(k)) attr[k] = k === 'fbclid' ? qs.get(k) : rapi(qs.get(k)); });
     store('av_attr', attr);
   }
 
   // 2) Cookie _fbc dari fbclid, _fbp bila Pixel belum membuatnya
-  if (attr.fbclid) {
+  // Link tes (fbclid berawalan TES) bukan klik iklan asli: jangan dibuat _fbc agar Meta tidak menganggap fbclid diubah
+  var isTes = /^TES/.test(attr.fbclid || '');
+  if (/\.TES[^.]*$/.test(getCookie('_fbc') || '')) setCookie('_fbc', '', -1); // sisa cookie dari tes lama
+  if (attr.fbclid && !isTes) {
     var fbc = getCookie('_fbc');
     if (!fbc || fbc.split('.').pop() !== attr.fbclid) setCookie('_fbc', 'fb.1.' + Date.now() + '.' + attr.fbclid, 90);
   }
@@ -155,7 +159,7 @@
     var payload = {
       key: KEY, kode: kode, event_id: eventId, wa: num.id,
       page_url: location.href.split('#')[0],
-      fbc: getCookie('_fbc'), fbp: getCookie('_fbp')
+      fbc: isTes ? null : getCookie('_fbc'), fbp: getCookie('_fbp')
     };
     ATTR_KEYS.forEach(function (k) { if (attr[k]) payload[k] = attr[k]; });
 
