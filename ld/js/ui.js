@@ -27,6 +27,7 @@ export const icon = (name) => {
     gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7.4-3a7.4 7.4 0 0 0-.1-1.3l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-2.2-1.3L14.4 2h-4l-.4 2.5a7.4 7.4 0 0 0-2.2 1.3l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.6l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 2.2 1.3l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 2.2-1.3l2.4 1 2-3.4-2-1.6c.1-.4.1-.9.1-1.3z',
     out: 'M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3',
     menu: 'M3 6h18M3 12h18M3 18h18',
+    calendar: 'M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM4 10h16M8 2v4M16 2v4',
     plus: 'M12 5v14M5 12h14',
     search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm10 2-4.3-4.3',
     check: 'M20 6 9 17l-5-5',
@@ -63,11 +64,26 @@ export function copyText(text) {
 }
 
 // Rentang tanggal untuk filter
+// key: today | yesterday | 7d | 14d | 30d | custom:YYYY-MM-DD:YYYY-MM-DD
+const lokal = (ymd) => { const [y, m, d] = ymd.split('-').map(Number); return new Date(y, m - 1, d); };
 export function range(key) {
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const end = new Date(start.getTime() + 864e5);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (typeof key === 'string' && key.startsWith('custom:')) {
+    const [, a, b] = key.split(':');
+    const s = lokal(a), e = new Date(lokal(b).getTime() + 864e5);
+    return { from: s.toISOString(), to: e.toISOString(), days: Math.round((e - s) / 864e5) };
+  }
+  if (key === 'yesterday') return { from: new Date(today.getTime() - 864e5).toISOString(), to: today.toISOString(), days: 1 };
+  const end = new Date(today.getTime() + 864e5);
   const days = { today: 1, '7d': 7, '14d': 14, '30d': 30 }[key] ?? 7;
   return { from: new Date(end.getTime() - days * 864e5).toISOString(), to: end.toISOString(), days };
 }
-export const RANGE_LABEL = { today: 'Hari ini', '7d': '7 hari', '14d': '14 hari', '30d': '30 hari' };
+export const ymdLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+export function customLabel(key) {
+  if (!key?.startsWith('custom:')) return 'Pilih tanggal';
+  const [, a, b] = key.split(':');
+  const f = (x) => lokal(x).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  return a === b ? f(a) : `${f(a)} – ${f(b)}`;
+}
+export const RANGE_LABEL = { today: 'Hari ini', yesterday: 'Kemarin', '7d': '7 hari', '14d': '14 hari', '30d': '30 hari' };

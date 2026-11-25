@@ -1,6 +1,6 @@
 // Aventra Leads · Leads & Closing
 import { api } from '../api.js';
-import { esc, rp, num, waktu, jam, range, modal, toast, icon, TAHAP, ALASAN, $, $$ } from '../ui.js';
+import { esc, rp, num, waktu, jam, range, ymdLocal, modal, toast, icon, TAHAP, ALASAN, $, $$ } from '../ui.js';
 
 let filter = 'semua';
 let q = '';
@@ -44,16 +44,16 @@ export async function render(el, ctx) {
       if (filter === 'gagal' && !(l.paid_at && !l.purchase_sent_at)) return false;
       if (!s) return true;
       const c = clickById[l.click_id];
-      return [c?.kode, l.phone, l.nama].some((v) => (v || '').toLowerCase().includes(s.replace(/^0/, '')));
+      return [c?.kode, l.phone, l.nama, l.ad_name].some((v) => (v || '').toLowerCase().includes(s.replace(/^0/, '')));
     });
     $('#rows', el).innerHTML = list.map((l) => {
       const c = clickById[l.click_id];
       const paid = !!l.paid_at;
       return `<tr data-id="${l.id}" class="${paid ? 'is-paid' : ''}">
         <td data-l="Masuk" class="nw">${waktu(l.created_at)}</td>
-        <td data-l="Kode">${c ? `<code>${esc(c.kode)}</code>` : '<span class="muted">tanpa kode</span>'}</td>
+        <td data-l="Kode">${c ? `<code>${esc(c.kode)}</code>` : l.sumber === 'ctwa' ? '<span class="tag">CTWA</span>' : '<span class="muted">tanpa kode</span>'}</td>
         <td data-l="Pelanggan"><b>${esc(l.nama || '-')}</b> <span class="tag">${esc(waLabel[l.wa_number_id] || '-')}</span><small class="muted block">${esc(l.phone || '')}</small></td>
-        <td data-l="Iklan" class="ad">${esc(c?.ad_name || c?.utm_content || (c ? '-' : 'manual'))}</td>
+        <td data-l="Iklan" class="ad">${esc(c?.ad_name || c?.utm_content || l.ad_name || (c ? '-' : 'manual'))}</td>
         <td data-l="Tahap">${paid ? '<span class="tag tE">E · Closing</span>'
           : `<select class="mini" data-f="stage">${['A', 'B', 'C', 'D'].map((k) => `<option value="${k}" ${l.stage === k ? 'selected' : ''}>${k} · ${TAHAP[k]}</option>`).join('')}</select>`}</td>
         <td data-l="Alasan">${paid ? '-' : `<select class="mini" data-f="alasan"><option value="">–</option>${Object.entries(ALASAN).map(([k, v]) => `<option value="${k}" ${String(l.alasan) === k ? 'selected' : ''}>${k} · ${v}</option>`).join('')}</select>`}</td>
@@ -94,9 +94,13 @@ export async function openLeadModal(state, { click = null } = {}, onDone) {
   const tid = state.tenant.id;
   const m = modal('Catat chat masuk', `
     <form id="lf" class="form">
-      <div class="seg block" id="mode"><button type="button" data-m="kode" class="on">Ada kode promo</button><button type="button" data-m="tanpa">Tanpa kode</button></div>
+      <div class="seg block" id="mode"><button type="button" data-m="kode" class="on">Ada kode promo</button><button type="button" data-m="ctwa">Iklan CTWA</button><button type="button" data-m="tanpa">Tanpa kode</button></div>
       <div data-show="kode">
         <label>Kode promo dari chat<div class="input-btn"><input name="kode" placeholder="${esc(state.tenant.prefix)}-XXXXXX" autocapitalize="characters" value="${esc(click?.kode || '')}"><button type="button" class="btn" id="cek">Cek</button></div></label>
+      </div>
+      <div data-show="ctwa" hidden>
+        <label>Dari iklan CTWA<select name="ctwa"><option value="">Memuat iklan…</option></select></label>
+        <p class="muted small">Chat langsung dari iklan Click to WhatsApp (tanpa landing page). Lihat nama iklan di label "Iklan" pada chat WA Business.</p>
       </div>
       <div data-show="tanpa" hidden>
         <p class="muted small">Pilih klik yang waktunya paling dekat dengan chat ini. Kalau tidak ada yang cocok, pilih "catat manual".</p>
@@ -142,6 +146,20 @@ export async function openLeadModal(state, { click = null } = {}, onDone) {
     m.el.querySelectorAll('#mode button').forEach((x) => x.classList.toggle('on', x === b));
     m.el.querySelectorAll('[data-show]').forEach((d) => { d.hidden = d.dataset.show !== mode; });
     info(null);
+    if (mode === 'ctwa') {
+      const sel = f.ctwa;
+      const now = new Date();
+      const ins = await api.insights(tid, ymdLocal(new Date(now - 30 * 864e5)), ymdLocal(now)).catch(() => []);
+      const g = {};
+      ins.forEach((r) => { const x = (g[r.ad_id] ??= { id: r.ad_id, name: r.ad_name || r.ad_id, camp: r.campaign_name || '', ms: 0, lpv: 0, last: '' });
+        x.ms += r.msg_started || 0; x.lpv += r.lpv || 0; if (r.tanggal > x.last) x.last = r.tanggal; });
+      const list = Object.values(g).filter((x) => x.ms > 0 && !x.lpv).sort((a, b) => b.last.localeCompare(a.last) || b.ms - a.ms);
+      const last = localStorage.getItem('ld_last_ctwa_' + tid);
+      sel.innerHTML = list.length
+        ? list.map((x) => `<option value="${esc(x.id)}" ${x.id === last ? 'selected' : ''}>${esc(x.name)} · ${esc(x.camp)}</option>`).join('')
+        : '<option value="">Belum ada iklan CTWA (sinkron data Meta dulu)</option>';
+      sel._list = list;
+    }
     if (mode === 'tanpa') {
       const now = Date.now();
       const cs = await api.clicks(tid, new Date(now - 3 * 3600e3).toISOString(), new Date(now + 60e3).toISOString());
@@ -158,12 +176,16 @@ export async function openLeadModal(state, { click = null } = {}, onDone) {
   f.onsubmit = async (e) => {
     e.preventDefault();
     if (mode === 'kode' && !chosen) { toast('Cek kode dulu, atau pilih "Tanpa kode"', 'err'); return; }
+    const ad = mode === 'ctwa' ? (f.ctwa._list || []).find((x) => x.id === f.ctwa.value) : null;
+    if (mode === 'ctwa' && !ad) { toast('Pilih iklan CTWA-nya', 'err'); return; }
     try {
       await api.createLead({
-        tenant_id: tid, click_id: chosen?.id ?? null, wa_number_id: f.wa.value || null,
+        tenant_id: tid, click_id: ad ? null : chosen?.id ?? null, wa_number_id: f.wa.value || null,
         phone: f.phone.value, nama: f.nama.value.trim() || null, stage: f.stage.value,
-        sumber: chosen ? 'lp' : 'manual',
+        sumber: ad ? 'ctwa' : chosen ? 'lp' : 'manual',
+        ...(ad ? { ad_id: ad.id, ad_name: ad.name } : {}),
       });
+      if (ad) localStorage.setItem('ld_last_ctwa_' + tid, ad.id);
       m.close(); toast('Chat tercatat'); onDone?.();
     } catch (err) { toast(err.message, 'err'); }
   };

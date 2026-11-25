@@ -255,3 +255,12 @@ h4.sub { margin: 16px 0 8px; font-size: 13px; color: var(--muted); text-transfor
   .fn-row { grid-template-columns: 1fr auto; gap: 4px 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
   .fn-bar, .fn-m { grid-column: 1 / -1; }
 }
+
+/* v1.5.0 — pilihan tanggal */
+.seg button.pick { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.seg button.pick svg { width: 15px; height: 15px; flex: none; }
+@media (max-width: 900px) {
+  .top .seg { flex-wrap: wrap; }
+  .top .seg button { flex: 1 1 30%; font-size: 13px; }
+  .top .seg button.pick { flex: 1 1 100%; justify-content: center; }
+}

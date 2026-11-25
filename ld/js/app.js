@@ -1,7 +1,7 @@
 // Aventra Leads · kerangka aplikasi, login, router
 import { api } from './api.js';
 import { APP_VERSION, DEMO } from './config.js';
-import { esc, icon, toast, $, $$, RANGE_LABEL } from './ui.js';
+import { esc, icon, toast, modal, $, $$, RANGE_LABEL, customLabel, range, ymdLocal } from './ui.js';
 
 export const state = {
   user: null, tenants: [], tenant: null, role: 'cs', wa: [],
@@ -99,7 +99,7 @@ function renderShell() {
         <button class="icon-btn only-m" id="menuBtn" aria-label="Menu">${icon('menu')}</button>
         <h1 id="pageTitle"></h1>
         <div class="top-right">
-          <div class="seg" id="periodSeg">${Object.entries(RANGE_LABEL).map(([k, v]) => `<button data-p="${k}" class="${k === state.period ? 'on' : ''}">${v}</button>`).join('')}</div>
+          <div class="seg" id="periodSeg">${Object.entries(RANGE_LABEL).map(([k, v]) => `<button data-p="${k}" class="${k === state.period ? 'on' : ''}">${v}</button>`).join('')}<button data-p="custom" class="pick ${state.period.startsWith('custom:') ? 'on' : ''}">${icon('calendar')}<span>${esc(customLabel(state.period))}</span></button></div>
         </div>
       </header>
       <main id="page" class="page"></main>
@@ -112,11 +112,29 @@ function renderShell() {
   $('#menuBtn').onclick = () => toggle(true);
   scrim.onclick = () => toggle(false);
   $$('.side-nav a').forEach((a) => a.addEventListener('click', () => toggle(false)));
+  const setPeriod = (p) => {
+    state.period = p; localStorage.setItem('ld_period', p);
+    $$('#periodSeg button').forEach((x) => x.classList.toggle('on', x.dataset.p === p || (x.dataset.p === 'custom' && p.startsWith('custom:'))));
+    $('#periodSeg .pick span').textContent = customLabel(p);
+    route();
+  };
   $('#periodSeg').onclick = (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    state.period = b.dataset.p; localStorage.setItem('ld_period', state.period);
-    $$('#periodSeg button').forEach((x) => x.classList.toggle('on', x === b));
-    route();
+    if (b.dataset.p !== 'custom') return setPeriod(b.dataset.p);
+    const r = range(state.period);
+    const a0 = ymdLocal(new Date(r.from)), b0 = ymdLocal(new Date(Date.parse(r.to) - 1)), max = ymdLocal(new Date());
+    const m = modal('Pilih tanggal', `<div class="form">
+      <div class="row2">
+        <label>Dari<input type="date" id="pdA" value="${a0}" max="${max}"></label>
+        <label>Sampai<input type="date" id="pdB" value="${b0}" max="${max}"></label>
+      </div>
+      <button class="btn primary block" id="pdOk">Terapkan</button></div>`);
+    m.el.querySelector('#pdOk').onclick = () => {
+      let a = m.el.querySelector('#pdA').value, z = m.el.querySelector('#pdB').value;
+      if (!a || !z) return toast('Isi kedua tanggal', 'err');
+      if (a > z) [a, z] = [z, a];
+      m.close(); setPeriod(`custom:${a}:${z}`);
+    };
   };
   const ts = $('#tenantSel');
   if (ts) ts.onchange = async () => { state.tenant = state.tenants.find((t) => t.id === ts.value); await loadTenantData(); renderShell(); route(); };

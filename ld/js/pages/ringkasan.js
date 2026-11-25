@@ -24,7 +24,7 @@ export async function render(el, { state }) {
   const row = (k) => (per[k] ??= { klik: 0, lead: 0, closing: 0, omzet: 0 });
   clicks.forEach((c) => row(adName(c)).klik++);
   leads.forEach((l) => {
-    const k = l.click_id ? adName(clickById[l.click_id]) : '(chat tanpa kode / manual)';
+    const k = l.click_id ? adName(clickById[l.click_id]) : l.ad_name ? l.ad_name + ' (CTWA)' : '(chat tanpa kode / manual)';
     const r = row(k); r.lead++;
     if (l.paid_at) { r.closing++; r.omzet += l.nilai || 0; }
   });

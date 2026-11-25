@@ -172,6 +172,13 @@ const D = (() => {
       lpv: 0, view_content: 0, contact: 0, msg_started: ms, purchase: Math.round(ms * 0.1 * rnd() * 2), purchase_value: 0,
       synced_at: new Date(now - 40 * 60e3).toISOString() });
   }
+  for (let d = 0; d < 14; d++) for (let j = 0; j < 3; j++) {
+    const t = now - d * 864e5 - j * 3 * 3600e3 - 3600e3; const paid = rnd() < 0.2;
+    leads.push({ id: `lc${d}_${j}`, tenant_id: tid, click_id: null, wa_number_id: 'w1', phone: '628' + Math.floor(1e9 + rnd() * 8e9), nama: pick(nama),
+      stage: paid ? 'E' : pick(['A', 'B', 'B', 'C']), alasan: null, nilai: paid ? 135000 : null, paid_at: paid ? new Date(t + 2 * 3600e3).toISOString() : null,
+      purchase_sent_at: paid ? new Date(t + 2 * 3600e3).toISOString() : null, sumber: 'ctwa', ad_id: '120219999', ad_name: 'CTWA Reels Pijat',
+      created_at: new Date(t).toISOString() });
+  }
   tenant.ad_account_id = '1234567890';
   tenant.auto_sync = true; tenant.last_sync_at = new Date(now - 12 * 60e3).toISOString(); tenant.last_sync_info = '96 baris · otomatis';
   return { tenant, wa, clicks, leads, events, keys, insights, adsToken: new Date(now - 3 * 864e5).toISOString(), token: new Date(now - 5 * 864e5).toISOString(), session: { user: { email: 'akhmad@contoh.id' } } };

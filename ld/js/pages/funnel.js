@@ -207,18 +207,25 @@ export async function render(el, ctx) {
     const ids = new Set(adClicks.map((c) => c.id));
     const adLeads = leads.filter((l) => ids.has(l.click_id));
     const paid = adLeads.filter((l) => l.paid_at);
+    // chat dari iklan CTWA yang dicatat CS di Aventra
+    const insIds = new Set(insSel.map((r) => r.ad_id));
+    const ctwaLeads = leads.filter((l) => l.sumber === 'ctwa' && l.ad_id && adIds.has(l.ad_id));
+    const ctwaPaid = ctwaLeads.filter((l) => l.paid_at);
     const S = (k) => ins.reduce((s, r) => s + Number(r[k] || 0), 0);
     const A = { S: S('spend'), I: S('impressions'), K: S('link_clicks'), L: S('lpv'), V: S('view_content'), MC: S('contact'),
-      MS: S('msg_started'), MP: S('purchase'), W: adClicks.length, C: adLeads.length, P: paid.length, O: paid.reduce((s, l) => s + (l.nilai || 0), 0) };
+      MS: S('msg_started'), MP: S('purchase'), W: adClicks.length, C: adLeads.length, P: paid.length, O: paid.reduce((s, l) => s + (l.nilai || 0), 0),
+      CC: ctwaLeads.length, CP: ctwaPaid.length, CO: ctwaPaid.reduce((s, l) => s + (l.nilai || 0), 0) };
     const isCtwa = A.MS > 0 && A.L === 0 && A.W === 0;
+    if (isCtwa) { A.O = A.CO; }
+    const PC = Math.max(A.CP, A.MP); // purchase CTWA: dari Aventra, atau label WA bila lebih banyak
     const Tm = { ...T, mode: isCtwa ? 'ctwa' : 'web' };
     const Hm = hitung(Tm);
-    const P = isCtwa ? A.MP : A.P;
+    const P = isCtwa ? PC : A.P;
     const steps = isCtwa ? [
       { k: 'Impresi', n: A.I, src: 'Meta' },
       { k: 'Klik link', n: A.K, src: 'Meta', l: 'CTR', r: div(A.K, A.I), t: Tm.wctr / 100, cost: div(A.S, A.K), max: Hm.max[1], cl: 'CPC' },
       { k: 'Chat dimulai', n: A.MS, src: 'Meta', l: 'Chat', r: div(A.MS, A.K), t: Tm.wchat / 100, cost: div(A.S, A.MS), max: Hm.max[2], cl: 'per chat' },
-      { k: 'Purchase', n: A.MP, src: 'Meta (label WA)', l: 'Purchase', r: div(A.MP, A.MS), t: Tm.wpurchase / 100, cost: div(A.S, A.MP), max: Hm.cpaT, cl: 'CPA' },
+      { k: 'Purchase', n: PC, src: `Aventra ${num(A.CP)} · label WA ${num(A.MP)}`, l: 'Purchase', r: div(PC, A.MS), t: Tm.wpurchase / 100, cost: div(A.S, PC), max: Hm.cpaT, cl: 'CPA' },
     ] : [
       { k: 'Impresi', n: A.I, src: 'Meta' },
       { k: 'Klik link', n: A.K, src: 'Meta', l: 'CTR', r: div(A.K, A.I), t: Tm.ctr / 100, cost: div(A.S, A.K), max: Hm.max[1], cl: 'CPC' },
@@ -247,7 +254,7 @@ export async function render(el, ctx) {
         </div>`;
       }).join('')}</div>
       ${!filtered && ctwaCamp.size ? `<div class="note warn" style="margin-bottom:8px"><div>${ctwaCamp.size} campaign CTWA tidak dimasukkan ke funnel website ini. Pilih campaign CTWA di filter untuk melihat funnelnya sendiri.</div></div>` : ''}
-      <p class="muted small">${isCtwa ? 'Funnel CTWA memakai data Meta: chat dimulai & purchase dari label WhatsApp Business.' : 'Contact, chat & purchase dihitung dari klik iklan yang tercatat di Aventra.'} Angka setelah "/" = patokan.</p>`;
+      <p class="muted small">${isCtwa ? `Funnel CTWA: chat dimulai dari Meta. Purchase = closing yang dicatat CS sebagai "Iklan CTWA" di Aventra (${num(A.CC)} chat tercatat), atau dari label WA Business bila angkanya lebih besar.` : 'Contact, chat & purchase dihitung dari klik iklan yang tercatat di Aventra.'} Angka setelah "/" = patokan.</p>`;
 
     const tips = {
       CTR: 'CTR rendah → kreatif/hook kurang menarik. Uji 2–3 kreatif baru dengan 3 detik pertama berbeda.',
@@ -266,13 +273,16 @@ export async function render(el, ctx) {
     const row = (id) => (g[id] ??= { name: '', S: 0, I: 0, K: 0, L: 0, MS: 0, MP: 0, W: 0, C: 0, P: 0, O: 0 });
     insSel.forEach((r) => { const x = row(r.ad_id); x.name = x.name || r.ad_name; x.S += Number(r.spend); x.I += r.impressions; x.K += r.link_clicks; x.L += r.lpv; x.MS += r.msg_started || 0; x.MP += r.purchase || 0; });
     const lb = Object.fromEntries(adLeads.map((l) => [l.click_id, l]));
+    leads.filter((l) => l.sumber === 'ctwa' && l.ad_id && insIds.has(l.ad_id)).forEach((l) => {
+      const x = row(l.ad_id); x.CC = (x.CC || 0) + 1; if (l.paid_at) { x.CP = (x.CP || 0) + 1; x.O += l.nilai || 0; }
+    });
     adClicks.forEach((c) => {
       const x = row(c.ad_id || 'tanpa-id'); x.name = x.name || c.ad_name || c.utm_content || '(tanpa ID iklan)'; x.W++;
       const l = lb[c.id]; if (l) { x.C++; if (l.paid_at) { x.P++; x.O += l.nilai || 0; } }
     });
     $('#perAd', el).innerHTML = Object.values(g).sort((a, b) => b.S - a.S || b.W - a.W).map((x) => {
       const ctwa = x.MS > 0 && !x.L && !x.W;
-      const pur = ctwa ? x.MP : x.P, cpa = div(x.S, pur);
+      const pur = ctwa ? Math.max(x.CP || 0, x.MP) : x.P, cpa = div(x.S, pur);
       const st = !x.S ? '<span class="badge">tanpa data Meta</span>'
         : !pur ? (x.S > H.cpaT * 2 ? '<span class="badge bad">Matikan? 2× CPA tanpa purchase</span>' : '<span class="badge warn">Belum purchase</span>')
         : cpa <= H.cpaT ? '<span class="badge ok">Winning</span>' : cpa <= H.laba ? '<span class="badge warn">Di atas target</span>' : '<span class="badge bad">Rugi</span>';
@@ -280,7 +290,7 @@ export async function render(el, ctx) {
         <td class="r" data-l="Spend">${x.S ? rp(x.S) : '-'}</td><td class="r" data-l="CTR">${p1(div(x.K, x.I))}</td>
         <td class="r" data-l="OCLP">${ctwa ? '-' : p1(div(x.L, x.K))}</td><td class="r" data-l="Contact">${ctwa ? '-' : p1(div(x.W, x.L))}</td>
         <td class="r" data-l="Chat">${ctwa ? p1(div(x.MS, x.K)) : p1(div(x.C, x.W))}</td>
-        <td class="r" data-l="Purchase">${num(pur)} <small class="muted">${ctwa ? p1(div(x.MP, x.MS)) : p1(div(x.P, x.C))}</small></td>
+        <td class="r" data-l="Purchase">${num(pur)} <small class="muted">${ctwa ? p1(div(pur, x.MS)) : p1(div(x.P, x.C))}</small></td>
         <td class="r" data-l="CPA">${rpx(cpa)}</td><td class="r" data-l="ROAS">${x.S && x.O ? (x.O / x.S).toFixed(2).replace('.', ',') + 'x' : '-'}</td>
         <td data-l="Status">${st}</td></tr>`;
     }).join('') || '<tr><td colspan="10" class="empty">Belum ada data</td></tr>';
@@ -290,7 +300,7 @@ export async function render(el, ctx) {
     const T2 = rows.reduce((a, x) => {
       const ctwa = x.MS > 0 && !x.L && !x.W;
       a.S += x.S; a.I += x.I; a.K += x.K; a.O += x.O; a.n++;
-      if (ctwa) { a.Kc += x.K; a.ch += x.MS; a.p += x.MP; } else { a.Kw += x.K; a.L += x.L; a.W += x.W; a.ch += x.C; a.p += x.P; }
+      if (ctwa) { a.Kc += x.K; a.ch += x.MS; a.p += Math.max(x.CP || 0, x.MP); } else { a.Kw += x.K; a.L += x.L; a.W += x.W; a.ch += x.C; a.p += x.P; }
       return a;
     }, { S: 0, I: 0, K: 0, O: 0, n: 0, Kc: 0, Kw: 0, L: 0, W: 0, ch: 0, p: 0 });
     const cpaT = div(T2.S, T2.p);
