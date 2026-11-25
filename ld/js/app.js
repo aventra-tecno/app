@@ -18,8 +18,8 @@ const PAGES = [
   { id: 'pengaturan', label: 'Pengaturan', icon: 'gear', load: () => import('./pages/pengaturan.js'), admin: true },
 ];
 export const MENU_LIST = PAGES.map(({ id, label, admin }) => ({ id, label, admin: !!admin }));
-const LOGO_LIGHT = 'https://aventra.id/logo-full-light.png';
-const LOGO_COLOR = 'https://aventra.id/logo-lockup.png';
+const LOGO_LIGHT = 'img/logo-light.png';   // logo putih (untuk sidebar hijau gelap)
+const LOGO_COLOR = 'img/logo.png';         // logo berwarna (untuk halaman login)
 // logo resmi; bila gagal dimuat, tampilkan teks
 const logo = (src, cls) => `<img class="${cls}" src="${src}" alt="Aventra" onerror="this.outerHTML='<b class=&quot;${cls} brand-text&quot;>aventra</b>'">`;
 
