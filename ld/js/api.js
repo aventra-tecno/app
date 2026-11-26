@@ -36,6 +36,12 @@ const real = {
     return { role: r?.role ?? 'cs', nama: r?.nama ?? null, jabatan: r?.jabatan ?? null, menus: r?.menus ?? null };
   },
   async extStatus(tid) { const c = await client(); return must(await c.rpc('ext_status', { p_tenant: tid })); },
+  // ----- WhatsApp Gateway (scan QR) -----
+  async waSessions(tid) { const c = await client(); return must(await c.from('wa_sessions').select('*').eq('tenant_id', tid).order('created_at')); },
+  async addWaSession(tid, label) { const c = await client(); return must(await c.from('wa_sessions').insert({ tenant_id: tid, label }).select('*').single()); },
+  async cmdWaSession(id, perintah) { const c = await client(); must(await c.from('wa_sessions').update({ perintah }).eq('id', id)); },
+  async delWaSession(id) { const c = await client(); must(await c.from('wa_sessions').delete().eq('id', id)); },
+  async gatewayStatus() { const c = await client(); return must(await c.from('gateway_status').select('*').eq('id', 1).maybeSingle()); },
   // ----- tim & akses -----
   async klaimUndangan() { const c = await client(); try { return must(await c.rpc('klaim_undangan')); } catch { return 0; } },
   async members(tid) { const c = await client(); return must(await c.rpc('daftar_anggota', { p_tenant: tid })); },
@@ -220,17 +226,24 @@ const D = (() => {
   }
   tenant.ad_account_id = '1234567890';
   tenant.auto_sync = true; tenant.last_sync_at = new Date(now - 12 * 60e3).toISOString(); tenant.last_sync_info = '96 baris · otomatis';
+  const wa_sessions = [{ id: 's1', label: 'CS Surabaya', status: 'terhubung', phone: '6285778082138', chat_tercatat: 23, last_seen: new Date(now - 20e3).toISOString() }];
   const team = [
     { user_id: 'u1', email: 'akhmad@contoh.id', nama: 'Akhmad Janni', role: 'owner', jabatan: 'Pemilik', menus: null, status: 'aktif' },
     { user_id: 'u2', email: 'cs.surabaya@contoh.id', nama: 'Rina', role: 'cs', jabatan: 'CS Surabaya', menus: ['leads', 'klik'], status: 'aktif' },
     { user_id: 'u3', email: 'marketing@contoh.id', nama: 'Dimas', role: 'admin', jabatan: 'Marketing', menus: ['ringkasan', 'funnel', 'klik', 'log'], status: 'aktif' },
     { user_id: null, undangan_id: 'i1', email: 'cs.malang@contoh.id', nama: 'Sari', role: 'cs', jabatan: 'CS Malang', menus: ['leads'], status: 'diundang' },
   ];
-  return { tenant, wa, clicks, leads, events, keys, insights, team, adsToken: new Date(now - 3 * 864e5).toISOString(), token: new Date(now - 5 * 864e5).toISOString(), session: { user: { email: 'akhmad@contoh.id' } } };
+  return { tenant, wa, clicks, leads, events, keys, insights, team, wa_sessions, adsToken: new Date(now - 3 * 864e5).toISOString(), token: new Date(now - 5 * 864e5).toISOString(), session: { user: { email: 'akhmad@contoh.id' } } };
 })();
 const inRange = (iso, f, t) => iso >= f && iso < t;
 const sortDesc = (a) => a.slice().sort((x, y) => (x.created_at < y.created_at ? 1 : -1));
 const wait = (v) => new Promise((r) => setTimeout(() => r(v), 60));
+
+// QR contoh untuk mode demo (bukan QR WhatsApp asli)
+const DEMO_QR = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" shape-rendering="crispEdges"><rect width="29" height="29" fill="#fff"/>' +
+  Array.from({ length: 29 * 29 }, (_, i) => { const x = i % 29, y = (i / 29) | 0; const f = (a, b) => x >= a && x < a + 7 && y >= b && y < b + 7; const fin = f(1, 1) || f(21, 1) || f(1, 21);
+    const on = fin ? !(x % 6 === 0 || y % 6 === 0) || (x - 1) % 6 === 0 || (y - 1) % 6 === 0 : ((x * 7 + y * 13 + x * y) % 5 < 2);
+    return on && x > 0 && y > 0 && x < 28 && y < 28 ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : ''; }).join('') + '</svg>');
 
 const demo = {
   async session() { return D.session; },
@@ -245,6 +258,11 @@ const demo = {
   async myRole() { return 'owner'; },
   async myMember() { const m = D.team[0]; return { role: 'owner', nama: m.nama, jabatan: m.jabatan, menus: null }; },
   async klaimUndangan() { return 0; },
+  async waSessions() { return D.wa_sessions.map((s) => { if (s.status === 'qr' && Date.now() - s._t > 7000) Object.assign(s, { status: 'terhubung', qr: null, phone: '6285778082138' }); return { ...s }; }); },
+  async addWaSession(t, label) { const s = { id: 's' + Date.now(), label, status: 'qr', qr: DEMO_QR, chat_tercatat: 0, _t: Date.now(), last_seen: new Date().toISOString() }; D.wa_sessions.push(s); return s; },
+  async cmdWaSession(id, p) { const s = D.wa_sessions.find((x) => x.id === id); if (p === 'logout') Object.assign(s, { status: 'keluar', phone: null }); else Object.assign(s, { status: 'qr', qr: DEMO_QR, _t: Date.now() }); },
+  async delWaSession(id) { D.wa_sessions = D.wa_sessions.filter((x) => x.id !== id); },
+  async gatewayStatus() { return { versi: '1.0.0', last_seen: new Date(Date.now() - 12e3).toISOString() }; },
   async extStatus() { return { plan: 'free', plan_until: null, kuota: 100, terpakai: 37, prefix: 'MR' }; },
   async members() { return wait(D.team.slice()); },
   async addMember(t, email, nama, role, jabatan, menus) { D.team.push({ user_id: null, undangan_id: 'u' + Date.now(), email, nama, role, jabatan, menus, status: 'diundang' }); return 'diundang'; },

@@ -670,3 +670,17 @@ b.lg-logo.brand-text { color: var(--navy-2); font-size: 30px; height: auto; }
 .ev-tag { display: inline-block; padding: 3px 9px; border-radius: 8px; font-weight: 700; font-size: 12.5px; background: var(--bg); }
 .ev-contact { background: var(--info-bg); color: var(--info); } .ev-lead { background: #F5ECFD; color: #7B3FB0; }
 .ev-purchase { background: var(--green-bg); color: #0E7C3A; }
+
+/* v1.14.0 — WhatsApp Gateway (scan QR) */
+.gw-head { display: grid; gap: 12px; }
+.gw-st { display: flex; gap: 10px; align-items: center; } .gw-st span { width: 10px; height: 10px; border-radius: 50%; background: #C9D3CE; flex: none; }
+.gw-st.on span { background: #25D366; box-shadow: 0 0 0 4px rgba(37, 211, 102, .2); animation: syncPulse 2s infinite; } .gw-st.off span { background: var(--red); }
+.gw-st b { display: block; } .gw-st small { color: var(--muted); }
+.gw-head .input-btn input { text-transform: none; }
+.gw-sess { display: grid; gap: 10px; }
+.gw-top { display: flex; justify-content: space-between; align-items: center; } .gw-top b { display: block; font-size: 15px; } .gw-top small { color: var(--muted); }
+.gw-qr { display: flex; gap: 16px; align-items: center; padding: 12px; border-radius: 14px; background: #F6FBF8; border: 1px solid var(--line); }
+.gw-qr img { width: 200px; height: 200px; border-radius: 10px; background: #fff; padding: 6px; border: 1px solid var(--line); image-rendering: pixelated; flex: none; }
+.gw-qr ol { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+.gw-meta { display: flex; gap: 16px; font-size: 12.5px; color: var(--muted); } .gw-meta b { color: var(--text); }
+@media (max-width: 900px) { .gw-qr { flex-direction: column; } .gw-qr img { width: 220px; height: 220px; } }

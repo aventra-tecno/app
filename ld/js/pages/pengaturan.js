@@ -1,20 +1,20 @@
 // Aventra Leads · Pengaturan
 import { api } from '../api.js';
 import { FUNCTIONS_URL, SCRIPT_URL } from '../config.js';
-import { esc, waktu, jam, modal, toast, icon, copyText, metaDates, $, $$ } from '../ui.js';
+import { esc, num, waktu, jam, modal, toast, icon, copyText, metaDates, $, $$ } from '../ui.js';
 import { loadTenantData } from '../app.js';
 
 let tab = 'bisnis';
-const TABS = { bisnis: 'Bisnis', pixel: 'Pixel & Token', meta: 'Meta Ads', wa: 'Nomor WA', pasang: 'Pasang di Landing Page', tes: 'Tes Pemasangan', ext: 'Ekstensi WhatsApp', api: 'API untuk ERP' };
+const TABS = { bisnis: 'Bisnis', pixel: 'Pixel & Token', meta: 'Meta Ads', wa: 'Nomor WA', pasang: 'Pasang di Landing Page', tes: 'Tes Pemasangan', wagw: 'WhatsApp (scan QR)', ext: 'Ekstensi WhatsApp', api: 'API untuk ERP' };
 
 export async function render(el, ctx) {
   el.innerHTML = `<div class="tabs">${Object.entries(TABS).map(([k, v]) => `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${v}</button>`).join('')}</div><div id="tabBody"></div>`;
   $('.tabs', el).onclick = (e) => {
     const b = e.target.closest('[data-t]'); if (!b) return;
-    tab = b.dataset.t; clearInterval(tesTimer); $$('.tabs button', el).forEach((x) => x.classList.toggle('on', x === b)); draw();
+    tab = b.dataset.t; clearInterval(tesTimer); clearInterval(gwTimer); $$('.tabs button', el).forEach((x) => x.classList.toggle('on', x === b)); draw();
   };
   const body = $('#tabBody', el);
-  const draw = () => ({ bisnis, pixel, meta: metaAds, wa, pasang, tes, ext: extTab, api: apiTab })[tab](body, ctx);
+  const draw = () => ({ bisnis, pixel, meta: metaAds, wa, pasang, tes, wagw: waGateway, ext: extTab, api: apiTab })[tab](body, ctx);
   draw();
 }
 
@@ -399,4 +399,73 @@ async function extTab(el, { state }) {
       <div class="note warn"><div>Ekstensi hanya <b>membaca</b> chat yang tampil di WhatsApp Web dan tidak pernah mengirim pesan. Yang dikirim ke Aventra hanya chat berisi kode <b>${esc(st.prefix || state.tenant.prefix)}-…</b>. Bila tampilan WhatsApp Web berubah, pencatatan bisa berhenti sementara sampai ekstensi diperbarui. Selama itu CS tetap bisa mencatat manual.</div></div>
     </div>
   </div>`;
+}
+
+// ---------------------------------------------------------------- WhatsApp Gateway / scan QR (v1.14.0)
+let gwTimer = 0;
+const GW_STATUS = {
+  baru: ['Menyiapkan QR…', ''], qr: ['Menunggu scan', 'warn'], terhubung: ['Terhubung', 'ok'],
+  terputus: ['Menyambung ulang…', 'warn'], keluar: ['Keluar', 'bad'], error: ['Perlu scan ulang', 'bad'],
+};
+async function waGateway(el, { state }) {
+  const t = state.tenant;
+  clearInterval(gwTimer);
+  const draw = async (paksa = false) => {
+    if (!el.isConnected) return clearInterval(gwTimer);
+    let list, gw;
+    try { [list, gw] = await Promise.all([api.waSessions(t.id), api.gatewayStatus().catch(() => null)]); }
+    catch (e) { el.innerHTML = `<div class="note bad"><div>${esc(e.message)}. Jalankan update-1.14.sql dulu.</div></div>`; return clearInterval(gwTimer); }
+    const online = gw?.last_seen && Date.now() - Date.parse(gw.last_seen) < 90e3;
+    if (!paksa && document.activeElement?.matches?.('#gwBox input')) return; // jangan ganggu saat mengetik
+    el.innerHTML = `<div class="grid2 g-top" id="gwBox">
+      <div class="stack">
+        <div class="card gw-head">
+          <div class="gw-st ${online ? 'on' : 'off'}"><span></span><div><b>Gateway ${online ? 'online' : 'offline'}</b>
+            <small>${gw?.last_seen ? `detak terakhir ${waktu(gw.last_seen)}${gw.versi ? ` · v${esc(gw.versi)}` : ''}` : 'belum pernah berjalan'}</small></div></div>
+          <form class="input-btn form" id="gwAdd"><input name="label" placeholder="Nama nomor, mis. CS Surabaya" maxlength="40"><button class="btn primary">${icon('plus')}Tambah nomor</button></form>
+        </div>
+        ${list.length ? list.map((s) => {
+          const [lbl, cls] = GW_STATUS[s.status] || [s.status, ''];
+          return `<div class="card gw-sess">
+            <div class="gw-top"><div><b>${esc(s.label || 'Nomor WhatsApp')}</b><small>${s.phone ? '+' + esc(s.phone) : 'belum tersambung'}</small></div><span class="badge ${cls}">${lbl}</span></div>
+            ${s.status === 'qr' && s.qr ? `<div class="gw-qr"><img src="${esc(s.qr)}" alt="QR WhatsApp"><ol>
+              <li>Buka <b>WhatsApp Business</b> di HP nomor ini.</li><li>Ketuk <b>⋮ / Setelan → Perangkat tertaut</b>.</li>
+              <li>Ketuk <b>Tautkan perangkat</b>, lalu arahkan kamera ke QR ini.</li><li>QR berganti otomatis setiap ±20 detik.</li></ol></div>` : ''}
+            ${s.status === 'baru' ? `<div class="note warn"><div>${online ? 'Menyiapkan QR… tunggu beberapa detik.' : 'Gateway offline. Jalankan program gateway di VPS dulu.'}</div></div>` : ''}
+            ${s.info && s.status !== 'qr' && s.status !== 'baru' ? `<p class="muted small">${esc(s.info)}</p>` : ''}
+            <div class="gw-meta"><span>Chat tercatat <b>${num(s.chat_tercatat || 0)}</b></span>${s.last_seen ? `<span>aktif ${waktu(s.last_seen)}</span>` : ''}</div>
+            <div class="btn-row">
+              ${['keluar', 'error', 'terputus'].includes(s.status) ? `<button class="btn sm primary" data-cmd="restart" data-id="${s.id}">Scan ulang</button>` : ''}
+              ${s.status === 'terhubung' ? `<button class="btn sm danger-ghost" data-cmd="logout" data-id="${s.id}">Putuskan</button>` : ''}
+              <button class="btn sm" data-del="${s.id}">${icon('trash')}Hapus</button>
+            </div></div>`;
+        }).join('') : '<div class="card empty muted">Belum ada nomor. Klik <b>Tambah nomor</b> lalu scan QR.</div>'}
+      </div>
+      <div class="card help">
+        <h3>Cara kerja</h3>
+        <ol>
+          <li>Program <b>Aventra WA Gateway</b> berjalan 24 jam di VPS Anda.</li>
+          <li>Nomor CS disambungkan dengan scan QR, sama seperti WhatsApp Web. CS tetap membalas dari HP seperti biasa.</li>
+          <li>Setiap chat masuk dibaca otomatis: yang berisi kode <b>${esc(t.prefix)}-…</b> dicatat dan event Lead dikirim ke Meta; chat pertama dari <b>iklan CTWA</b> dicatat beserta ID iklannya.</li>
+          <li>Gateway <b>tidak pernah mengirim pesan</b> dan tidak membuat pesan terbaca.</li>
+        </ol>
+        <div class="note warn"><div>Gateway memakai API WhatsApp tidak resmi. Nomor yang memakainya bisa diblokir WhatsApp. Uji 1 nomor dulu selama 1–2 minggu.</div></div>
+      </div>
+    </div>`;
+    $('#gwAdd', el).onsubmit = async (e) => {
+      e.preventDefault();
+      try { await api.addWaSession(t.id, e.target.label.value.trim() || null); draw(true); } catch (err) { toast(err.message, 'err'); }
+    };
+    $$('[data-cmd]', el).forEach((b) => (b.onclick = async () => {
+      if (b.dataset.cmd === 'logout' && !confirm('Putuskan nomor ini dari gateway? Chat berhenti tercatat otomatis.')) return;
+      try { await api.cmdWaSession(b.dataset.id, b.dataset.cmd); toast(b.dataset.cmd === 'logout' ? 'Diputuskan' : 'Menyiapkan QR baru…'); draw(true); } catch (err) { toast(err.message, 'err'); }
+    }));
+    $$('[data-del]', el).forEach((b) => (b.onclick = async () => {
+      if (!confirm('Hapus nomor ini? Gateway akan keluar dari WhatsApp di nomor tersebut.')) return;
+      try { await api.delWaSession(b.dataset.del); draw(true); } catch (err) { toast(err.message, 'err'); }
+    }));
+  };
+  el.innerHTML = '<div class="loading">Memuat…</div>';
+  await draw();
+  gwTimer = setInterval(draw, 3000);
 }
