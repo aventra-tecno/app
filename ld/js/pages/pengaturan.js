@@ -5,7 +5,7 @@ import { esc, num, waktu, jam, modal, toast, icon, copyText, metaDates, $, $$ } 
 import { loadTenantData } from '../app.js';
 
 let tab = 'bisnis';
-const TABS = { bisnis: 'Bisnis', pixel: 'Pixel & Token', meta: 'Meta Ads', wa: 'Nomor WA', pasang: 'Pasang di Landing Page', tes: 'Tes Pemasangan', wagw: 'WhatsApp (scan QR)', ext: 'Ekstensi WhatsApp', api: 'API untuk ERP' };
+const TABS = { bisnis: 'Bisnis', pixel: 'Pixel & Token', meta: 'Meta Ads', wa: 'Nomor WA & Scan QR', pasang: 'Pasang di Landing Page', tes: 'Tes Pemasangan', ext: 'Ekstensi WhatsApp', api: 'API untuk ERP' };
 
 export async function render(el, ctx) {
   el.innerHTML = `<div class="tabs">${Object.entries(TABS).map(([k, v]) => `<button data-t="${k}" class="${k === tab ? 'on' : ''}">${v}</button>`).join('')}</div><div id="tabBody"></div>`;
@@ -14,7 +14,7 @@ export async function render(el, ctx) {
     tab = b.dataset.t; clearInterval(tesTimer); clearInterval(gwTimer); $$('.tabs button', el).forEach((x) => x.classList.toggle('on', x === b)); draw();
   };
   const body = $('#tabBody', el);
-  const draw = () => ({ bisnis, pixel, meta: metaAds, wa, pasang, tes, wagw: waGateway, ext: extTab, api: apiTab })[tab](body, ctx);
+  const draw = () => ({ bisnis, pixel, meta: metaAds, wa, pasang, tes, ext: extTab, api: apiTab })[tab === 'wagw' ? (tab = 'wa') : tab](body, ctx);
   draw();
 }
 
@@ -171,42 +171,6 @@ async function metaAds(el, { state }) {
 }
 
 // ---------------------------------------------------------------- Nomor WA
-function wa(el, ctx) {
-  const { state } = ctx;
-  el.innerHTML = `<div class="toolbar"><p class="muted small grow">Template pesan wajib memuat <code>{kode}</code>. <code>{promo}</code> diganti teks promo.</p>
-    <button class="btn primary" id="add">${icon('plus')}Tambah nomor</button></div>
-    <div class="card flush"><table class="tbl">
-      <thead><tr><th>Label</th><th>Nomor</th><th>Template pesan</th><th>Status</th><th></th></tr></thead>
-      <tbody>${state.wa.map((w) => `<tr data-id="${w.id}">
-        <td data-l="Label"><b>${esc(w.label)}</b></td><td data-l="Nomor">${esc(w.phone)}</td>
-        <td data-l="Template" class="muted">${esc(w.template)}</td>
-        <td data-l="Status">${w.aktif ? '<span class="badge ok">Aktif</span>' : '<span class="badge">Nonaktif</span>'}</td>
-        <td class="act"><button class="btn sm" data-a="edit">Ubah</button></td></tr>`).join('') || '<tr><td colspan="5" class="empty">Belum ada nomor</td></tr>'}</tbody>
-    </table></div>`;
-  const open = (w = {}) => {
-    const m = modal(w.id ? 'Ubah nomor WA' : 'Tambah nomor WA', `<form class="form" id="wf">
-      <div class="row2"><label>Label (mis. SBY)<input name="label" required value="${esc(w.label || '')}"></label>
-      <label>Nomor WA<input name="phone" required inputmode="tel" value="${esc(w.phone || '')}" placeholder="0857xxxx"></label></div>
-      <label>Template pesan<textarea name="template" rows="3" required>${esc(w.template || `Halo ${state.tenant.nama}, saya mau pesan. Kode promo: {kode} ({promo})`)}</textarea></label>
-      <label class="check"><input type="checkbox" name="aktif" ${w.aktif !== false ? 'checked' : ''}> Aktif</label>
-      <div class="btn-row"><button class="btn primary">Simpan</button>${w.id ? '<button type="button" class="btn danger-ghost" id="del">Hapus</button>' : ''}</div>
-    </form>`);
-    const f = m.el.querySelector('#wf');
-    f.onsubmit = async (e) => {
-      e.preventDefault();
-      if (!f.template.value.includes('{kode}')) { toast('Template harus memuat {kode}', 'err'); return; }
-      try {
-        await api.saveWa({ ...(w.id ? { id: w.id } : { tenant_id: state.tenant.id }), label: f.label.value.trim().toUpperCase(), phone: f.phone.value, template: f.template.value.trim(), aktif: f.aktif.checked });
-        m.close(); await loadTenantData(); wa(el, ctx); toast('Tersimpan');
-      } catch (err) { toast(err.message, 'err'); }
-    };
-    const d = m.el.querySelector('#del');
-    if (d) d.onclick = async () => { if (!confirm('Hapus nomor ini?')) return; await api.deleteWa(w.id); m.close(); await loadTenantData(); wa(el, ctx); };
-  };
-  $('#add', el).onclick = () => open();
-  $('tbody', el).onclick = (e) => { const b = e.target.closest('[data-a="edit"]'); if (b) open(state.wa.find((w) => w.id === b.closest('tr').dataset.id)); };
-}
-
 // ---------------------------------------------------------------- Pasang
 function pasang(el, { state }) {
   const t = state.tenant;
@@ -419,72 +383,139 @@ async function extTab(el, { state }) {
   </div>`;
 }
 
-// ---------------------------------------------------------------- WhatsApp Gateway / scan QR (v1.14.0)
+// ---------------------------------------------------------------- Nomor WA + Scan QR (v1.16.0: tab digabung)
 let gwTimer = 0;
 const GW_STATUS = {
-  baru: ['Menyiapkan QR…', ''], qr: ['Menunggu scan', 'warn'], terhubung: ['Terhubung', 'ok'],
-  terputus: ['Menyambung ulang…', 'warn'], keluar: ['Keluar', 'bad'], error: ['Perlu scan ulang', 'bad'],
+  baru: ['Menyiapkan QR…', 'warn'], qr: ['Menunggu scan', 'warn'], terhubung: ['Tersambung', 'ok'],
+  terputus: ['Menyambung ulang…', 'warn'], keluar: ['Terputus', 'bad'], error: ['Perlu scan ulang', 'bad'],
 };
-async function waGateway(el, { state }) {
+const nHp = (p) => { const d = String(p || '').replace(/\D/g, ''); return d.startsWith('0') ? '62' + d.slice(1) : d.startsWith('8') ? '62' + d : d; };
+
+async function wa(el, ctx) {
+  const { state } = ctx;
   const t = state.tenant;
   clearInterval(gwTimer);
+  let gwSiap = true;
+
   const draw = async (paksa = false) => {
     if (!el.isConnected) return clearInterval(gwTimer);
-    let list, gw;
-    try { [list, gw] = await Promise.all([api.waSessions(t.id), api.gatewayStatus().catch(() => null)]); }
-    catch (e) { el.innerHTML = `<div class="note bad"><div>${esc(e.message)}. Jalankan update-1.14.sql dulu.</div></div>`; return clearInterval(gwTimer); }
+    let sesi = [], gw = null;
+    try { [sesi, gw] = await Promise.all([api.waSessions(t.id), api.gatewayStatus().catch(() => null)]); }
+    catch { gwSiap = false; }
+    if (!paksa && document.activeElement?.closest?.('#waBox select')) return;
     const online = gw?.last_seen && Date.now() - Date.parse(gw.last_seen) < 90e3;
-    if (!paksa && document.activeElement?.matches?.('#gwBox input')) return; // jangan ganggu saat mengetik
-    el.innerHTML = `<div class="grid2 g-top" id="gwBox">
-      <div class="stack">
-        <div class="card gw-head">
-          <div class="gw-st ${online ? 'on' : 'off'}"><span></span><div><b>Gateway ${online ? 'online' : 'offline'}</b>
-            <small>${gw?.last_seen ? `detak terakhir ${waktu(gw.last_seen)}${gw.versi ? ` · v${esc(gw.versi)}` : ''}` : 'belum pernah berjalan'}</small></div></div>
-          <form class="input-btn form" id="gwAdd"><input name="label" placeholder="Nama nomor, mis. CS Surabaya" maxlength="40"><button class="btn primary">${icon('plus')}Tambah nomor</button></form>
+    // sesi lama (sebelum v1.16) dicocokkan lewat nomor HP lalu ditautkan
+    for (const s of sesi) if (!s.wa_number_id && s.phone) {
+      const w = state.wa.find((x) => nHp(x.phone) === nHp(s.phone));
+      if (w) { s.wa_number_id = w.id; api.linkWaSession(s.id, w.id).catch(() => {}); }
+    }
+    const sesiOf = (w) => sesi.find((s) => s.wa_number_id === w.id);
+    const lepas = sesi.filter((s) => !s.wa_number_id || !state.wa.some((w) => w.id === s.wa_number_id));
+
+    const kartu = (w) => {
+      const s = sesiOf(w);
+      const [lbl, cls] = s ? GW_STATUS[s.status] || [s.status, ''] : ['Belum scan', ''];
+      const beda = s?.status === 'terhubung' && s.phone && nHp(s.phone) !== nHp(w.phone);
+      return `<div class="card wa-card" data-w="${w.id}">
+        <div class="wa-card-top">
+          <div class="wa-id"><span class="wa-ic">${icon('chat')}</span><div><b>${esc(w.label)}</b><small>+${esc(nHp(w.phone))}</small></div></div>
+          <div class="wa-badges">${w.aktif ? '<span class="badge ok" title="Dipakai tombol WA di landing page">Landing aktif</span>' : '<span class="badge">Landing nonaktif</span>'}
+            <span class="badge ${cls}" title="Status sambungan scan QR (baca chat otomatis)">${icon('chat')}${lbl}</span></div>
         </div>
-        ${list.length ? list.map((s) => {
-          const [lbl, cls] = GW_STATUS[s.status] || [s.status, ''];
-          return `<div class="card gw-sess">
-            <div class="gw-top"><div><b>${esc(s.label || 'Nomor WhatsApp')}</b><small>${s.phone ? '+' + esc(s.phone) : 'belum tersambung'}</small></div><span class="badge ${cls}">${lbl}</span></div>
-            ${s.status === 'qr' && s.qr ? `<div class="gw-qr"><img src="${esc(s.qr)}" alt="QR WhatsApp"><ol>
-              <li>Buka <b>WhatsApp Business</b> di HP nomor ini.</li><li>Ketuk <b>⋮ / Setelan → Perangkat tertaut</b>.</li>
-              <li>Ketuk <b>Tautkan perangkat</b>, lalu arahkan kamera ke QR ini.</li><li>QR berganti otomatis setiap ±20 detik.</li></ol></div>` : ''}
-            ${s.status === 'baru' ? `<div class="note warn"><div>${online ? 'Menyiapkan QR… tunggu beberapa detik.' : 'Gateway offline. Jalankan program gateway di VPS dulu.'}</div></div>` : ''}
-            ${s.info && s.status !== 'qr' && s.status !== 'baru' ? `<p class="muted small">${esc(s.info)}</p>` : ''}
-            <div class="gw-meta"><span>Chat tercatat <b>${num(s.chat_tercatat || 0)}</b></span>${s.last_seen ? `<span>aktif ${waktu(s.last_seen)}</span>` : ''}</div>
-            <div class="btn-row">
-              ${['keluar', 'error', 'terputus'].includes(s.status) ? `<button class="btn sm primary" data-cmd="restart" data-id="${s.id}">Scan ulang</button>` : ''}
-              ${s.status === 'terhubung' ? `<button class="btn sm danger-ghost" data-cmd="logout" data-id="${s.id}">Putuskan</button>` : ''}
-              <button class="btn sm" data-del="${s.id}">${icon('trash')}Hapus</button>
-            </div></div>`;
-        }).join('') : '<div class="card empty muted">Belum ada nomor. Klik <b>Tambah nomor</b> lalu scan QR.</div>'}
-      </div>
-      <div class="card help">
-        <h3>Cara kerja</h3>
-        <ol>
-          <li>Program <b>Aventra WA Gateway</b> berjalan 24 jam di VPS Anda.</li>
-          <li>Nomor CS disambungkan dengan scan QR, sama seperti WhatsApp Web. CS tetap membalas dari HP seperti biasa.</li>
-          <li>Setiap chat masuk dibaca otomatis: yang berisi kode <b>${esc(t.prefix)}-…</b> dicatat dan event Lead dikirim ke Meta; chat pertama dari <b>iklan CTWA</b> dicatat beserta ID iklannya.</li>
-          <li>Gateway <b>tidak pernah mengirim pesan</b> dan tidak membuat pesan terbaca.</li>
-        </ol>
-        <div class="note warn"><div>Gateway memakai API WhatsApp tidak resmi. Nomor yang memakainya bisa diblokir WhatsApp. Uji 1 nomor dulu selama 1–2 minggu.</div></div>
-      </div>
-    </div>`;
-    $('#gwAdd', el).onsubmit = async (e) => {
-      e.preventDefault();
-      try { await api.addWaSession(t.id, e.target.label.value.trim() || null); draw(true); } catch (err) { toast(err.message, 'err'); }
+        <p class="wa-tmpl">${esc(w.template)}</p>
+        ${s?.status === 'qr' && s.qr ? `<div class="gw-qr"><img src="${esc(s.qr)}" alt="QR WhatsApp"><ol>
+          <li>Buka <b>WhatsApp Business</b> di HP nomor <b>${esc(w.label)}</b>.</li><li>Ketuk <b>⋮ / Setelan → Perangkat tertaut</b>.</li>
+          <li>Ketuk <b>Tautkan perangkat</b>, lalu arahkan kamera ke QR ini.</li><li>QR berganti otomatis setiap ±20 detik.</li></ol></div>` : ''}
+        ${s?.status === 'baru' ? `<div class="note warn"><div>${online ? 'Menyiapkan QR… tunggu beberapa detik.' : 'Gateway offline. Jalankan program WA Gateway di VPS dulu.'}</div></div>` : ''}
+        ${beda ? `<div class="note bad"><div>Yang di-scan nomor <b>+${esc(s.phone)}</b>, bukan nomor ini. Putuskan lalu scan dari HP yang benar.</div></div>` : ''}
+        ${s?.info && !['qr', 'baru', 'terhubung'].includes(s.status) ? `<p class="muted small">${esc(s.info)}</p>` : ''}
+        ${s ? `<div class="gw-meta"><span>Chat tercatat otomatis <b>${num(s.chat_tercatat || 0)}</b></span>${s.last_seen && s.status === 'terhubung' ? `<span>aktif ${waktu(s.last_seen)}</span>` : ''}</div>` : ''}
+        <div class="btn-row">
+          ${!s || ['keluar', 'error', 'terputus'].includes(s.status) ? `<button class="btn sm primary" data-a="scan">${icon('chat')}${s ? 'Scan ulang' : 'Scan QR'}</button>` : ''}
+          ${s?.status === 'terhubung' ? '<button class="btn sm danger-ghost" data-a="putus">Putuskan</button>' : ''}
+          ${s && s.status !== 'terhubung' ? '<button class="btn sm" data-a="batal">Batalkan</button>' : ''}
+          <button class="btn sm" data-a="ubah">${icon('edit')}Ubah</button>
+        </div></div>`;
     };
-    $$('[data-cmd]', el).forEach((b) => (b.onclick = async () => {
-      if (b.dataset.cmd === 'logout' && !confirm('Putuskan nomor ini dari gateway? Chat berhenti tercatat otomatis.')) return;
-      try { await api.cmdWaSession(b.dataset.id, b.dataset.cmd); toast(b.dataset.cmd === 'logout' ? 'Diputuskan' : 'Menyiapkan QR baru…'); draw(true); } catch (err) { toast(err.message, 'err'); }
+
+    el.innerHTML = `<div id="waBox">
+      <div class="card wa-top">
+        <div class="gw-st ${online ? 'on' : 'off'}"><span></span><div><b>WA Gateway ${!gwSiap ? 'belum dipasang' : online ? 'online' : 'offline'}</b>
+          <small>${!gwSiap ? 'Jalankan update-1.14.sql & update-1.16.sql untuk fitur scan QR' : gw?.last_seen ? `detak terakhir ${waktu(gw.last_seen)}${gw.versi ? ` · v${esc(gw.versi)}` : ''}` : 'program gateway belum pernah berjalan di VPS'}</small></div></div>
+        <div class="wa-top-r">
+          <label class="wa-simpan">Simpan isi chat Inbox<select id="simpan">${[30, 60, 90, 180].map((d) => `<option value="${d}" ${(t.wa_simpan_hari || 60) === d ? 'selected' : ''}>${d} hari</option>`).join('')}</select></label>
+          <button class="btn primary" id="add">${icon('plus')}Tambah nomor</button>
+        </div>
+      </div>
+      <div class="wa-grid">${state.wa.map(kartu).join('') || '<div class="card empty muted">Belum ada nomor. Klik <b>Tambah nomor</b>.</div>'}</div>
+      ${lepas.length ? `<h3 class="wa-sub">Sambungan tanpa nomor</h3><div class="wa-grid">${lepas.map((s) => `<div class="card wa-card"><div class="wa-card-top"><div class="wa-id"><span class="wa-ic">${icon('chat')}</span><div><b>${esc(s.label || 'Nomor WhatsApp')}</b><small>${s.phone ? '+' + esc(s.phone) : 'belum tersambung'}</small></div></div><span class="badge ${(GW_STATUS[s.status] || [])[1] || ''}">${(GW_STATUS[s.status] || [s.status])[0]}</span></div>
+        <p class="muted small">Tambahkan nomor ini di daftar atas supaya chat-nya terhubung ke nomor CS yang benar.</p><div class="btn-row"><button class="btn sm" data-del="${s.id}">${icon('trash')}Hapus sambungan</button></div></div>`).join('')}</div>` : ''}
+      <div class="card help wa-help"><h3>Cara kerja</h3><ol>
+        <li><b>Nomor WA</b> dipakai tombol WhatsApp di landing page (template wajib memuat <code>{kode}</code>, <code>{promo}</code> diganti teks promo).</li>
+        <li><b>Scan QR</b> menyambungkan nomor itu ke WA Gateway di VPS, sama seperti WhatsApp Web. Chat berkode & chat dari iklan CTWA tercatat otomatis, dan semua chat tampil di menu <b>Inbox WA</b>.</li>
+        <li>Gateway hanya membaca: tidak pernah mengirim pesan dan tidak membuat pesan terbaca. CS tetap membalas dari HP.</li></ol>
+        <div class="note warn"><div>Gateway memakai API WhatsApp tidak resmi. Nomor yang memakainya bisa diblokir WhatsApp. Uji 1 nomor dulu selama 1–2 minggu.</div></div></div>
+    </div>`;
+
+    $('#add', el).onclick = () => ubah();
+    $('#simpan', el).onchange = async (e) => {
+      try { await api.updateTenant(t.id, { wa_simpan_hari: Number(e.target.value) }); t.wa_simpan_hari = Number(e.target.value); toast('Tersimpan'); } catch (err) { toast(err.message, 'err'); }
+    };
+    $$('[data-w] [data-a]', el).forEach((b) => (b.onclick = async () => {
+      const w = state.wa.find((x) => x.id === b.closest('[data-w]').dataset.w);
+      const s = sesiOf(w);
+      try {
+        if (b.dataset.a === 'ubah') return ubah(w);
+        if (b.dataset.a === 'scan') { await scan(w, s); toast('Menyiapkan QR…'); }
+        if (b.dataset.a === 'putus') { if (!confirm(`Putuskan ${w.label} dari gateway? Chat berhenti tercatat otomatis.`)) return; await api.cmdWaSession(s.id, 'logout'); toast('Diputuskan'); }
+        if (b.dataset.a === 'batal') { await api.delWaSession(s.id); }
+        draw(true);
+      } catch (err) { toast(err.message, 'err'); }
     }));
     $$('[data-del]', el).forEach((b) => (b.onclick = async () => {
-      if (!confirm('Hapus nomor ini? Gateway akan keluar dari WhatsApp di nomor tersebut.')) return;
+      if (!confirm('Hapus sambungan ini? Gateway akan keluar dari WhatsApp di nomor tersebut.')) return;
       try { await api.delWaSession(b.dataset.del); draw(true); } catch (err) { toast(err.message, 'err'); }
     }));
   };
+
+  const scan = async (w, s) => {
+    if (!gwSiap) throw new Error('Jalankan update-1.14.sql & update-1.16.sql dulu');
+    if (s) await api.cmdWaSession(s.id, 'restart');
+    else await api.addWaSession(t.id, w.label, w.id);
+  };
+
+  const ubah = (w = {}) => {
+    const m = modal(w.id ? 'Ubah nomor WA' : 'Tambah nomor WA', `<form class="form" id="wf">
+      <div class="row2"><label>Label (mis. SBY)<input name="label" required value="${esc(w.label || '')}"></label>
+      <label>Nomor WA<input name="phone" required inputmode="tel" value="${esc(w.phone || '')}" placeholder="0857xxxx"></label></div>
+      <label>Template pesan<textarea name="template" rows="3" required>${esc(w.template || `Halo ${t.nama}, saya mau pesan. Kode promo: {kode} ({promo})`)}</textarea></label>
+      <label class="check"><input type="checkbox" name="aktif" ${w.aktif !== false ? 'checked' : ''}> Aktif di tombol WA landing page</label>
+      <div class="btn-row">
+        ${w.id ? '<button class="btn primary">Simpan</button><button type="button" class="btn danger-ghost" id="del">Hapus</button>'
+          : `<button class="btn primary" data-scan="1">${icon('chat')}Simpan & Scan QR</button><button class="btn">Simpan saja</button>`}
+      </div>
+    </form>`);
+    const f = m.el.querySelector('#wf');
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      if (!f.template.value.includes('{kode}')) { toast('Template harus memuat {kode}', 'err'); return; }
+      const mauScan = e.submitter?.dataset.scan === '1';
+      try {
+        const row = { label: f.label.value.trim().toUpperCase(), phone: f.phone.value, template: f.template.value.trim(), aktif: f.aktif.checked };
+        const baru = await api.saveWa(w.id ? { id: w.id, ...row } : { tenant_id: t.id, ...row });
+        if (w.id) { const s = (await api.waSessions(t.id).catch(() => [])).find((x) => x.wa_number_id === w.id); if (s && s.label !== row.label) api.linkWaSession(s.id, w.id, row.label).catch(() => {}); }
+        m.close(); await loadTenantData();
+        if (mauScan && baru?.id) { try { await scan(baru, null); toast('Tersimpan. Menyiapkan QR…'); } catch (err) { toast(err.message, 'err'); } }
+        else toast('Tersimpan');
+        draw(true);
+      } catch (err) { toast(err.message, 'err'); }
+    };
+    const d = m.el.querySelector('#del');
+    if (d) d.onclick = async () => { if (!confirm('Hapus nomor ini?')) return; await api.deleteWa(w.id); m.close(); await loadTenantData(); draw(true); };
+  };
+
   el.innerHTML = '<div class="loading">Memuat…</div>';
-  await draw();
+  await draw(true);
   gwTimer = setInterval(draw, 3000);
 }
 

@@ -12,6 +12,7 @@ export const state = {
 const PAGES = [
   { id: 'ringkasan', label: 'Ringkasan', icon: 'home', load: () => import('./pages/ringkasan.js') },
   { id: 'leads', label: 'Leads & Closing', icon: 'users', load: () => import('./pages/leads.js') },
+  { id: 'inbox', label: 'Inbox WA', icon: 'chat', load: () => import('./pages/inbox.js') },
   { id: 'funnel', label: 'Funnel & Target', icon: 'funnel', load: () => import('./pages/funnel.js') },
   { id: 'klik', label: 'Klik Tombol WA', icon: 'click', load: () => import('./pages/klik.js') },
   { id: 'log', label: 'Log Event Meta', icon: 'pulse', load: () => import('./pages/log.js') },

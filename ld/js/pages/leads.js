@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { esc, rp, num, waktu, jam, range, ymdLocal, modal, toast, icon, TAHAP, ALASAN, potong, pagerHtml, bindPager, petaIklan, opsiIklan, lolosIklan, $, $$ } from '../ui.js';
 
 let filter = 'semua';
+const SUMBER_NAMA = { manual: 'diubah CS', kontak: 'kontak HP CS', profil: 'profil WA' };
 let fKode = '', fPel = '', fSumber = '', hal = 1;
 let sel = { c: '', a: '', d: '' };
 const SUMBER = { lp: 'Landing page', wa: 'Otomatis (WA)', ctwa: 'Iklan CTWA', manual: 'Manual', api: 'API / ERP' };
@@ -43,6 +44,7 @@ export async function render(el, ctx) {
     if (filter === 'proses' && l.paid_at) return false;
     if (filter === 'lunas' && !l.paid_at) return false;
     if (filter === 'gagal' && !(l.paid_at && !l.purchase_sent_at)) return false;
+    if (filter === 'tanpa_hp' && l.phone) return false;
     return true;
   };
 
@@ -73,9 +75,10 @@ export async function render(el, ctx) {
       proses: dasar.filter((l) => !l.paid_at).length,
       lunas: dasar.filter((l) => l.paid_at).length,
       gagal: dasar.filter((l) => l.paid_at && !l.purchase_sent_at).length,
+      tanpa_hp: dasar.filter((l) => !l.phone).length,
     };
     $('#chips', el).innerHTML = `${chip('semua', 'Semua', counts.semua)}${chip('proses', 'Belum lunas', counts.proses)}
-      ${chip('lunas', 'Lunas', counts.lunas)}${counts.gagal ? chip('gagal', 'Gagal ke Meta', counts.gagal, 'bad') : ''}`;
+      ${chip('lunas', 'Lunas', counts.lunas)}${counts.gagal ? chip('gagal', 'Gagal ke Meta', counts.gagal, 'bad') : ''}${counts.tanpa_hp || filter === 'tanpa_hp' ? chip('tanpa_hp', 'Tanpa nomor', counts.tanpa_hp, 'warn') : ''}`;
     const pg = potong(dasar.filter((l) => lolos(l)), hal);
     hal = pg.page;
     $('#rows', el).innerHTML = pg.rows.map((l) => {
@@ -85,8 +88,8 @@ export async function render(el, ctx) {
       return `<tr data-id="${l.id}" class="${paid ? 'is-paid' : ''}">
         <td data-l="Masuk" class="nw">${waktu(l.created_at)}</td>
         <td data-l="Kode">${c ? `<code>${esc(c.kode)}</code>` : l.sumber === 'ctwa' ? '<span class="tag">CTWA</span>' : '<span class="muted">tanpa kode</span>'}${l.sumber === 'wa' || (l.sumber === 'ctwa' && l.ctwa_clid) ? ' <span class="badge ok" title="Dicatat otomatis dari WhatsApp">auto</span>' : ''}</td>
-        <td data-l="Nama"><b>${esc(l.nama || '-')}</b></td>
-        <td data-l="No. HP" class="nw">${hp ? `<a class="wa-link" href="https://wa.me/${esc(l.phone)}" target="_blank" rel="noopener">${esc(hp)}</a>` : '<span class="muted">-</span>'}<small class="muted block">${esc(waLabel[l.wa_number_id] || '')}</small></td>
+        <td data-l="Nama"><button class="pel-edit" data-a="pel" title="Ubah nama & nomor">${l.nama ? `<b>${esc(l.nama)}</b>` : '<span class="muted">Tanpa nama</span>'}${icon('edit')}</button>${l.nama_sumber ? `<small class="muted block">${SUMBER_NAMA[l.nama_sumber] || ''}</small>` : ''}</td>
+        <td data-l="No. HP" class="nw">${hp ? `<a class="wa-link" href="https://wa.me/${esc(l.phone)}" target="_blank" rel="noopener">${esc(hp)}</a>` : '<button class="hp-kosong" data-a="pel">Nomor belum ada · isi</button>'}<small class="muted block">${esc(waLabel[l.wa_number_id] || '')}</small></td>
         <td data-l="Iklan" class="ad" title="${esc(l._m.cn)}${l._m.an ? ' › ' + esc(l._m.an) : ''}">${esc(c ? l._m.dn : l.ad_name || l._m.dn)}<small class="muted block">${esc(l._m.cn)}</small></td>
         <td data-l="Tahap">${paid ? '<span class="tag tE">E · Closing</span>'
           : `<select class="mini" data-f="stage">${['A', 'B', 'C', 'D'].map((k) => `<option value="${k}" ${l.stage === k ? 'selected' : ''}>${k} · ${TAHAP[k]}</option>`).join('')}</select>`}</td>
@@ -131,7 +134,34 @@ export async function render(el, ctx) {
     const lead = leads.find((l) => l.id === b.closest('tr').dataset.id);
     if (b.dataset.a === 'lunas') openPaidModal(lead, leads, () => ctx.refresh());
     if (b.dataset.a === 'ulang') sendPaid(lead.id, lead.nilai, () => ctx.refresh());
+    if (b.dataset.a === 'pel') openPelanggan(lead, () => draw());
   };
+}
+
+// ------------------------------------------------------------------ MODAL: nama & nomor pelanggan
+export function openPelanggan(lead, onDone) {
+  const m = modal('Data pelanggan', `
+    <form id="pel" class="form">
+      <label>Nama pelanggan<input name="nama" value="${esc(lead.nama || '')}" placeholder="mis. Bu Rina Rungkut" maxlength="80"></label>
+      <label>Nomor WhatsApp<input name="phone" inputmode="tel" value="${lead.phone ? '0' + esc(String(lead.phone).replace(/^62/, '')) : ''}" placeholder="0812xxxx"></label>
+      <p class="muted small">Nama yang diubah di sini tidak akan ditimpa otomatis oleh gateway atau ekstensi. Nomor yang sudah terisi juga tidak ditimpa.</p>
+      <button class="btn primary block">Simpan</button>
+    </form>`);
+  const f = m.el.querySelector('#pel');
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const d = f.phone.value.replace(/\D/g, '');
+    if (d && (d.length < 9 || d.length > 15)) { toast('Nomor WA tidak valid', 'err'); return; }
+    const patch = { nama: f.nama.value.trim() || null, phone: d || null };
+    const gantiNama = patch.nama !== (lead.nama || null);
+    try {
+      await api.updateLead(lead.id, patch);
+      Object.assign(lead, { nama: patch.nama, phone: d ? (d.startsWith('0') ? '62' + d.slice(1) : d.startsWith('8') ? '62' + d : d) : null });
+      if (gantiNama) lead.nama_sumber = patch.nama ? 'manual' : null;
+      m.close(); toast('Tersimpan'); onDone?.();
+    } catch (err) { toast(err.message, 'err'); }
+  };
+  setTimeout(() => (lead.phone ? f.nama : f.phone).focus(), 50);
 }
 
 const chip = (k, label, n, cls = '') => `<button data-chip="${k}" class="chip ${cls} ${filter === k ? 'on' : ''}">${label}<b>${num(n)}</b></button>`;

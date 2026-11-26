@@ -38,8 +38,36 @@ const real = {
   async extStatus(tid) { const c = await client(); return must(await c.rpc('ext_status', { p_tenant: tid })); },
   // ----- WhatsApp Gateway (scan QR) -----
   async waSessions(tid) { const c = await client(); return must(await c.from('wa_sessions').select('*').eq('tenant_id', tid).order('created_at')); },
-  async addWaSession(tid, label) { const c = await client(); return must(await c.from('wa_sessions').insert({ tenant_id: tid, label }).select('*').single()); },
+  async addWaSession(tid, label, waNumberId = null) { const c = await client(); return must(await c.from('wa_sessions').insert({ tenant_id: tid, label, wa_number_id: waNumberId }).select('*').single()); },
+  // ----- Inbox WA (hanya baca) -----
+  async inboxChats(tid, { wa = '', filter = '', q = '', offset = 0 } = {}) {
+    const c = await client();
+    const LEAD = 'id, stage, alasan, paid_at, nilai, purchase_sent_at, nama, phone, sumber, click_id, created_at';
+    let r = c.from('wa_chats').select(`*, lead:leads${filter === 'closing' ? '!inner' : ''}(${LEAD})`).eq('tenant_id', tid);
+    if (wa) r = r.eq('wa_number_id', wa);
+    if (filter === 'kode') r = r.not('kode', 'is', null);
+    if (filter === 'ctwa') r = r.not('ad_name', 'is', null);
+    if (filter === 'tanpa') r = r.is('kode', null).is('ad_name', null).is('lead_id', null);
+    if (filter === 'closing') r = r.not('lead.paid_at', 'is', null);
+    const bersih = q.replace(/[^\p{L}\p{N} -]/gu, '').trim();
+    if (bersih) {
+      const d = bersih.replace(/\D/g, '').replace(/^0/, '');
+      r = r.or([`nama.ilike.*${bersih}*`, `kode.ilike.*${bersih}*`, ...(d.length >= 3 ? [`phone.ilike.*${d}*`] : [])].join(','));
+    }
+    return must(await r.order('last_at', { ascending: false }).range(offset, offset + 19));
+  },
+  async inboxChat(id) {
+    const c = await client();
+    return must(await c.from('wa_chats').select('*, lead:leads(id, stage, alasan, paid_at, nilai, purchase_sent_at, nama, phone, sumber, click_id, created_at)').eq('id', id).maybeSingle());
+  },
+  async inboxMessages(chatId, before = null) {
+    const c = await client();
+    let r = c.from('wa_messages').select('*').eq('chat_id', chatId);
+    if (before) r = r.lt('at', before);
+    return must(await r.order('at', { ascending: false }).limit(30)).reverse();
+  },
   async cmdWaSession(id, perintah) { const c = await client(); must(await c.from('wa_sessions').update({ perintah }).eq('id', id)); },
+  async linkWaSession(id, waNumberId, label) { const c = await client(); must(await c.from('wa_sessions').update(label ? { wa_number_id: waNumberId, label } : { wa_number_id: waNumberId }).eq('id', id)); },
   async delWaSession(id) { const c = await client(); must(await c.from('wa_sessions').delete().eq('id', id)); },
   async gatewayStatus() { const c = await client(); return must(await c.from('gateway_status').select('*').eq('id', 1).maybeSingle()); },
   // ----- tim & akses -----
@@ -55,8 +83,8 @@ const real = {
   async waNumbers(tid) { const c = await client(); return must(await c.from('wa_numbers').select('*').eq('tenant_id', tid).order('label')); },
   async saveWa(row) {
     const c = await client();
-    if (row.id) return must(await c.from('wa_numbers').update(row).eq('id', row.id));
-    return must(await c.from('wa_numbers').insert(row));
+    if (row.id) return must(await c.from('wa_numbers').update(row).eq('id', row.id).select('*').single());
+    return must(await c.from('wa_numbers').insert(row).select('*').single());
   },
   async deleteWa(id) { const c = await client(); must(await c.from('wa_numbers').delete().eq('id', id)); },
 
@@ -184,6 +212,8 @@ const D = (() => {
         purchase_sent_at: paid && rnd() < 0.92 ? new Date(t + 3 * 3600e3).toISOString() : null,
         sumber: 'lp', catatan: null, created_at: new Date(t + 5 * 60e3).toISOString(),
         cs_id: w.id === 'w1' ? pick(['u2', 'u2', 'u1']) : 'u3', lead_sent_at: rnd() < 0.9 ? new Date(t + 6 * 60e3).toISOString() : null };
+      if (i % 9 === 4) Object.assign(l, { sumber: 'wa', phone: null });           // contoh: dicatat ekstensi, nomor tak terbaca
+      l.nama_sumber = l.sumber === 'wa' ? 'kontak' : i % 4 === 0 ? 'manual' : 'profil';
       leads.push(l);
       events.push({ id: events.length + 1, tenant_id: tid, lead_id: l.id, click_id: c.id, event_name: 'Lead', ok: true, response: { events_received: 1 }, created_at: l.created_at });
       if (paid) events.push({ id: events.length + 1, tenant_id: tid, lead_id: l.id, event_name: 'Purchase', ok: !!l.purchase_sent_at,
@@ -226,7 +256,7 @@ const D = (() => {
   }
   tenant.ad_account_id = '1234567890';
   tenant.auto_sync = true; tenant.last_sync_at = new Date(now - 12 * 60e3).toISOString(); tenant.last_sync_info = '96 baris · otomatis';
-  const wa_sessions = [{ id: 's1', label: 'CS Surabaya', status: 'terhubung', phone: '6285778082138', chat_tercatat: 23, last_seen: new Date(now - 20e3).toISOString() }];
+  const wa_sessions = [{ id: 's1', label: 'SBY', status: 'terhubung', phone: '6285778082138', chat_tercatat: 23, last_seen: new Date(now - 20e3).toISOString() }];
   const team = [
     { user_id: 'u1', email: 'akhmad@contoh.id', nama: 'Akhmad Janni', role: 'owner', jabatan: 'Pemilik', menus: null, status: 'aktif' },
     { user_id: 'u2', email: 'cs.surabaya@contoh.id', nama: 'Rina', role: 'cs', jabatan: 'CS Surabaya', menus: ['leads', 'klik'], status: 'aktif' },
@@ -245,6 +275,41 @@ const DEMO_QR = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://w
     const on = fin ? !(x % 6 === 0 || y % 6 === 0) || (x - 1) % 6 === 0 || (y - 1) % 6 === 0 : ((x * 7 + y * 13 + x * y) % 5 < 2);
     return on && x > 0 && y > 0 && x < 28 && y < 28 ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : ''; }).join('') + '</svg>');
 
+// ---- data contoh Inbox (dibuat dari leads contoh + beberapa chat biasa) ----
+let _chats = null;
+const _msgs = {};
+function demoChats() {
+  if (_chats) return _chats;
+  const now = Date.now();
+  const byClick = Object.fromEntries(D.clicks.map((c) => [c.id, c]));
+  _chats = D.leads.filter((l) => l.phone).sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 45).map((l, i) => {
+    const c = byClick[l.click_id];
+    const at = new Date(Math.min(now - i * 37 * 60e3, Date.parse(l.created_at) + 3600e3 * (i % 5))).toISOString();
+    return { id: 'ch' + l.id, wa_number_id: l.wa_number_id || D.wa[0]?.id, jid: l.phone + '@s.whatsapp.net', phone: l.phone, nama: l.nama, lead_id: l.id,
+      kode: c?.kode || null, ad_id: l.sumber === 'ctwa' ? l.ad_id || '1201' : null, ad_name: l.sumber === 'ctwa' ? l.ad_name || 'CTWA Reels Pijat' : null,
+      last_text: l.paid_at ? 'Terima kasih kak, sudah transfer ya 🙏' : i % 3 ? 'Baik kak, ditunggu ya' : 'Kak masih ada slot jam 7 malam?', last_tipe: 'teks', last_from_me: !!(i % 3), last_at: at, jumlah: 6 };
+  });
+  ['Rudi', 'Lina', 'Pak Harto', 'Mbak Ayu', 'Doni', 'Sinta'].forEach((n, i) => _chats.push({ id: 'cx' + i, wa_number_id: D.wa[i % D.wa.length]?.id, jid: '62813000' + i + '@s.whatsapp.net',
+    phone: '62813000111' + i, nama: n, lead_id: null, kode: null, ad_id: null, ad_name: null, last_text: i % 2 ? 'Oke makasih' : 'Halo, alamatnya di mana ya?', last_tipe: 'teks',
+    last_from_me: !!(i % 2), last_at: new Date(now - (i * 95 + 20) * 60e3).toISOString(), jumlah: 3 }));
+  return _chats;
+}
+function demoMsgs(id) {
+  if (_msgs[id]) return _msgs[id];
+  const c = demoChats().find((x) => x.id === id); if (!c) return [];
+  const t = Date.parse(c.last_at); const m = [];
+  const add = (menit, from_me, teks, extra = {}) => m.push({ id: id + m.length, chat_id: id, msg_id: 'm' + m.length, from_me, tipe: 'teks', teks, at: new Date(t - menit * 60e3).toISOString(), ...extra });
+  if (c.kode) add(95, false, `Halo ${D.tenant.nama}, saya mau pesan. Kode promo: ${c.kode} (${D.tenant.teks_promo || 'promo'})`, { kode: c.kode });
+  else if (c.ad_name) add(95, false, 'Halo, saya mau tanya soal pijat panggilan', { ctwa: true });
+  else add(95, false, 'Halo kak, mau tanya');
+  add(90, true, 'Halo kak, terima kasih sudah menghubungi 🙏 Untuk area mana ya kak?');
+  add(70, false, 'Daerah Rungkut kak. Harganya berapa?');
+  add(65, true, 'Untuk 90 menit Rp135.000 kak, sudah termasuk transport.');
+  if (c.kode || c.ad_name) add(40, false, '', { tipe: 'foto' });
+  add(0, c.last_from_me, c.last_text);
+  return (_msgs[id] = m);
+}
+
 const demo = {
   async session() { return D.session; },
   async signIn() { D.session = { user: { email: 'akhmad@contoh.id' } }; },
@@ -258,8 +323,19 @@ const demo = {
   async myRole() { return 'owner'; },
   async myMember() { const m = D.team[0]; return { role: 'owner', nama: m.nama, jabatan: m.jabatan, menus: null }; },
   async klaimUndangan() { return 0; },
-  async waSessions() { return D.wa_sessions.map((s) => { if (s.status === 'qr' && Date.now() - s._t > 7000) Object.assign(s, { status: 'terhubung', qr: null, phone: '6285778082138' }); return { ...s }; }); },
-  async addWaSession(t, label) { const s = { id: 's' + Date.now(), label, status: 'qr', qr: DEMO_QR, chat_tercatat: 0, _t: Date.now(), last_seen: new Date().toISOString() }; D.wa_sessions.push(s); return s; },
+  async waSessions() { return D.wa_sessions.map((s) => { if (s.status === 'qr' && Date.now() - s._t > 7000) Object.assign(s, { status: 'terhubung', qr: null, phone: D.wa.find((w) => w.id === s.wa_number_id)?.phone || '6285778082138' }); return { ...s }; }); },
+  async addWaSession(t, label, waNumberId = null) { const s = { id: 's' + Date.now(), label, wa_number_id: waNumberId, status: 'qr', qr: DEMO_QR, chat_tercatat: 0, _t: Date.now(), last_seen: new Date().toISOString() }; D.wa_sessions.push(s); return s; },
+  async inboxChats(t, { wa = '', filter = '', q = '', offset = 0 } = {}) {
+    const lead = (c) => D.leads.find((l) => l.id === c.lead_id) || null;
+    const s = q.trim().toLowerCase(), d = s.replace(/\D/g, '').replace(/^0/, '');
+    const list = demoChats().map((c) => ({ ...c, lead: lead(c) })).filter((c) => (!wa || c.wa_number_id === wa)
+      && (filter !== 'kode' || c.kode) && (filter !== 'ctwa' || c.ad_name) && (filter !== 'tanpa' || (!c.kode && !c.ad_name && !c.lead_id))
+      && (filter !== 'closing' || c.lead?.paid_at)
+      && (!s || (c.nama || '').toLowerCase().includes(s) || (c.kode || '').toLowerCase().includes(s) || (d.length >= 3 && (c.phone || '').includes(d))));
+    return wait(list.sort((a, b) => b.last_at.localeCompare(a.last_at)).slice(offset, offset + 20));
+  },
+  async inboxChat(id) { const c = demoChats().find((x) => x.id === id); return c ? { ...c, lead: D.leads.find((l) => l.id === c.lead_id) || null } : null; },
+  async inboxMessages(id, before = null) { const m = demoMsgs(id).filter((x) => !before || x.at < before); return wait(m.slice(-30)); },
   async cmdWaSession(id, p) { const s = D.wa_sessions.find((x) => x.id === id); if (p === 'logout') Object.assign(s, { status: 'keluar', phone: null }); else Object.assign(s, { status: 'qr', qr: DEMO_QR, _t: Date.now() }); },
   async delWaSession(id) { D.wa_sessions = D.wa_sessions.filter((x) => x.id !== id); },
   async gatewayStatus() { return { versi: '1.0.0', last_seen: new Date(Date.now() - 12e3).toISOString() }; },
@@ -272,7 +348,8 @@ const demo = {
   async removeMember(t, uid) { D.team = D.team.filter((m) => m.user_id !== uid); },
   async removeInvite(id) { D.team = D.team.filter((m) => m.undangan_id !== id); },
   async waNumbers() { return wait(D.wa.slice()); },
-  async saveWa(row) { if (row.id) Object.assign(D.wa.find((w) => w.id === row.id), row); else D.wa.push({ ...row, id: 'w' + Date.now() }); },
+  async saveWa(row) { if (row.id) return Object.assign(D.wa.find((w) => w.id === row.id), row); const w = { ...row, id: 'w' + Date.now() }; D.wa.push(w); return w; },
+  async linkWaSession(id, waNumberId, label) { Object.assign(D.wa_sessions.find((s) => s.id === id), { wa_number_id: waNumberId }, label ? { label } : {}); },
   async deleteWa(id) { D.wa.splice(D.wa.findIndex((w) => w.id === id), 1); },
   async clicks(t, f, to) { return wait(sortDesc(D.clicks.filter((c) => inRange(c.created_at, f, to)).map(rapi))); },
   async clickByKode(t, k) { return D.clicks.find((c) => c.kode === k.trim().toUpperCase()) ?? null; },
