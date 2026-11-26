@@ -56,6 +56,7 @@ const real = {
     }
     return must(await r.order('last_at', { ascending: false }).range(offset, offset + 19));
   },
+  async lengkapiLeads(tid) { const c = await client(); return must(await c.rpc('lengkapi_leads', { p_tenant: tid })); },
   async inboxChat(id) {
     const c = await client();
     return must(await c.from('wa_chats').select('*, lead:leads(id, stage, alasan, paid_at, nilai, purchase_sent_at, nama, phone, sumber, click_id, created_at)').eq('id', id).maybeSingle());
@@ -334,6 +335,7 @@ const demo = {
       && (!s || (c.nama || '').toLowerCase().includes(s) || (c.kode || '').toLowerCase().includes(s) || (d.length >= 3 && (c.phone || '').includes(d))));
     return wait(list.sort((a, b) => b.last_at.localeCompare(a.last_at)).slice(offset, offset + 20));
   },
+  async lengkapiLeads() { return wait(0); },
   async inboxChat(id) { const c = demoChats().find((x) => x.id === id); return c ? { ...c, lead: D.leads.find((l) => l.id === c.lead_id) || null } : null; },
   async inboxMessages(id, before = null) { const m = demoMsgs(id).filter((x) => !before || x.at < before); return wait(m.slice(-30)); },
   async cmdWaSession(id, p) { const s = D.wa_sessions.find((x) => x.id === id); if (p === 'logout') Object.assign(s, { status: 'keluar', phone: null }); else Object.assign(s, { status: 'qr', qr: DEMO_QR, _t: Date.now() }); },

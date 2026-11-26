@@ -78,7 +78,17 @@ export async function render(el, ctx) {
       tanpa_hp: dasar.filter((l) => !l.phone).length,
     };
     $('#chips', el).innerHTML = `${chip('semua', 'Semua', counts.semua)}${chip('proses', 'Belum lunas', counts.proses)}
-      ${chip('lunas', 'Lunas', counts.lunas)}${counts.gagal ? chip('gagal', 'Gagal ke Meta', counts.gagal, 'bad') : ''}${counts.tanpa_hp || filter === 'tanpa_hp' ? chip('tanpa_hp', 'Tanpa nomor', counts.tanpa_hp, 'warn') : ''}`;
+      ${chip('lunas', 'Lunas', counts.lunas)}${counts.gagal ? chip('gagal', 'Gagal ke Meta', counts.gagal, 'bad') : ''}${counts.tanpa_hp || filter === 'tanpa_hp' ? chip('tanpa_hp', 'Tanpa nomor', counts.tanpa_hp, 'warn') : ''}${counts.tanpa_hp ? `<button class="btn sm" id="lengkapi" title="Ambil nomor & nama dari chat yang sudah dibaca gateway (menu Inbox WA)">${icon('sync')}Lengkapi dari Inbox</button>` : ''}`;
+    const lk = $('#lengkapi', el);
+    if (lk) lk.onclick = async () => {
+      lk.disabled = true; lk.textContent = 'Mencocokkan…';
+      try {
+        const n = await api.lengkapiLeads(tid);
+        toast(n ? `${n} lead dilengkapi dari Inbox` : 'Tidak ada yang bisa dilengkapi. Chat-nya belum terbaca gateway (lebih dari 7 hari / sebelum scan QR). Isi manual lewat tombol kuning.', n ? 'ok' : 'warn');
+        if (n) ctx.refresh();
+      } catch (err) { toast(err.message, 'err'); }
+      lk.disabled = false; lk.innerHTML = `${icon('sync')}Lengkapi dari Inbox`;
+    };
     const pg = potong(dasar.filter((l) => lolos(l)), hal);
     hal = pg.page;
     $('#rows', el).innerHTML = pg.rows.map((l) => {

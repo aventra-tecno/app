@@ -4,7 +4,7 @@
 export const SUPABASE_URL = 'https://ydpyiwrznodxskpcwfcr.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_UYQMNd2FcKM6teFf_3AVfA_NnyZyJbu';
 
-export const APP_VERSION = '1.17.0';
+export const APP_VERSION = '1.18.0';
 export const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
 export const SCRIPT_URL = 'https://app.aventra.id/app/ld/t.js';
 
