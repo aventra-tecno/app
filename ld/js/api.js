@@ -40,7 +40,7 @@ const real = {
   async waSessions(tid) { const c = await client(); return must(await c.from('wa_sessions').select('*').eq('tenant_id', tid).order('created_at')); },
   async addWaSession(tid, label, waNumberId = null) { const c = await client(); return must(await c.from('wa_sessions').insert({ tenant_id: tid, label, wa_number_id: waNumberId }).select('*').single()); },
   // ----- Inbox WA (hanya baca) -----
-  async inboxChats(tid, { wa = '', filter = '', q = '', offset = 0 } = {}) {
+  async inboxChats(tid, { wa = '', filter = '', q = '', offset = 0, iklan = null } = {}) {
     const c = await client();
     const LEAD = 'id, stage, alasan, paid_at, nilai, purchase_sent_at, nama, phone, sumber, click_id, created_at';
     let r = c.from('wa_chats').select(`*, lead:leads${filter === 'closing' ? '!inner' : ''}(${LEAD})`).eq('tenant_id', tid);
@@ -49,6 +49,7 @@ const real = {
     if (filter === 'ctwa') r = r.not('ad_name', 'is', null);
     if (filter === 'tanpa') r = r.is('kode', null).is('ad_name', null).is('lead_id', null);
     if (filter === 'closing') r = r.not('lead.paid_at', 'is', null);
+    if (iklan) r = r.in('iklan_id', iklan.length ? iklan : ['-']);
     const bersih = q.replace(/[^\p{L}\p{N} -]/gu, '').trim();
     if (bersih) {
       const d = bersih.replace(/\D/g, '').replace(/^0/, '');
@@ -57,6 +58,7 @@ const real = {
     return must(await r.order('last_at', { ascending: false }).range(offset, offset + 19));
   },
   async lengkapiLeads(tid) { const c = await client(); return must(await c.rpc('lengkapi_leads', { p_tenant: tid })); },
+  async hubungkanChatKlik(chatId, clickId) { const c = await client(); return must(await c.rpc('hubungkan_chat_klik', { p_chat: chatId, p_click: clickId })); },
   async inboxChat(id) {
     const c = await client();
     return must(await c.from('wa_chats').select('*, lead:leads(id, stage, alasan, paid_at, nilai, purchase_sent_at, nama, phone, sumber, click_id, created_at)').eq('id', id).maybeSingle());
@@ -286,13 +288,18 @@ function demoChats() {
   _chats = D.leads.filter((l) => l.phone).sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 45).map((l, i) => {
     const c = byClick[l.click_id];
     const at = new Date(Math.min(now - i * 37 * 60e3, Date.parse(l.created_at) + 3600e3 * (i % 5))).toISOString();
-    return { id: 'ch' + l.id, wa_number_id: l.wa_number_id || D.wa[0]?.id, jid: l.phone + '@s.whatsapp.net', phone: l.phone, nama: l.nama, lead_id: l.id,
+    const ik = l.sumber === 'ctwa' ? { iklan_id: l.ad_id || '120219999', iklan_nama: l.ad_name || 'CTWA Reels Pijat', campaign_nama: 'CTWA Mahyra SBY', iklan_sumber: 'ctwa' }
+      : c?.ad_id || c?.ad_name ? { iklan_id: c.ad_id || null, iklan_nama: c.ad_name || c.utm_content, campaign_nama: c.campaign_name || c.utm_campaign, iklan_sumber: 'lp' } : { iklan_sumber: c ? 'organik' : null };
+    return { ...ik, id: 'ch' + l.id, wa_number_id: l.wa_number_id || D.wa[0]?.id, jid: l.phone + '@s.whatsapp.net', phone: l.phone, nama: l.nama, lead_id: l.id,
       kode: c?.kode || null, ad_id: l.sumber === 'ctwa' ? l.ad_id || '1201' : null, ad_name: l.sumber === 'ctwa' ? l.ad_name || 'CTWA Reels Pijat' : null,
       last_text: l.paid_at ? 'Terima kasih kak, sudah transfer ya 🙏' : i % 3 ? 'Baik kak, ditunggu ya' : 'Kak masih ada slot jam 7 malam?', last_tipe: 'teks', last_from_me: !!(i % 3), last_at: at, jumlah: 6 };
   });
   ['Rudi', 'Lina', 'Pak Harto', 'Mbak Ayu', 'Doni', 'Sinta'].forEach((n, i) => _chats.push({ id: 'cx' + i, wa_number_id: D.wa[i % D.wa.length]?.id, jid: '62813000' + i + '@s.whatsapp.net',
     phone: '62813000111' + i, nama: n, lead_id: null, kode: null, ad_id: null, ad_name: null, last_text: i % 2 ? 'Oke makasih' : 'Halo, alamatnya di mana ya?', last_tipe: 'teks',
     last_from_me: !!(i % 2), last_at: new Date(now - (i * 95 + 20) * 60e3).toISOString(), jumlah: 3 }));
+  // contoh saran: klik tombol WA 4 menit sebelum chat pertama "Rudi" (pelanggan menghapus kodenya)
+  const cx = _chats.find((x) => x.id === 'cx0'); const ad = D.clicks.find((k) => k.ad_id) || {};
+  D.clicks.push({ ...ad, id: 'kdemo', kode: 'MR-SARAN1', wa_number_id: cx.wa_number_id, fbc: 'fb.1.x', created_at: new Date(Date.parse(cx.last_at) - 99 * 60e3).toISOString() });
   return _chats;
 }
 function demoMsgs(id) {
@@ -326,16 +333,22 @@ const demo = {
   async klaimUndangan() { return 0; },
   async waSessions() { return D.wa_sessions.map((s) => { if (s.status === 'qr' && Date.now() - s._t > 7000) Object.assign(s, { status: 'terhubung', qr: null, phone: D.wa.find((w) => w.id === s.wa_number_id)?.phone || '6285778082138' }); return { ...s }; }); },
   async addWaSession(t, label, waNumberId = null) { const s = { id: 's' + Date.now(), label, wa_number_id: waNumberId, status: 'qr', qr: DEMO_QR, chat_tercatat: 0, _t: Date.now(), last_seen: new Date().toISOString() }; D.wa_sessions.push(s); return s; },
-  async inboxChats(t, { wa = '', filter = '', q = '', offset = 0 } = {}) {
+  async inboxChats(t, { wa = '', filter = '', q = '', offset = 0, iklan = null } = {}) {
     const lead = (c) => D.leads.find((l) => l.id === c.lead_id) || null;
     const s = q.trim().toLowerCase(), d = s.replace(/\D/g, '').replace(/^0/, '');
     const list = demoChats().map((c) => ({ ...c, lead: lead(c) })).filter((c) => (!wa || c.wa_number_id === wa)
       && (filter !== 'kode' || c.kode) && (filter !== 'ctwa' || c.ad_name) && (filter !== 'tanpa' || (!c.kode && !c.ad_name && !c.lead_id))
-      && (filter !== 'closing' || c.lead?.paid_at)
+      && (filter !== 'closing' || c.lead?.paid_at) && (!iklan || iklan.includes(c.iklan_id))
       && (!s || (c.nama || '').toLowerCase().includes(s) || (c.kode || '').toLowerCase().includes(s) || (d.length >= 3 && (c.phone || '').includes(d))));
     return wait(list.sort((a, b) => b.last_at.localeCompare(a.last_at)).slice(offset, offset + 20));
   },
   async lengkapiLeads() { return wait(0); },
+  async hubungkanChatKlik(chatId, clickId) {
+    const ch = demoChats().find((x) => x.id === chatId); const k = D.clicks.find((x) => x.id === clickId);
+    if (D.leads.some((l) => l.click_id === clickId)) throw new Error(`Klik ${k.kode} sudah terhubung ke chat lain`);
+    const l = { id: 'l' + Date.now(), tenant_id: D.tenant.id, click_id: k.id, wa_number_id: ch.wa_number_id, phone: ch.phone, nama: ch.nama, nama_sumber: 'profil', stage: 'A', sumber: 'lp', created_at: new Date().toISOString() };
+    D.leads.push(l); Object.assign(ch, { lead_id: l.id, kode: k.kode, iklan_id: k.ad_id, iklan_nama: k.ad_name, campaign_nama: k.campaign_name, iklan_sumber: 'lp' }); return l.id;
+  },
   async inboxChat(id) { const c = demoChats().find((x) => x.id === id); return c ? { ...c, lead: D.leads.find((l) => l.id === c.lead_id) || null } : null; },
   async inboxMessages(id, before = null) { const m = demoMsgs(id).filter((x) => !before || x.at < before); return wait(m.slice(-30)); },
   async cmdWaSession(id, p) { const s = D.wa_sessions.find((x) => x.id === id); if (p === 'logout') Object.assign(s, { status: 'keluar', phone: null }); else Object.assign(s, { status: 'qr', qr: DEMO_QR, _t: Date.now() }); },

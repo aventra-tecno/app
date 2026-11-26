@@ -800,3 +800,19 @@ tr:hover .pel-edit svg, .pel-edit:focus svg { opacity: 1; }
 .ib-nm { display: flex; align-items: center; gap: 6px; }
 .ib-who { grid-template-columns: auto; } .ib-edit { padding: 2px 6px; margin-left: 6px; vertical-align: middle; } .ib-edit svg { width: 13px; height: 13px; }
 @media (max-width: 760px) { .pel-edit svg { opacity: 1; } }
+/* v1.19.0 — Inbox: label iklan, filter iklan, saran klik; chip tidak terpotong */
+.ib-chips { flex-wrap: wrap; overflow: visible; }
+.ib-chips .chip { padding: 4px 10px; }
+.ib-fik { display: inline-flex; align-items: center; gap: 4px; } .ib-fik svg { width: 13px; height: 13px; }
+.ib-fik.aktif { border-color: #25D366; color: #0B7A45; background: #E9FBF1; }
+.ib-iklan { display: grid; gap: 6px; } .ib-iklan[hidden] { display: none; }
+.ib-iklan select { height: 34px; border: 1px solid var(--line); border-radius: 9px; padding: 0 8px; font: inherit; font-size: 13px; background: #fff; width: 100%; }
+.ib-ad { display: inline-flex; align-items: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: #F1F4FA; color: #3B4A6B; }
+.ib-ad.ctwa { background: #E3EEFF; color: #1D4ED8; } .ib-ad.org { background: #F2F2F2; color: #6B6B6B; } .ib-ad.unk { background: none; color: #98A2A0; font-weight: 500; padding-left: 0; }
+.ib-ad small { font-weight: 500; opacity: .8; margin-left: 3px; }
+.ib-lead .ib-ad { font-size: 12px; padding: 3px 9px; max-width: 420px; }
+.ib-saran { display: grid; gap: 6px; margin: 0; padding: 10px 16px; background: #FFF8E6; border-bottom: 1px solid #F3DFA8; }
+.ib-saran > b { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #7A5200; } .ib-saran > b svg { width: 15px; height: 15px; }
+.ib-sr { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; background: #fff; font-size: 13px; }
+.ib-sr code { font-weight: 700; }
+@media (max-width: 900px) { .ib-sr { flex-direction: column; align-items: stretch; } }

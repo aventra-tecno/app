@@ -1,6 +1,6 @@
 // Aventra Leads · Klik tombol WA (v1.15.0: nama & HP pelanggan, filter nomor WA & status, 20 data per halaman)
 import { api } from '../api.js';
-import { esc, num, pct, waktu, range, ymdLocal, icon, potong, pagerHtml, bindPager, petaIklan, opsiIklan, lolosIklan, $ } from '../ui.js';
+import { esc, num, pct, waktu, range, ymdLocal, icon, klikUnik, potong, pagerHtml, bindPager, petaIklan, opsiIklan, lolosIklan, $ } from '../ui.js';
 import { openLeadModal } from './leads.js';
 
 let status = '', nomor = '', cari = '', hal = 1;
@@ -25,6 +25,7 @@ export async function render(el, ctx) {
   const clicks = allClicks.filter((c) => lolosIklan(c._m, sel) && (!nomor || c.wa_number_id === nomor));
   const belum = clicks.filter((c) => c._s === 'belum');
   const withFbc = clicks.filter((c) => c.fbc).length;
+  const unik = klikUnik(clicks, new Set(Object.keys(leadOf))).length;
   const nomorAda = state.wa.filter((w) => allClicks.some((c) => c.wa_number_id === w.id));
 
   el.innerHTML = `
@@ -36,8 +37,8 @@ export async function render(el, ctx) {
     <select data-f="s"><option value="">Semua status</option>${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${status === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
   </div>
   <div class="kpis three">
-    <div class="kpi"><small>Klik tombol WA</small><b>${num(clicks.length)}</b><span>${num(withFbc)} membawa jejak iklan (fbc)</span></div>
-    <div class="kpi"><small>Sudah jadi chat</small><b>${num(clicks.length - belum.length)}</b><span>${pct(clicks.length - belum.length, clicks.length)} dari klik</span></div>
+    <div class="kpi"><small>Klik tombol WA</small><b>${num(clicks.length)}</b><span>${unik < clicks.length ? `<b>${num(unik)} orang unik</b> (klik berulang ≤30 menit dihitung 1) · ` : ''}${num(withFbc)} membawa jejak iklan</span></div>
+    <div class="kpi"><small>Sudah jadi chat</small><b>${num(clicks.length - belum.length)}</b><span>${pct(clicks.length - belum.length, unik)} dari orang unik</span></div>
     <div class="kpi"><small>Belum terhubung</small><b>${num(belum.length)}</b><span>bisa jadi kode dihapus pelanggan</span></div>
   </div>
   <p class="muted small" style="margin:-4px 0 12px">Chat masuk tanpa kode? Cocokkan dengan klik yang waktunya paling dekat, lalu tekan <b>Hubungkan</b>.</p>

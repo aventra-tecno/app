@@ -200,3 +200,21 @@ export function opsiIklan(items, sel) {
   };
 }
 export const lolosIklan = (m, sel) => (!sel.c || m.c === sel.c) && (!sel.a || m.a === sel.a) && (!sel.d || m.d === sel.d);
+
+// ---------------------------------------------------------------- v1.19.0: Contact unik
+// Klik tombol WA berulang dari browser yang sama (fbp / IP) dalam 30 menit dihitung 1 orang.
+// Klik yang sudah jadi chat (punya lead) selalu dihitung.
+export function klikUnik(clicks, linked = new Set()) {
+  const JEDA = 30 * 60e3;
+  const kunci = (c) => c.fbp || c.ip || c.id;
+  const waktuKey = new Map();
+  const simpan = (c) => { const k = kunci(c); (waktuKey.get(k) || waktuKey.set(k, []).get(k)).push(Date.parse(c.created_at)); };
+  const hasil = clicks.filter((c) => linked.has(c.id));
+  hasil.forEach(simpan);
+  [...clicks].filter((c) => !linked.has(c.id)).sort((a, b) => a.created_at.localeCompare(b.created_at)).forEach((c) => {
+    const t = Date.parse(c.created_at);
+    if ((waktuKey.get(kunci(c)) || []).some((x) => Math.abs(x - t) < JEDA)) return;
+    hasil.push(c); simpan(c);
+  });
+  return hasil;
+}

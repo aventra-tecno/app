@@ -2,7 +2,7 @@
 // Rumus inti:  CPA = CPM ÷ (1000 × CTR × OCLP × Contact × Chat × Purchase)   (iklan ke website)
 //              CPA = CPM ÷ (1000 × CTR × Chat × Purchase)                    (iklan CTWA)
 import { api } from '../api.js';
-import { esc, rp, num, range, metaDates, tzBeda, toast, icon, $ } from '../ui.js';
+import { esc, rp, num, range, metaDates, tzBeda, toast, icon, klikUnik, $ } from '../ui.js';
 
 // ---------- nilai awal & penjelasan ----------
 export const DEF = {
@@ -328,7 +328,8 @@ export function aktual(insAll, clicks, leads, T, sel = { c: '', a: '', d: '' }) 
   // Tanpa filter: funnel website saja (campaign CTWA punya alur berbeda, lihat dengan memilih campaign-nya)
   const ins = filtered ? insSel : insSel.filter((r) => !ctwaCamp.has(adsMap[r.ad_id].c));
   const adIds = new Set(ins.map((r) => r.ad_id));
-  const adClicks = clicks.filter((c) => (filtered ? c.ad_id && adIds.has(c.ad_id) : c.ad_id || c.fbc));
+  const adClicksAll = clicks.filter((c) => (filtered ? c.ad_id && adIds.has(c.ad_id) : c.ad_id || c.fbc));
+  const adClicks = klikUnik(adClicksAll, new Set(leads.map((l) => l.click_id).filter(Boolean)));   // Contact unik per orang
   const ids = new Set(adClicks.map((c) => c.id));
   const adLeads = leads.filter((l) => ids.has(l.click_id));
   const paid = adLeads.filter((l) => l.paid_at);
@@ -338,7 +339,7 @@ export function aktual(insAll, clicks, leads, T, sel = { c: '', a: '', d: '' }) 
   const ctwaPaid = ctwaLeads.filter((l) => l.paid_at);
   const S = (k) => ins.reduce((s, r) => s + Number(r[k] || 0), 0);
   const A = { S: S('spend'), I: S('impressions'), K: S('link_clicks'), L: S('lpv'), V: S('view_content'), MC: S('contact'),
-    MS: S('msg_started'), MP: S('purchase'), W: adClicks.length, C: adLeads.length, P: paid.length, O: paid.reduce((s, l) => s + (l.nilai || 0), 0),
+    MS: S('msg_started'), MP: S('purchase'), W: adClicks.length, WR: adClicksAll.length, C: adLeads.length, P: paid.length, O: paid.reduce((s, l) => s + (l.nilai || 0), 0),
     CC: ctwaLeads.length, CP: ctwaPaid.length, CO: ctwaPaid.reduce((s, l) => s + (l.nilai || 0), 0) };
   const isCtwa = A.MS > 0 && A.L === 0 && A.W === 0;
   if (isCtwa) { A.O = A.CO; }
@@ -355,7 +356,7 @@ export function aktual(insAll, clicks, leads, T, sel = { c: '', a: '', d: '' }) 
     { k: 'Impresi', n: A.I, src: 'Meta' },
     { k: 'Klik link', n: A.K, src: 'Meta', l: 'CTR', r: div(A.K, A.I), t: Tm.ctr / 100, cost: div(A.S, A.K), max: Hm.max[1], cl: 'CPC' },
     { k: 'Landing page view', n: A.L, src: 'Meta', l: 'OCLP', r: div(A.L, A.K), t: Tm.oclp / 100, cost: div(A.S, A.L), max: Hm.max[2], cl: 'per LPV' },
-    { k: 'Contact (klik WA)', n: A.W, src: `Aventra${A.MC ? ` · Meta ${num(A.MC)}` : ''}`, l: 'Contact', r: div(A.W, A.L), t: Tm.contact / 100, cost: div(A.S, A.W), max: Hm.max[3], cl: 'per klik WA' },
+    { k: 'Contact (klik WA)', n: A.W, src: `Aventra · ${A.WR > A.W ? `${num(A.WR)} klik, ${num(A.W)} orang` : 'orang unik'}${A.MC ? ` · Meta ${num(A.MC)}` : ''}`, l: 'Contact', r: div(A.W, A.L), t: Tm.contact / 100, cost: div(A.S, A.W), max: Hm.max[3], cl: 'per klik WA' },
     { k: 'Chat masuk', n: A.C, src: 'Aventra', l: 'Chat', r: div(A.C, A.W), t: Tm.chat / 100, cost: div(A.S, A.C), max: Hm.max[4], cl: 'per chat' },
     { k: 'Purchase', n: A.P, src: 'Aventra', l: 'Purchase', r: div(A.P, A.C), t: Tm.purchase / 100, cost: div(A.S, A.P), max: Hm.cpaT, cl: 'CPA' },
   ];

@@ -1,10 +1,12 @@
 // Aventra Leads · Inbox WA (v1.16.0) — hanya baca & tandai, data dari WA Gateway (scan QR)
 import { api } from '../api.js';
-import { esc, rp, tgl, jam, toast, icon, TAHAP, ALASAN, $, $$ } from '../ui.js';
+import { esc, rp, tgl, jam, waktu, toast, icon, TAHAP, ALASAN, ymdLocal, petaIklan, opsiIklan, lolosIklan, $, $$ } from '../ui.js';
 import { openLeadModal, openPaidModal, openPelanggan } from './leads.js';
 
 let fWa = '', fTanda = '', fCari = '';
 let bukaId = null;
+let selIk = { c: '', a: '', d: '' };
+let bukaFilter = false;
 let timer = 0;
 
 const TANDA = [['', 'Semua'], ['kode', 'Berkode'], ['ctwa', 'Iklan CTWA'], ['closing', 'Closing'], ['tanpa', 'Belum ditandai']];
@@ -16,6 +18,13 @@ const waktuPendek = (iso) => {
   if (now - d < 6 * 864e5) return d.toLocaleDateString('id-ID', { weekday: 'short' });
   return tgl(iso);
 };
+// label asal chat: iklan mana
+function labelIklan(c, besar = false) {
+  if (c.iklan_sumber === 'organik') return `<span class="ib-ad org">Organik · tanpa iklan</span>`;
+  if (!c.iklan_sumber && !c.iklan_nama) return `<span class="ib-ad unk">Sumber belum diketahui</span>`;
+  const nm = c.iklan_nama || (c.iklan_id ? `Iklan ${c.iklan_id}` : 'Iklan');
+  return `<span class="ib-ad ${c.iklan_sumber === 'ctwa' ? 'ctwa' : ''}" title="${esc(c.campaign_nama || '')}">${c.iklan_sumber === 'ctwa' ? 'CTWA' : 'Iklan'} · ${esc(nm)}${besar && c.campaign_nama ? ` <small>· ${esc(c.campaign_nama)}</small>` : ''}</span>`;
+}
 const hp = (p) => (p ? '0' + String(p).replace(/^62/, '') : '');
 const inisial = (n) => (n || '?').trim().split(/\s+/).slice(0, 2).map((x) => x[0]).join('').toUpperCase();
 
@@ -23,7 +32,6 @@ function tanda(c, besar = false) {
   const t = [];
   if (c.lead?.paid_at) t.push(`<span class="tg tg-close" title="Sudah closing">${icon('check')}Closing${besar && c.lead.nilai ? ' · ' + rp(c.lead.nilai) : ''}</span>`);
   if (c.kode) t.push(`<span class="tg tg-kode" title="Kode promo terbaca bot">${icon('check')}${esc(c.kode)}</span>`);
-  if (c.ad_name) t.push(`<span class="tg tg-ctwa" title="Chat dari iklan Click to WhatsApp">CTWA${besar ? ' · ' + esc(c.ad_name) : ''}</span>`);
   if (c.lead && !c.kode && !c.ad_name && !c.lead.paid_at) t.push('<span class="tg tg-lead">Lead</span>');
   if (c.lead && !c.lead.paid_at && besar) t.push(`<span class="tg">Tahap ${esc(c.lead.stage)}</span>`);
   return t.join('');
@@ -52,7 +60,9 @@ export async function render(el, ctx) {
       <div class="ib-tools">
         <div class="search">${icon('search')}<input id="ibCari" placeholder="Cari nama, nomor, atau kode" value="${esc(fCari)}"></div>
         ${state.wa.length > 1 ? `<select id="ibWa"><option value="">Semua nomor CS</option>${state.wa.map((w) => `<option value="${w.id}" ${fWa === w.id ? 'selected' : ''}>${esc(w.label)} · ${esc(w.phone)}</option>`).join('')}</select>` : ''}
-        <div class="ib-chips" id="ibTanda">${TANDA.map(([k, v]) => `<button class="chip ${fTanda === k ? 'on' : ''}" data-t="${k}">${v}</button>`).join('')}</div>
+        <div class="ib-chips" id="ibTanda">${TANDA.map(([k, v]) => `<button class="chip ${fTanda === k ? 'on' : ''}" data-t="${k}">${v}</button>`).join('')}
+          <button class="chip ib-fik ${selIk.c || selIk.a || selIk.d ? 'aktif' : ''}" id="ibFik">${icon('funnel')}Iklan${selIk.c || selIk.a || selIk.d ? ' •' : ''}</button></div>
+        <div class="ib-iklan" id="ibIklan" ${bukaFilter ? '' : 'hidden'}><div class="loading small">Memuat iklan…</div></div>
       </div>
       <div class="ib-rows" id="ibRows"><div class="loading">Memuat…</div></div>
     </aside>
@@ -67,7 +77,7 @@ export async function render(el, ctx) {
         <span class="ib-mid">
           <span class="ib-top"><b>${esc(c.lead?.nama || c.nama || hp(c.phone) || 'Tanpa nama')}</b><small>${waktuPendek(c.last_at)}</small></span>
           <span class="ib-last">${c.last_from_me ? '<i class="ib-me">Anda:</i> ' : ''}${c.last_tipe && c.last_tipe !== 'teks' ? `${icon((JENIS[c.last_tipe] || JENIS.lainnya)[0])}${(JENIS[c.last_tipe] || JENIS.lainnya)[1]}` : esc(c.last_text || '')}</span>
-          <span class="ib-tags">${tanda(c)}</span>
+          <span class="ib-tags">${tanda(c)}${labelIklan(c)}</span>
         </span>
       </button>`).join('')
       + (chats.length && !habis ? '<button class="btn sm ib-more" id="ibMore">Muat 20 chat lagi</button>' : '')
@@ -78,7 +88,7 @@ export async function render(el, ctx) {
   const muat = async (lanjut = false) => {
     if (memuat) return; memuat = true;
     try {
-      const baru = await api.inboxChats(tid, { wa: fWa, filter: fTanda, q: fCari, offset: lanjut ? chats.length : 0 });
+      const baru = await api.inboxChats(tid, { wa: fWa, filter: fTanda, q: fCari, offset: lanjut ? chats.length : 0, iklan: idIklan() });
       chats = lanjut ? chats.concat(baru) : baru;
       habis = baru.length < 20;
       drawList();
@@ -105,13 +115,14 @@ export async function render(el, ctx) {
           <small>${chat.phone ? `<a class="wa-link" href="https://wa.me/${esc(chat.phone)}" target="_blank" rel="noopener">${esc(hp(chat.phone))}</a>` : 'nomor disamarkan WhatsApp'}${wa ? ` · masuk ke ${esc(wa.label)}` : ''}</small></div>
       </header>
       <div class="ib-lead">
-        <div class="ib-tags">${tanda(chat, true) || '<span class="muted small">Belum ditandai bot (tanpa kode & bukan dari iklan)</span>'}</div>
+        <div class="ib-tags">${tanda(chat, true)}${labelIklan(chat, true)}</div>
         ${l ? (l.paid_at ? '' : `<div class="ib-act">
             <select class="mini" data-f="stage">${['A', 'B', 'C', 'D'].map((k) => `<option value="${k}" ${l.stage === k ? 'selected' : ''}>${k} · ${TAHAP[k]}</option>`).join('')}</select>
             <select class="mini" data-f="alasan"><option value="">Alasan –</option>${Object.entries(ALASAN).map(([k, v]) => `<option value="${k}" ${String(l.alasan) === k ? 'selected' : ''}>${k} · ${v}</option>`).join('')}</select>
             <button class="btn green sm" id="ibLunas">${icon('check')}Lunas</button></div>`)
           : '<div class="ib-act"><button class="btn sm primary" id="ibCatat">' + icon('plus') + 'Catat sebagai lead</button></div>'}
       </div>
+      ${!l ? '<div id="ibSaran"></div>' : ''}
       <div class="ib-msgs" id="ibMsgs">
         ${adaLebih ? '<button class="btn sm ib-older" id="ibOlder">Pesan sebelumnya</button>' : ''}
         ${pesan.map((m, i) => {
@@ -138,6 +149,7 @@ export async function render(el, ctx) {
       const patch = { [s.dataset.f]: s.value === '' ? null : s.dataset.f === 'alasan' ? Number(s.value) : s.value };
       try { await api.updateLead(l.id, patch); Object.assign(l, patch); toast('Tersimpan'); drawList(); } catch (e) { toast(e.message, 'err'); }
     }));
+    if (!l) saran();
     const ed = $('#ibEdit', chatEl);
     if (ed && l) ed.onclick = () => openPelanggan(l, () => { drawChat(false); drawList(); });
     const lunas = $('#ibLunas', chatEl);
@@ -149,6 +161,68 @@ export async function render(el, ctx) {
       if (f) { f.phone.value = hp(chat.phone); f.nama.value = chat.nama || ''; if (chat.wa_number_id) f.wa.value = chat.wa_number_id; }
     };
   };
+  // ---------- saran: chat tanpa kode ↔ klik tombol WA beberapa menit sebelumnya ----------
+  const saran = async () => {
+    const box = $('#ibSaran', chatEl);
+    const c0 = chat;
+    const pertama = pesan.find((m) => !m.from_me) || pesan[0];
+    if (!box || !pertama) return;
+    const t0 = Date.parse(pertama.at);
+    try {
+      const [ks, ls] = await Promise.all([
+        api.clicks(tid, new Date(t0 - 30 * 60e3).toISOString(), new Date(t0 + 2 * 60e3).toISOString()),
+        api.leads(tid, new Date(t0 - 864e5).toISOString(), new Date(t0 + 864e5).toISOString()),
+      ]);
+      if (chat !== c0 || !box.isConnected) return;
+      const terpakai = new Set(ls.map((x) => x.click_id).filter(Boolean));
+      const cocok = ks.filter((k) => !terpakai.has(k.id) && (!chat.wa_number_id || !k.wa_number_id || k.wa_number_id === chat.wa_number_id))
+        .sort((a, b) => Math.abs(t0 - Date.parse(a.created_at)) - Math.abs(t0 - Date.parse(b.created_at))).slice(0, 3);
+      if (!cocok.length) { box.innerHTML = ''; return; }
+      box.innerHTML = `<div class="ib-saran"><b>${icon('click')}Kemungkinan dari klik tombol WA</b>
+        <span class="muted small">Chat ini tanpa kode. Ada klik ke nomor ini tak lama sebelum chat masuk, mungkin pelanggan menghapus kodenya.</span>
+        ${cocok.map((k) => { const m = Math.round((t0 - Date.parse(k.created_at)) / 60e3); return `<div class="ib-sr"><span><code>${esc(k.kode)}</code> · ${m >= 0 ? `${m} menit sebelum chat` : 'bersamaan'} · ${esc(k.ad_name || k.utm_content || (k.fbc ? 'dari iklan' : 'organik'))}</span>
+          <button class="btn sm primary" data-k="${k.id}">Hubungkan</button></div>`; }).join('')}</div>`;
+      $$('[data-k]', box).forEach((b) => (b.onclick = async () => {
+        b.disabled = true;
+        try {
+          const leadId = await api.hubungkanChatKlik(chat.id, b.dataset.k);
+          api.sendLead(leadId).catch(() => {});
+          toast('Terhubung · lead tercatat & event Lead dikirim ke Meta');
+          await buka(chat.id, true); muat();
+        } catch (e) { toast(e.message, 'err'); b.disabled = false; }
+      }));
+    } catch { /* abaikan */ }
+  };
+
+  // ---------- filter campaign › ad set › iklan ----------
+  let insRows = null;
+  const idIklan = () => {
+    if (!insRows || !(selIk.c || selIk.a || selIk.d)) return null;
+    return [...new Set(insRows.filter((r) => lolosIklan(r._m, selIk)).map((r) => r.ad_id))];
+  };
+  const drawFilterIklan = async () => {
+    const box = $('#ibIklan', el);
+    if (!insRows) {
+      const now = new Date();
+      const ins = await api.insights(tid, ymdLocal(new Date(now - 90 * 864e5)), ymdLocal(now)).catch(() => []);
+      const peta = petaIklan(ins);
+      insRows = ins.map((r) => ({ ad_id: r.ad_id, _m: peta(r) }));
+    }
+    const ops = opsiIklan(insRows.map((r) => r._m), selIk);
+    box.innerHTML = insRows.length ? `${ops.html}${selIk.c || selIk.a || selIk.d ? '<button class="btn sm" id="ibIkReset">Hapus filter iklan</button>' : ''}`
+      : '<p class="muted small">Belum ada data iklan. Sinkron Meta dulu.</p>';
+    box.onchange = (e) => {
+      const sl = e.target.closest('select[data-f]'); if (!sl) return;
+      selIk[sl.dataset.f] = sl.value;
+      if (sl.dataset.f === 'c') { selIk.a = ''; selIk.d = ''; }
+      if (sl.dataset.f === 'a') selIk.d = '';
+      tandaiFik(); drawFilterIklan(); muat();
+    };
+    const rs = $('#ibIkReset', box);
+    if (rs) rs.onclick = () => { selIk = { c: '', a: '', d: '' }; tandaiFik(); drawFilterIklan(); muat(); };
+  };
+  const tandaiFik = () => { const b = $('#ibFik', el); const on = !!(selIk.c || selIk.a || selIk.d); b.classList.toggle('aktif', on); b.innerHTML = `${icon('funnel')}Iklan${on ? ' •' : ''}`; };
+
   const buka = async (id, segar = false) => {
     bukaId = id;
     $('#ib', el).classList.add('lihat-chat');
@@ -169,6 +243,8 @@ export async function render(el, ctx) {
   $('#ibCari', el).oninput = (e) => { fCari = e.target.value; clearTimeout(tunda); tunda = setTimeout(() => muat(), 300); };
   const waSel = $('#ibWa', el);
   if (waSel) waSel.onchange = () => { fWa = waSel.value; muat(); };
+  $('#ibFik', el).onclick = () => { bukaFilter = !bukaFilter; $('#ibIklan', el).hidden = !bukaFilter; if (bukaFilter) drawFilterIklan(); };
+  if (bukaFilter || selIk.c || selIk.a || selIk.d) { bukaFilter = true; $('#ibIklan', el).hidden = false; await drawFilterIklan(); }
   $('#ibTanda', el).onclick = (e) => {
     const b = e.target.closest('[data-t]'); if (!b) return;
     fTanda = b.dataset.t; $$('#ibTanda .chip', el).forEach((x) => x.classList.toggle('on', x === b)); muat();
