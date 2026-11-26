@@ -1,81 +1,128 @@
 // Aventra Leads · Leads & Closing
 import { api } from '../api.js';
-import { esc, rp, num, waktu, jam, range, ymdLocal, modal, toast, icon, TAHAP, ALASAN, $, $$ } from '../ui.js';
+import { esc, rp, num, waktu, jam, range, ymdLocal, modal, toast, icon, TAHAP, ALASAN, potong, pagerHtml, bindPager, petaIklan, opsiIklan, lolosIklan, $, $$ } from '../ui.js';
 
 let filter = 'semua';
-let q = '';
+let fKode = '', fPel = '', fSumber = '', hal = 1;
+let sel = { c: '', a: '', d: '' };
+const SUMBER = { lp: 'Landing page', wa: 'Otomatis (WA)', ctwa: 'Iklan CTWA', manual: 'Manual', api: 'API / ERP' };
 
 export async function render(el, ctx) {
   const { state } = ctx;
   const { from, to } = range(state.period);
   const tid = state.tenant.id;
-  const [leads, clicks] = await Promise.all([api.leads(tid, from, to), api.clicks(tid, new Date(Date.parse(from) - 7 * 864e5).toISOString(), to)]);
+  const [leads, clicks, ins] = await Promise.all([
+    api.leads(tid, from, to), api.clicks(tid, new Date(Date.parse(from) - 7 * 864e5).toISOString(), to),
+    api.insights(tid, ymdLocal(new Date(Date.parse(from) - 60 * 864e5)), ymdLocal(new Date(Date.parse(to) - 1))).catch(() => []),
+  ]);
   const clickById = Object.fromEntries(clicks.map((c) => [c.id, c]));
   const waLabel = Object.fromEntries(state.wa.map((w) => [w.id, w.label]));
+  const iklan = petaIklan(ins);
+  leads.forEach((l) => {
+    const c = clickById[l.click_id];
+    l._c = c;
+    l._m = c ? iklan(c) : l.ad_id || l.ad_name ? iklan({ ad_id: l.ad_id, ad_name: l.ad_name }) : iklan(null);
+  });
+  const ops = opsiIklan(leads.map((l) => l._m), sel);
+  if (!ops.ada(sel)) sel = { c: '', a: '', d: '' };
+  const sumberAda = [...new Set(leads.map((l) => l.sumber).filter(Boolean))];
 
-  const counts = {
-    semua: leads.length,
-    proses: leads.filter((l) => !l.paid_at).length,
-    lunas: leads.filter((l) => l.paid_at).length,
-    gagal: leads.filter((l) => l.paid_at && !l.purchase_sent_at).length,
+  const lolos = (l, abaikanStatus = false) => {
+    if (!lolosIklan(l._m, sel)) return false;
+    if (fSumber && l.sumber !== fSumber) return false;
+    const k = fKode.trim().toUpperCase();
+    if (k && !(l._c?.kode || '').toUpperCase().includes(k)) return false;
+    const p = fPel.trim().toLowerCase();
+    if (p) {
+      const d = p.replace(/\D/g, '').replace(/^0/, '').replace(/^62/, '');
+      const okNama = (l.nama || '').toLowerCase().includes(p);
+      const okHp = d.length >= 3 && (l.phone || '').replace(/\D/g, '').includes(d);
+      if (!okNama && !okHp) return false;
+    }
+    if (abaikanStatus) return true;
+    if (filter === 'proses' && l.paid_at) return false;
+    if (filter === 'lunas' && !l.paid_at) return false;
+    if (filter === 'gagal' && !(l.paid_at && !l.purchase_sent_at)) return false;
+    return true;
   };
 
   el.innerHTML = `
+  <div class="filters lipat" id="filters">
+    <div class="search">${icon('search')}<input id="fKode" placeholder="Kode promo, mis. ${esc(state.tenant.prefix)}-6JD" value="${esc(fKode)}" autocapitalize="characters"></div>
+    <div class="search">${icon('search')}<input id="fPel" placeholder="Nama atau nomor HP pelanggan" value="${esc(fPel)}"></div>
+    <button type="button" class="btn flt-toggle" id="fltBtn">${icon('funnel')}Filter${sel.c || sel.a || sel.d || (typeof nomor !== 'undefined' && nomor) || (typeof status !== 'undefined' && status) || (typeof fSumber !== 'undefined' && fSumber) ? ' •' : ''}</button>
+    ${ops.html}
+    <select data-f="s"><option value="">Semua sumber</option>${sumberAda.map((k) => `<option value="${k}" ${fSumber === k ? 'selected' : ''}>${esc(SUMBER[k] || k)}</option>`).join('')}</select>
+  </div>
   <div class="toolbar">
-    <div class="search">${icon('search')}<input id="q" placeholder="Cari kode, nomor, atau nama" value="${esc(q)}"></div>
-    <div class="chips">
-      ${chip('semua', 'Semua', counts.semua)}${chip('proses', 'Belum lunas', counts.proses)}
-      ${chip('lunas', 'Lunas', counts.lunas)}${counts.gagal ? chip('gagal', 'Gagal ke Meta', counts.gagal, 'bad') : ''}
-    </div>
+    <div class="chips" id="chips"></div>
     <button class="btn primary" id="add">${icon('plus')}Chat masuk</button>
   </div>
   <div class="card flush">
     <table class="tbl leads">
-      <thead><tr><th>Masuk</th><th>Kode</th><th>Pelanggan</th><th>Iklan</th><th>Tahap</th><th>Alasan</th><th class="r">Nilai · Meta</th><th></th></tr></thead>
+      <thead><tr><th>Masuk</th><th>Kode</th><th>Nama</th><th>No. HP</th><th>Iklan</th><th>Tahap</th><th>Alasan</th><th class="r">Nilai · Meta</th><th></th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
+    <div id="pager"></div>
   </div>`;
 
   function draw() {
-    const s = q.trim().toLowerCase();
-    const list = leads.filter((l) => {
-      if (filter === 'proses' && l.paid_at) return false;
-      if (filter === 'lunas' && !l.paid_at) return false;
-      if (filter === 'gagal' && !(l.paid_at && !l.purchase_sent_at)) return false;
-      if (!s) return true;
-      const c = clickById[l.click_id];
-      return [c?.kode, l.phone, l.nama, l.ad_name].some((v) => (v || '').toLowerCase().includes(s.replace(/^0/, '')));
-    });
-    $('#rows', el).innerHTML = list.map((l) => {
-      const c = clickById[l.click_id];
+    const dasar = leads.filter((l) => lolos(l, true));
+    const counts = {
+      semua: dasar.length,
+      proses: dasar.filter((l) => !l.paid_at).length,
+      lunas: dasar.filter((l) => l.paid_at).length,
+      gagal: dasar.filter((l) => l.paid_at && !l.purchase_sent_at).length,
+    };
+    $('#chips', el).innerHTML = `${chip('semua', 'Semua', counts.semua)}${chip('proses', 'Belum lunas', counts.proses)}
+      ${chip('lunas', 'Lunas', counts.lunas)}${counts.gagal ? chip('gagal', 'Gagal ke Meta', counts.gagal, 'bad') : ''}`;
+    const pg = potong(dasar.filter((l) => lolos(l)), hal);
+    hal = pg.page;
+    $('#rows', el).innerHTML = pg.rows.map((l) => {
+      const c = l._c;
       const paid = !!l.paid_at;
+      const hp = l.phone ? '0' + String(l.phone).replace(/^62/, '') : '';
       return `<tr data-id="${l.id}" class="${paid ? 'is-paid' : ''}">
         <td data-l="Masuk" class="nw">${waktu(l.created_at)}</td>
-        <td data-l="Kode">${c ? `<code>${esc(c.kode)}</code>` : l.sumber === 'ctwa' ? '<span class="tag">CTWA</span>' : '<span class="muted">tanpa kode</span>'}${l.sumber === 'wa' ? ' <span class="badge ok" title="Dicatat otomatis oleh ekstensi WhatsApp Web">auto</span>' : ''}</td>
-        <td data-l="Pelanggan"><b>${esc(l.nama || '-')}</b> <span class="tag">${esc(waLabel[l.wa_number_id] || '-')}</span><small class="muted block">${esc(l.phone || '')}</small></td>
-        <td data-l="Iklan" class="ad">${esc(c?.ad_name || c?.utm_content || l.ad_name || (c ? '-' : 'manual'))}</td>
+        <td data-l="Kode">${c ? `<code>${esc(c.kode)}</code>` : l.sumber === 'ctwa' ? '<span class="tag">CTWA</span>' : '<span class="muted">tanpa kode</span>'}${l.sumber === 'wa' || (l.sumber === 'ctwa' && l.ctwa_clid) ? ' <span class="badge ok" title="Dicatat otomatis dari WhatsApp">auto</span>' : ''}</td>
+        <td data-l="Nama"><b>${esc(l.nama || '-')}</b></td>
+        <td data-l="No. HP" class="nw">${hp ? `<a class="wa-link" href="https://wa.me/${esc(l.phone)}" target="_blank" rel="noopener">${esc(hp)}</a>` : '<span class="muted">-</span>'}<small class="muted block">${esc(waLabel[l.wa_number_id] || '')}</small></td>
+        <td data-l="Iklan" class="ad" title="${esc(l._m.cn)}${l._m.an ? ' › ' + esc(l._m.an) : ''}">${esc(c ? l._m.dn : l.ad_name || l._m.dn)}<small class="muted block">${esc(l._m.cn)}</small></td>
         <td data-l="Tahap">${paid ? '<span class="tag tE">E · Closing</span>'
           : `<select class="mini" data-f="stage">${['A', 'B', 'C', 'D'].map((k) => `<option value="${k}" ${l.stage === k ? 'selected' : ''}>${k} · ${TAHAP[k]}</option>`).join('')}</select>`}</td>
         <td data-l="Alasan">${paid ? '-' : `<select class="mini" data-f="alasan"><option value="">–</option>${Object.entries(ALASAN).map(([k, v]) => `<option value="${k}" ${String(l.alasan) === k ? 'selected' : ''}>${k} · ${v}</option>`).join('')}</select>`}</td>
-        <td data-l="Nilai · Meta" class="r nw">${!paid ? '<span class="muted">–</span>' : `${rp(l.nilai)} ${l.purchase_sent_at ? '<span class="badge ok">Terkirim</span>' : '<span class="badge bad">Gagal</span>'}`}</td>
+        <td data-l="Nilai · Meta" class="r">${!paid ? '<span class="muted">–</span>' : `<span class="nw">${rp(l.nilai)}</span> ${l.purchase_sent_at ? '<span class="badge ok">Terkirim</span>' : '<span class="badge bad">Gagal</span>'}`}</td>
         <td class="act">${!paid ? '<button class="btn green sm" data-a="lunas">Lunas</button>'
           : !l.purchase_sent_at ? '<button class="btn sm" data-a="ulang">Kirim ulang</button>' : ''}</td>
       </tr>`;
-    }).join('') || '<tr><td colspan="8" class="empty">Belum ada chat di periode ini</td></tr>';
+    }).join('') || '<tr><td colspan="9" class="empty">Tidak ada chat di periode / filter ini</td></tr>';
+    $('#pager', el).innerHTML = pagerHtml(pg);
+    bindPager($('#pager', el), (n) => { hal = n; draw(); el.querySelector('.card.flush')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
   }
   draw();
+  $('#fltBtn', el).onclick = () => $('#filters', el).classList.toggle('buka');
 
-  $('#q', el).oninput = (e) => { q = e.target.value; draw(); };
-  $('.chips', el).onclick = (e) => {
+  $('#fKode', el).oninput = (e) => { fKode = e.target.value; hal = 1; draw(); };
+  $('#fPel', el).oninput = (e) => { fPel = e.target.value; hal = 1; draw(); };
+  $('#filters', el).onchange = (e) => {
+    const s = e.target.closest('select[data-f]'); if (!s) return;
+    hal = 1;
+    if (s.dataset.f === 's') { fSumber = s.value; draw(); return; }
+    sel[s.dataset.f] = s.value;
+    if (s.dataset.f === 'c') { sel.a = ''; sel.d = ''; }
+    if (s.dataset.f === 'a') sel.d = '';
+    render(el, ctx);
+  };
+  $('#chips', el).onclick = (e) => {
     const b = e.target.closest('[data-chip]'); if (!b) return;
-    filter = b.dataset.chip; $$('.chips [data-chip]', el).forEach((x) => x.classList.toggle('on', x === b)); draw();
+    filter = b.dataset.chip; hal = 1; draw();
   };
   $('#add', el).onclick = () => openLeadModal(state, {}, () => ctx.refresh());
 
   $('#rows', el).onchange = async (e) => {
-    const sel = e.target.closest('select[data-f]'); if (!sel) return;
-    const id = sel.closest('tr').dataset.id;
-    const patch = { [sel.dataset.f]: sel.value === '' ? null : sel.dataset.f === 'alasan' ? Number(sel.value) : sel.value };
+    const sel2 = e.target.closest('select[data-f]'); if (!sel2) return;
+    const id = sel2.closest('tr').dataset.id;
+    const patch = { [sel2.dataset.f]: sel2.value === '' ? null : sel2.dataset.f === 'alasan' ? Number(sel2.value) : sel2.value };
     try { await api.updateLead(id, patch); Object.assign(leads.find((l) => l.id === id), patch); toast('Tersimpan'); }
     catch (err) { toast(err.message, 'err'); }
   };

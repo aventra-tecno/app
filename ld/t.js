@@ -1,13 +1,14 @@
-/*! Aventra Leads · t.js v1.1.2
+/*! Aventra Leads · t.js v1.2.0
  * Pasang di landing page:
  *   <script src="https://app.aventra.id/app/ld/t.js" data-key="pk_xxx" defer></script>
  * Tombol WA:
  *   <a href="https://wa.me/6285778082138" data-aventra-wa="SBY">Chat WA</a>
  *   (atribut data-aventra-wa = label nomor di Aventra; boleh dikosongkan,
  *    link wa.me biasa juga otomatis ditangkap)
- * Pixel otomatis (PageView + ViewContent) aktif bila dinyalakan di
- * Aventra Leads > Pengaturan > Pixel & Token. Jangan pasang kode dasar
- * Pixel manual sekaligus, supaya PageView tidak dobel.
+ * Pixel otomatis aktif bila dinyalakan di Aventra Leads > Pengaturan > Pixel & Token.
+ * Event yang dipilih di sana (PageView, ViewContent, AddToCart, …) dikirim otomatis
+ * saat halaman dibuka / scroll 50% / 30 detik / klik tombol WA / klik tombol khusus:
+ *   <button data-aventra-event="AddToCart">Pesan sekarang</button>
  */
 (function () {
   'use strict';
@@ -76,22 +77,51 @@
     })
     .catch(function (e) { console.warn('[Aventra] tidak bisa menghubungi server', e); return null; });
 
-  // 3b) Pasang kode dasar Meta Pixel bila diaktifkan di Aventra
+  // 3b) Pixel: kode dasar + event pilihan dari Aventra (v1.2.0)
+  var EV = [];
+  function track(name, c) {
+    if (typeof window.fbq !== 'function') return;
+    try { window.fbq('track', name, c && c.pixel && c.pixel.vc && name !== 'PageView' ? { content_name: c.pixel.vc } : {}); } catch (e) {}
+  }
+  function evBy(w) { var r = []; for (var i = 0; i < EV.length; i++) if (EV[i] && EV[i].w === w && EV[i].e) r.push(EV[i].e); return r; }
   function initPixel(c) {
     if (!c || !c.pixel || !c.pixel.id || window.__avPixel) return;
-    if (typeof window.fbq === 'function') return; // halaman sudah punya Pixel sendiri
     window.__avPixel = true;
-    /* eslint-disable */
-    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-    document,'script','https://connect.facebook.net/en_US/fbevents.js');
-    /* eslint-enable */
-    window.fbq('init', String(c.pixel.id));
-    window.fbq('track', 'PageView');
-    window.fbq('track', 'ViewContent', c.pixel.vc ? { content_name: c.pixel.vc } : {});
+    EV = c.pixel.ev && c.pixel.ev.length ? c.pixel.ev : [{ e: 'PageView', w: 'load' }, { e: 'ViewContent', w: 'load' }];
+    var pasang = typeof window.fbq !== 'function'; // halaman belum punya Pixel sendiri
+    if (pasang) {
+      /* eslint-disable */
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+      document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      /* eslint-enable */
+      window.fbq('init', String(c.pixel.id));
+    }
+    // PageView hanya dikirim bila kode dasar dipasang oleh script ini (Pixel manual sudah mengirim PageView sendiri)
+    evBy('load').forEach(function (n) { if (n !== 'PageView' || pasang) track(n, c); });
+    var lama = evBy('lama');
+    if (lama.length) setTimeout(function () { lama.forEach(function (n) { track(n, c); }); }, 30000);
+    var gulir = evBy('scroll');
+    if (gulir.length) {
+      var onScroll = function () {
+        var h = document.documentElement.scrollHeight - window.innerHeight;
+        if (h <= 0 || window.scrollY / h >= 0.5) {
+          window.removeEventListener('scroll', onScroll);
+          gulir.forEach(function (n) { track(n, c); });
+        }
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+    }
   }
+  // tombol khusus: <button data-aventra-event="AddToCart">
+  document.addEventListener('click', function (e) {
+    var el = e.target && e.target.closest && e.target.closest('[data-aventra-event]');
+    if (!el || !cfg) return;
+    var n = el.getAttribute('data-aventra-event');
+    if (evBy('klik').indexOf(n) >= 0) track(n, cfg);
+  }, true);
   cfgReady.then(initPixel);
 
   function digits(s) { return String(s || '').replace(/\D/g, ''); }
@@ -168,6 +198,7 @@
     } catch (err) {}
     if (typeof window.fbq === 'function') {
       try { window.fbq('track', 'Contact', {}, { eventID: eventId }); } catch (err) {}
+      evBy('wa').forEach(function (n) { track(n, cfg); });
     }
     window.AventraLeads = { kode: kode };
 

@@ -51,12 +51,25 @@ async function pixel(el, { state }) {
       <input name="token" type="password" autocomplete="off" placeholder="${ts ? 'Token tersimpan · isi untuk mengganti' : 'Tempel token dari Events Manager'}">
     </label>
     <p class="small ${ts ? 'ok-text' : 'err-text'}">${ts ? `Token tersimpan sejak ${waktu(ts)}. Isinya tidak bisa dilihat lagi dari aplikasi.` : 'Token belum diisi. Event belum bisa dikirim ke Meta.'}</p>
-    <label class="check"><input type="checkbox" name="pixel_browser" ${t.pixel_browser ? 'checked' : ''}> Pasang Pixel otomatis lewat script (PageView + ViewContent)</label>
+
     <label class="check"><input type="checkbox" name="lead_event" ${t.lead_event !== false ? 'checked' : ''}><span>Kirim event <b>Lead</b> ke Meta saat chat berkode tercatat (dari CS atau ekstensi WhatsApp)</span></label>
     <p class="muted small" style="margin:-6px 0 0 26px">Bisa dipakai campaign <b>Leads → Website → Lead</b> supaya Meta mencari orang yang benar-benar chat, bukan sekadar klik tombol WA.</p>
     <div class="backfill" id="backfill"></div>
-    <label>Nama konten untuk ViewContent<input name="vc_name" value="${esc(t.vc_name || '')}" placeholder="Pijat Panggilan Surabaya"></label>
-    <p class="muted small">Aktifkan kalau landing page <b>belum</b> punya kode Pixel. Kalau sudah ada kode Pixel manual, biarkan mati supaya PageView tidak dobel. Perubahan terasa di landing page paling lambat 5 menit.</p>
+    <div class="pxev">
+      <label class="check"><input type="checkbox" name="pixel_browser" ${t.pixel_browser ? 'checked' : ''}><span><b>Kirim event Pixel dari landing page lewat script</b></span></label>
+      <p class="muted small" style="margin:-4px 0 4px 26px">Kode dasar Pixel ikut dipasang otomatis kalau halaman belum punya. Kalau sudah ada kode Pixel manual, script hanya menambah event yang dipilih (PageView tidak dobel).</p>
+      <div class="pxev-list" id="pxev">${EVENTS.map(([n, d]) => {
+        const cur = evAktif(t).find((x) => x.e === n);
+        return `<div class="pxev-row ${cur ? 'on' : ''}"><label class="check"><input type="checkbox" data-ev="${n}" ${cur ? 'checked' : ''}><span><b>${n}</b><small class="muted block">${d}</small></span></label>
+          ${n === 'PageView' ? '<span class="muted small">saat halaman dibuka</span>' : `<select data-w="${n}">${Object.entries(KAPAN).map(([k, v]) => `<option value="${k}" ${(cur?.w || DEF_W[n] || 'load') === k ? 'selected' : ''}>${v}</option>`).join('')}</select>`}</div>`;
+      }).join('')}
+        <div class="pxev-row fixed"><span><b>Contact</b><small class="muted block">klik tombol WA · otomatis, browser + server</small></span><span class="badge ok">selalu</span></div>
+        <div class="pxev-row fixed"><span><b>Lead</b><small class="muted block">chat berkode tercatat · dari server</small></span><span class="badge ${t.lead_event !== false ? 'ok' : ''}">${t.lead_event !== false ? 'aktif' : 'mati'}</span></div>
+        <div class="pxev-row fixed"><span><b>Purchase</b><small class="muted block">CS menandai lunas · dari server</small></span><span class="badge ok">selalu</span></div>
+      </div>
+      <p class="muted small">Event pilihan dikirim dari browser pengunjung, tidak perlu disetel lagi di Events Manager. Event dengan <b>"Saat klik tombol khusus"</b> perlu atribut di tombolnya, lihat tab <b>Pasang di Landing Page</b>. Perubahan terasa di landing page paling lambat 5 menit.</p>
+    </div>
+    <label>Nama konten (content_name) untuk event Pixel<input name="vc_name" value="${esc(t.vc_name || '')}" placeholder="Pijat Panggilan Surabaya"></label>
     <label>Test event code (opsional)<input name="test_event_code" value="${esc(t.test_event_code || '')}" placeholder="TEST12345"></label>
     <p class="muted small">Isi hanya saat uji coba, lalu kosongkan lagi. Selama terisi, event hanya muncul di tab <b>Test events</b> Events Manager dan tidak dipakai untuk optimasi iklan.</p>
     <div class="btn-row"><button class="btn primary">Simpan</button>${ts ? '<button type="button" class="btn danger-ghost" id="hapus">Hapus token</button>' : ''}</div>
@@ -74,6 +87,7 @@ async function pixel(el, { state }) {
       const patch = {
         pixel_id: f.pixel_id.value.replace(/\D/g, '') || null, test_event_code: f.test_event_code.value.trim() || null,
         pixel_browser: f.pixel_browser.checked, vc_name: f.vc_name.value.trim() || null,
+        pixel_events: $$('[data-ev]', f).filter((c) => c.checked).map((c) => ({ e: c.dataset.ev, w: c.dataset.ev === 'PageView' ? 'load' : $(`[data-w="${c.dataset.ev}"]`, f).value })),
         lead_event: f.lead_event.checked,
       };
       await api.updateTenant(t.id, patch); Object.assign(t, patch);
@@ -81,6 +95,7 @@ async function pixel(el, { state }) {
       toast('Tersimpan'); pixel(el, { state });
     } catch (err) { toast(err.message, 'err'); }
   };
+  $('#pxev', el).onchange = (e) => { const c = e.target.closest('[data-ev]'); if (c) c.closest('.pxev-row').classList.toggle('on', c.checked); };
   const h = $('#hapus', el);
   if (h) h.onclick = async () => { if (!confirm('Hapus token? Event berhenti terkirim ke Meta.')) return; await api.saveToken(t.id, ''); pixel(el, { state }); };
 
@@ -206,9 +221,12 @@ function pasang(el, { state }) {
       <p class="muted small">Link <code>wa.me</code> yang sudah ada juga otomatis tertangkap. Pakai <code>data-aventra-wa="LABEL"</code> kalau satu halaman punya beberapa nomor.</p></div>
     <div class="card"><h3><span class="num">3</span>Isi "URL parameters" di setiap iklan Meta</h3>${codeBox(params)}
       <p class="muted small">Ads Manager → level iklan → Tracking → URL parameters. Dari sini laporan "Per iklan" terisi otomatis.</p></div>
-    <div class="card"><h3><span class="num">4</span>Pixel PageView &amp; ViewContent</h3>
-      ${t.pixel_browser ? `<p class="small ok-text">Pixel otomatis <b>aktif</b>: script di langkah 1 sudah memasang Pixel ${esc(t.pixel_id || '')} + PageView + ViewContent. Tidak perlu kode tambahan.</p>`
-        : `<p class="muted small">Pilih salah satu: nyalakan <b>Pixel otomatis</b> di tab Pixel &amp; Token (paling mudah), atau tempel kode ini di &lt;head&gt;:</p>${codeBox(pixelCode(t))}`}
+    <div class="card"><h3><span class="num">4</span>Event Pixel</h3>
+      ${t.pixel_browser ? `<p class="small ok-text">Event Pixel lewat script <b>aktif</b> (Pixel ${esc(t.pixel_id || '')}). Yang dikirim:</p>
+        <ul class="small pxev-sum">${evAktif(t).map((x) => `<li><b>${esc(x.e)}</b> · ${x.e === 'PageView' ? 'saat halaman dibuka' : KAPAN[x.w].toLowerCase()}</li>`).join('')}<li><b>Contact</b> · saat klik tombol WA</li></ul>
+        ${evAktif(t).filter((x) => x.w === 'klik').map((x) => `<p class="muted small">Tombol untuk <b>${esc(x.e)}</b>: tambahkan atribut ini di tombolnya</p>${codeBox(`<button data-aventra-event="${x.e}">${x.e === 'AddToCart' ? 'Pesan sekarang' : x.e === 'InitiateCheckout' ? 'Lanjut pesan' : 'Klik di sini'}</button>`)}`).join('')}
+        <p class="muted small">Ubah daftar event di tab <b>Pixel &amp; Token</b>. Tidak perlu kode tambahan selain script di langkah 1.</p>`
+        : `<p class="muted small">Pilih salah satu: nyalakan <b>Kirim event Pixel lewat script</b> di tab Pixel &amp; Token lalu pilih event-nya (paling mudah), atau tempel kode ini di &lt;head&gt;:</p>${codeBox(pixelCode(t))}`}
       <p class="muted small">Jangan menambahkan <code>fbq('track','Contact')</code> sendiri: Contact sudah dikirim script, tanpa dobel.</p></div>
     <div class="card"><h3><span class="num">5</span>Uji</h3>
       <p class="small">Pakai tab <b>Tes Pemasangan</b>: masukkan alamat landing page, buka link tesnya, lalu lihat hasilnya langsung.</p></div>
@@ -469,3 +487,25 @@ async function waGateway(el, { state }) {
   await draw();
   gwTimer = setInterval(draw, 3000);
 }
+
+// ---------------------------------------------------------------- daftar event Pixel (v1.15.0)
+const EVENTS = [
+  ['PageView', 'Halaman dibuka'],
+  ['ViewContent', 'Melihat isi halaman / layanan'],
+  ['Search', 'Mencari sesuatu'],
+  ['AddToCart', 'Menambah ke keranjang / mau pesan'],
+  ['AddToWishlist', 'Menyimpan ke favorit'],
+  ['InitiateCheckout', 'Mulai proses pesan'],
+  ['AddPaymentInfo', 'Mengisi info pembayaran'],
+  ['CompleteRegistration', 'Selesai daftar'],
+  ['Schedule', 'Membuat jadwal / booking'],
+  ['FindLocation', 'Mencari lokasi'],
+  ['CustomizeProduct', 'Memilih varian / paket'],
+  ['SubmitApplication', 'Mengirim formulir'],
+  ['Subscribe', 'Berlangganan'],
+  ['StartTrial', 'Mulai coba gratis'],
+  ['Donate', 'Donasi'],
+];
+const KAPAN = { load: 'Saat halaman dibuka', scroll: 'Saat scroll 50% halaman', lama: 'Setelah 30 detik di halaman', wa: 'Saat klik tombol WA', klik: 'Saat klik tombol khusus' };
+const DEF_W = { ViewContent: 'load', Search: 'klik', AddToCart: 'wa', InitiateCheckout: 'wa', Schedule: 'wa', FindLocation: 'klik', CustomizeProduct: 'klik', SubmitApplication: 'klik' };
+const evAktif = (t) => (Array.isArray(t.pixel_events) ? t.pixel_events : [{ e: 'PageView', w: 'load' }, { e: 'ViewContent', w: 'load' }]);

@@ -141,3 +141,58 @@ export function customLabel(key) {
   return a === b ? f(a) : `${f(a)} – ${f(b)}`;
 }
 export const RANGE_LABEL = { today: 'Hari ini', yesterday: 'Kemarin', '7d': '7 hari', '14d': '14 hari', '30d': '30 hari' };
+
+// ---------------------------------------------------------------- v1.15.0: halaman (20 data per halaman)
+export const PER_HAL = 20;
+export function potong(list, hal) {
+  const pages = Math.max(1, Math.ceil(list.length / PER_HAL));
+  const page = Math.min(Math.max(1, hal || 1), pages);
+  return { rows: list.slice((page - 1) * PER_HAL, page * PER_HAL), page, pages, total: list.length };
+}
+export function pagerHtml({ page, pages, total }) {
+  if (!total) return '';
+  const a = (page - 1) * PER_HAL + 1, b = Math.min(page * PER_HAL, total);
+  if (pages <= 1) return `<div class="pager"><span>${Number(total).toLocaleString('id-ID')} data</span></div>`;
+  return `<div class="pager"><span>${a}–${b} dari <b>${Number(total).toLocaleString('id-ID')}</b> data</span>
+    <div class="pg">
+      <button type="button" class="btn sm" data-pg="${page - 1}" ${page <= 1 ? 'disabled' : ''}>‹ Sebelumnya</button>
+      <label>Halaman <select data-pg-sel>${Array.from({ length: pages }, (_, i) => `<option value="${i + 1}" ${i + 1 === page ? 'selected' : ''}>${i + 1}</option>`).join('')}</select> dari ${pages}</label>
+      <button type="button" class="btn sm" data-pg="${page + 1}" ${page >= pages ? 'disabled' : ''}>Selanjutnya ›</button>
+    </div></div>`;
+}
+export function bindPager(box, go) {
+  if (!box) return;
+  box.onclick = (e) => { const b = e.target.closest('[data-pg]'); if (b && !b.disabled) go(Number(b.dataset.pg)); };
+  const s = box.querySelector('[data-pg-sel]');
+  if (s) s.onchange = () => go(Number(s.value));
+}
+
+// ---------------------------------------------------------------- v1.15.0: campaign › ad set › iklan dari data Meta
+export function petaIklan(ins) {
+  const meta = {};
+  (ins || []).forEach((r) => { meta[r.ad_id] = { c: r.campaign_id || r.campaign_name, cn: r.campaign_name, a: r.adset_id || r.adset_name, an: r.adset_name, dn: r.ad_name }; });
+  return (x) => {
+    if (!x) return { c: '-', cn: '(tanpa iklan)', a: '-', an: '', d: '-', dn: 'manual' };
+    const m = meta[x.ad_id];
+    if (m) return { c: m.c, cn: m.cn, a: m.a, an: m.an, d: x.ad_id, dn: m.dn || x.ad_name };
+    const cn = x.campaign_name || x.utm_campaign || '';
+    const dn = x.ad_name || x.utm_content || '';
+    return { c: cn ? 'n:' + cn : '-', cn: cn || '(tanpa campaign)', a: '-', an: '(ad set tidak diketahui)', d: x.ad_id || (dn ? 'n:' + dn : '-'), dn: dn || '(tanpa iklan)' };
+  };
+}
+// opsi <select> campaign / ad set / iklan yang saling menyaring
+export function opsiIklan(items, sel) {
+  const camps = {}, sets = {}, ads = {};
+  items.forEach((m) => { camps[m.c] = m.cn; sets[m.a] = { name: m.an, c: m.c }; ads[m.d] = { name: m.dn, a: m.a, c: m.c }; });
+  const e = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const opt = (obj, cur, all, keep = () => true) => `<option value="">${all}</option>` +
+    Object.entries(obj).filter(([k, v]) => keep(k, v)).sort((x, y) => String(x[1].name ?? x[1]).localeCompare(String(y[1].name ?? y[1])))
+      .map(([k, v]) => `<option value="${e(k)}" ${k === cur ? 'selected' : ''}>${e(v.name ?? v)}</option>`).join('');
+  return {
+    ada: (s) => !s.c || !!camps[s.c],
+    html: `<select data-f="c">${opt(camps, sel.c, 'Semua campaign')}</select>
+      <select data-f="a">${opt(sets, sel.a, 'Semua ad set', (k, v) => !sel.c || v.c === sel.c)}</select>
+      <select data-f="d">${opt(ads, sel.d, 'Semua iklan', (k, v) => (!sel.c || v.c === sel.c) && (!sel.a || v.a === sel.a))}</select>`,
+  };
+}
+export const lolosIklan = (m, sel) => (!sel.c || m.c === sel.c) && (!sel.a || m.a === sel.a) && (!sel.d || m.d === sel.d);

@@ -1,8 +1,8 @@
 // Aventra Leads · Log event Meta (v1.12.3: filter tanggal & event)
 import { api } from '../api.js';
-import { esc, num, waktu, range, $ } from '../ui.js';
+import { esc, num, waktu, range, potong, pagerHtml, bindPager, $ } from '../ui.js';
 
-let fEvent = '', fStatus = '';
+let fEvent = '', fStatus = '', hal = 1;
 const URUT = ['Contact', 'Lead', 'Purchase'];
 
 export async function render(el, { state }) {
@@ -18,6 +18,7 @@ export async function render(el, { state }) {
   const draw = () => {
     const ev = all.filter((e) => (!fEvent || e.event_name === fEvent) && (!fStatus || (fStatus === 'ok' ? e.ok : !e.ok)));
     const gagal = ev.filter((e) => !e.ok).length;
+    const pg = potong(ev, hal); hal = pg.page;
     const per = Object.fromEntries(names.map((n) => [n, all.filter((e) => e.event_name === n)]));
     el.innerHTML = `
     <div class="toolbar">
@@ -34,17 +35,18 @@ export async function render(el, { state }) {
     <div class="card flush">
       <table class="tbl">
         <thead><tr><th>Waktu</th><th>Event</th><th>Status</th><th>Keterangan dari Meta</th></tr></thead>
-        <tbody>${ev.slice(0, 500).map((e) => `<tr>
+        <tbody>${pg.rows.map((e) => `<tr>
           <td data-l="Waktu" class="nw">${waktu(e.created_at)}</td>
           <td data-l="Event"><span class="ev-tag ev-${esc(e.event_name).toLowerCase()}">${esc(e.event_name)}</span></td>
           <td data-l="Status">${e.ok ? '<span class="badge ok">Berhasil</span>' : '<span class="badge bad">Gagal</span>'}</td>
           <td data-l="Keterangan" class="${e.ok ? 'muted' : 'err-text'}">${esc(pesan(e.response))}</td></tr>`).join('')
           || '<tr><td colspan="4" class="empty">Tidak ada event di periode / filter ini</td></tr>'}</tbody>
       </table>
-      ${ev.length > 500 ? `<p class="muted small" style="padding:10px 16px">Menampilkan 500 dari ${num(ev.length)} event. Persempit tanggal atau filter.</p>` : ''}
+      <div id="pager">${pagerHtml(pg)}</div>
     </div>`;
-    $('#fe', el).onclick = (e) => { const b = e.target.closest('[data-e]'); if (!b) return; fEvent = b.dataset.e; draw(); };
-    $('#fs', el).onclick = (e) => { const b = e.target.closest('[data-s]'); if (!b) return; fStatus = b.dataset.s; draw(); };
+    $('#fe', el).onclick = (e) => { const b = e.target.closest('[data-e]'); if (!b) return; fEvent = b.dataset.e; hal = 1; draw(); };
+    $('#fs', el).onclick = (e) => { const b = e.target.closest('[data-s]'); if (!b) return; fStatus = b.dataset.s; hal = 1; draw(); };
+    bindPager($('#pager', el), (n) => { hal = n; draw(); el.querySelector('.card.flush')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
   };
   draw();
 }
